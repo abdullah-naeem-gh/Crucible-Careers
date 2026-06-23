@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+:root {
+  --orange-500: #FF6B00;
+  --orange-400: #FF914D;
+  --gray-900: #1A1A1A;
+}
+
+html, body, #root { height: 100%; }
+body { font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: var(--gray-900); }
+
+html, body {
+  overflow-x: hidden;
+}
+
+.btn-pill {
+  @apply inline-flex items-center justify-center rounded-full px-6 py-3 text-base font-semibold transition transform;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, var(--orange-500), var(--orange-400));
+  color: white;
+  @apply shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:brightness-110;
+}
+
+.btn-secondary-link {
+  @apply text-sm font-medium underline underline-offset-4 decoration-gray-300 hover:decoration-gray-500 hover:text-gray-800;
+}
+
+.panel-base {
+  @apply grid place-items-center p-10 md:p-14 min-h-[50vh] md:min-h-screen focus-within:outline-none;
+}
+
+.panel-content {
+  @apply w-full max-w-xl text-center space-y-6;
+}
+
+.headline {
+  @apply text-4xl md:text-5xl font-semibold tracking-tight leading-tight;
+}
+
+.tagline {
+  @apply text-base md:text-lg text-gray-600 max-w-prose mx-auto;
+}
+
+.btn-pill { min-height: 44px; }
