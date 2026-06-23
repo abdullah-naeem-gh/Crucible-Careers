@@ -1257,7 +1257,7 @@ const EmployersLandingPage = () => {
       <NavBar isVisible={isNavBarVisible} />
       <HeroSection scrollY={scrollY} />
       
-      <div className="relative z-10 bg-white">
+      <div className="employer-dark-content relative z-10 bg-[#090909] text-white">
         <HiringChallengesSection />
         <CrucibleStandardSection />
         <HiringProcessSection />

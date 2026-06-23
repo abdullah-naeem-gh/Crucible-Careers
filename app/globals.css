@@ -44,3 +44,94 @@ html, body {
 }
 
 .btn-pill { min-height: 44px; }
+
+/* Employer surfaces reuse the Talent UI language with a dark material palette. */
+.employer-dark-content {
+  color: #f5f5f5;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 107, 0, 0.08), transparent 30rem),
+    #090909;
+}
+
+.employer-dark-content .bg-white,
+.employer-dark-content .bg-gray-50,
+.employer-dark-content .bg-gray-100 {
+  background-color: #0d0d0d;
+}
+
+.employer-dark-content .text-gray-900 {
+  color: #f5f5f5;
+}
+
+.employer-dark-content .text-gray-500 {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.employer-dark-content .text-gray-700,
+.employer-dark-content .text-gray-600 {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.employer-dark-content .border-gray-200,
+.employer-dark-content .border-gray-300 {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.employer-dark-content section {
+  position: relative;
+  overflow: hidden;
+}
+
+.employer-dark-content section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+}
+
+.employer-dashboard .bg-white {
+  background-color: rgba(20, 20, 20, 0.78);
+  backdrop-filter: blur(18px);
+}
+
+.employer-dashboard .bg-gray-50 {
+  background-color: rgba(255, 255, 255, 0.035);
+}
+
+.employer-dashboard .border-gray-100,
+.employer-dashboard .border-gray-200 {
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+.employer-dashboard .divide-gray-100 > :not(:last-child) {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.employer-dashboard .text-gray-900 {
+  color: #f7f7f7;
+}
+
+.employer-dashboard .text-gray-700,
+.employer-dashboard .text-gray-600 {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.employer-dashboard .text-gray-500,
+.employer-dashboard .text-gray-400 {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.employer-dashboard .hover\:bg-gray-50:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.employer-dashboard input,
+.employer-dashboard select,
+.employer-dashboard textarea {
+  color-scheme: dark;
+}

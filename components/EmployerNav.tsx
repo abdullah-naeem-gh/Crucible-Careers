@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 
 interface EmployerNavProps {
   activeTab?: 'overview' | 'analytics' | 'jobs'
@@ -8,32 +8,35 @@ interface EmployerNavProps {
 }
 
 const EmployerNav = ({ activeTab = 'overview', company = 'TechCorp' }: EmployerNavProps) => {
-  const router = useRouter()
-
   const isActive = (key: 'overview' | 'analytics' | 'jobs') => activeTab === key
 
   return (
-    <div className="sticky top-0 z-20 w-full bg-white/80 backdrop-blur border-b border-gray-100">
+    <motion.div
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.45, ease: 'easeOut' }}
+      className="sticky top-0 z-30 w-full border-b border-white/10 bg-[#0d0d0d]/80 text-white shadow-2xl shadow-black/20 backdrop-blur-xl"
+    >
       <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 text-gray-900">
-            <div className="h-5 w-6 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-[#FF6B00]" />
+          <Link href="/employers" className="flex items-center gap-2 text-white">
+            <div className="h-5 w-6 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-gradient-to-br from-[#FF6B00] to-[#FF914D] shadow-lg shadow-orange-500/20" />
             <span className="font-semibold">Crucible</span>
-          </div>
+          </Link>
           <nav className="hidden md:flex items-center gap-1">
-            <Link href="/dashboard/employer?tab=overview" className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive('overview') ? 'text-gray-900 bg-gray-100' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}>Overview</Link>
-            <Link href="/dashboard/employer/jobs" className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive('jobs') ? 'text-gray-900 bg-gray-100' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}>Job Listings</Link>
-            <Link href="/dashboard/employer?tab=analytics" className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive('analytics') ? 'text-gray-900 bg-gray-100' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}>Analytics</Link>
+            <Link href="/dashboard/employer?tab=overview" className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${isActive('overview') ? 'border border-orange-500/20 bg-orange-500/10 text-[#FF914D]' : 'text-white/55 hover:bg-white/5 hover:text-white'}`}>Overview</Link>
+            <Link href="/dashboard/employer/jobs" className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${isActive('jobs') ? 'border border-orange-500/20 bg-orange-500/10 text-[#FF914D]' : 'text-white/55 hover:bg-white/5 hover:text-white'}`}>Job Listings</Link>
+            <Link href="/dashboard/employer?tab=analytics" className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${isActive('analytics') ? 'border border-orange-500/20 bg-orange-500/10 text-[#FF914D]' : 'text-white/55 hover:bg-white/5 hover:text-white'}`}>Analytics</Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          <button className="hidden md:inline-flex px-3 py-2 rounded-md border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50">Company</button>
-          <button className="hidden md:inline-flex px-3 py-2 rounded-md border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50">Profile</button>
-          <Link href="/" className="px-3 py-2 rounded-md border border-red-200 bg-red-50 text-sm text-red-700 hover:bg-red-100" onClick={() => localStorage.removeItem('recruiter_jobs')}>Logout</Link>
-          <div className="h-7 w-7 rounded-full bg-[#FF6B00] text-white text-xs font-semibold grid place-items-center">{company.charAt(0)}</div>
+          <button className="hidden md:inline-flex px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-sm text-white/70 hover:bg-white/10 hover:text-white">Company</button>
+          <button className="hidden md:inline-flex px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-sm text-white/70 hover:bg-white/10 hover:text-white">Profile</button>
+          <Link href="/" className="px-3 py-2 rounded-lg border border-red-500/20 bg-red-500/10 text-sm text-red-300 hover:bg-red-500/20" onClick={() => localStorage.removeItem('recruiter_jobs')}>Logout</Link>
+          <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-xs font-semibold text-white shadow-lg shadow-orange-500/20">{company.charAt(0)}</div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
