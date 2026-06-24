@@ -3,4 +3,4 @@ node_modules/
 *.local
 AGENTS.md
 .serena
-tsconfig.tsbuildinfo
+tsconfig.tsbuildinfospec.md
