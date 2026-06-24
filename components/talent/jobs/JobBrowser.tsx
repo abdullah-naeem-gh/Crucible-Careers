@@ -21,7 +21,8 @@ function relativeDate(iso: string | null): string {
 }
 
 export default function JobBrowser({ jobs }: Props) {
-  const [selectedJob, setSelectedJob] = useState<ScrapedJob | null>(jobs[0] ?? null)
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(jobs[0]?._id ?? null)
+  const selectedJob = jobs.find(j => j._id === selectedJobId) ?? jobs[0] ?? null
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [activeType, setActiveType] = useState('')
@@ -144,7 +145,7 @@ export default function JobBrowser({ jobs }: Props) {
                   <li key={job._id}>
                     <motion.button
                       whileHover={{ scale: 1.005 }}
-                      onClick={() => setSelectedJob(job)}
+                      onClick={() => setSelectedJobId(job._id)}
                       className={`w-full text-left p-4 rounded-xl border transition-shadow ${
                         selectedJob?._id === job._id
                           ? 'border-[#FF6B00]/60 ring-2 ring-[#FF6B00]/20 bg-white shadow-md'
