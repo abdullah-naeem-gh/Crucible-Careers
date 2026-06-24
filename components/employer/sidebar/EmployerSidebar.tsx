@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-type EmployerTab = "overview" | "jobs" | "analytics";
+type EmployerTab = "overview" | "jobs" | "analytics" | "profile";
 
 interface EmployerSidebarProps {
   activeTab: EmployerTab;
@@ -18,6 +18,7 @@ const tabs: Array<{ key: EmployerTab; label: string }> = [
   { key: "overview", label: "Overview" },
   { key: "jobs", label: "Job Listings" },
   { key: "analytics", label: "Analytics" },
+  { key: "profile", label: "Company Profile" },
 ];
 
 export default function EmployerSidebar({
@@ -80,18 +81,7 @@ export default function EmployerSidebar({
             </button>
           );
         })}
-        <button
-          type="button"
-          className="flex w-full items-center rounded-xl border border-transparent px-3.5 py-2.5 text-left text-white/60 transition-all hover:border-white/[0.05] hover:bg-white/[0.035] hover:text-white"
-        >
-          Company
-        </button>
-        <button
-          type="button"
-          className="flex w-full items-center rounded-xl border border-transparent px-3.5 py-2.5 text-left text-white/60 transition-all hover:border-white/[0.05] hover:bg-white/[0.035] hover:text-white"
-        >
-          Profile
-        </button>
+
       </nav>
 
       <div className="mt-6 grid grid-cols-2 gap-2 lg:hidden">
