@@ -1,5 +1,5 @@
 "use client";
-import NavBar from '../components/NavBar'
+import NavBar from '@/components/shared/navigation/NavBar'
 import { motion, useInView } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
