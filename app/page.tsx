@@ -528,33 +528,34 @@ const FooterSection = () => (
 )
 
 const LandingPage = () => {
-  const [isNavBarVisible, setIsNavBarVisible] = useState(true)
   const [scrollY, setScrollY] = useState(0)
-  const lastScrollY = useRef(0)
 
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      const heroSectionHeight = window.innerHeight
-      setScrollY(currentScrollY)
-      const isInHeroSection = currentScrollY < heroSectionHeight
-      const isScrollingUp = currentScrollY < lastScrollY.current
-      const isScrollingDown = currentScrollY > lastScrollY.current
-      if (currentScrollY <= 50) { setIsNavBarVisible(true) }
-      else if (isInHeroSection && isScrollingUp) { setIsNavBarVisible(true) }
-      else if (!isInHeroSection) { setIsNavBarVisible(false) }
-      else if (isScrollingDown) { setIsNavBarVisible(false) }
-      lastScrollY.current = currentScrollY
+      setScrollY(
+        window.scrollY ||
+        window.pageYOffset ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0
+      )
     }
+
+    handleScroll()
     window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => { window.removeEventListener('scroll', handleScroll) }
+    document.body.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      document.body.removeEventListener('scroll', handleScroll)
+    }
   }, [])
 
   return (
-    <div className="relative w-full min-h-screen">
-      <NavBar isVisible={isNavBarVisible} />
+    <div className="min-h-screen">
+      <NavBar />
       <HeroSection scrollY={scrollY} />
-      <div className="relative z-20 bg-white">
+      <div className="relative z-20">
         <ApplySection />
         <ScrutinizedSection />
         <CardsSection />

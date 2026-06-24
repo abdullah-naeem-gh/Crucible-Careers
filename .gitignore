@@ -2,3 +2,4 @@ node_modules/
 .next/
 *.local
 AGENTS.md
+.serena
