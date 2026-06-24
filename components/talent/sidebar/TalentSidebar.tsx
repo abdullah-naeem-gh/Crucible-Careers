@@ -39,6 +39,16 @@ export default function TalentSidebar({ jobCount = 4, applicationCount = 12, sav
           Jobs <span className="rounded-md bg-[#FF6B00]/10 text-[#FF6B00] px-2">{jobCount}</span>
         </Link>
         <Link
+          href="/talent/dashboard/companies"
+          className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+            isActive('/talent/dashboard/companies')
+              ? 'bg-orange-50 text-[#FF6B00] border border-orange-100'
+              : 'text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          Companies
+        </Link>
+        <Link
           href="/talent/dashboard/applications"
           className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
             isActive('/talent/dashboard/applications')
