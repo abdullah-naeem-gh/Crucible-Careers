@@ -69,6 +69,16 @@ export default function TalentSidebar({ jobCount = 4, applicationCount = 12, sav
           Profile
         </Link>
         <Link
+          href="/talent/dashboard/exams"
+          className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+            isActive('/talent/dashboard/exams')
+              ? 'bg-orange-50 text-[#FF6B00] border border-orange-100'
+              : 'text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          Exams & Badges
+        </Link>
+        <Link
           href="/talent/dashboard/settings"
           className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
             isActive('/talent/dashboard/settings')
