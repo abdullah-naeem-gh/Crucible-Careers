@@ -238,18 +238,29 @@ export default function JobBrowser({ jobs }: Props) {
         ) : (
           <motion.div key={selectedJob._id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}>
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs text-gray-500 flex items-center gap-1.5">
-                  <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-[#FF6B00] hover:underline transition-colors font-medium">{selectedJob.company}</Link>
-                  <span>•</span>
-                  {[selectedJob.location, selectedJob.type].filter(Boolean).join(' • ')}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`}>
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-100 flex items-center justify-center text-[#FF6B00] font-bold text-lg shadow-sm hover:shadow-md transition-shadow">
+                      {selectedJob.company.charAt(0).toUpperCase()}
+                    </div>
+                  </Link>
+                  <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`} className="text-base font-semibold text-gray-900 hover:text-[#FF6B00] transition-colors">
+                    {selectedJob.company}
+                  </Link>
                 </div>
-                <h1 className="mt-1 text-2xl font-semibold leading-tight text-gray-900">{selectedJob.title}</h1>
+                <div>
+                  <h1 className="text-2xl font-bold leading-tight text-gray-900">{selectedJob.title}</h1>
+                  <div className="mt-1.5 text-sm text-gray-500 flex flex-wrap items-center gap-1.5">
+                    <span>{[selectedJob.location, selectedJob.type].filter(Boolean).join(', ')}</span>
+                    <span>•</span>
+                    <span className="text-green-700 font-medium">{relativeDate(selectedJob.posted_at)}</span>
+                  </div>
+                </div>
               </div>
               <div className="text-right shrink-0">
-                <div className="mb-2 text-xs text-gray-400">{relativeDate(selectedJob.posted_at)}</div>
                 {selectedJob.salary && (
-                  <div className="text-sm font-semibold text-[#FF914D]">{selectedJob.salary}</div>
+                  <div className="text-sm font-semibold text-[#FF914D] mb-2">{selectedJob.salary}</div>
                 )}
               </div>
             </div>
