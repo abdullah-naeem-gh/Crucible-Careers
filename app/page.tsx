@@ -1,7 +1,7 @@
 "use client";
 import NavBar from '@/components/shared/navigation/NavBar'
 import { motion, useInView } from 'framer-motion'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 
 const AnimatedBackground = () => {
@@ -165,10 +165,9 @@ const HeroContent = () => {
   )
 }
 
-const HeroSection = ({ scrollY }: { scrollY: number }) => (
-  <section 
+const HeroSection = () => (
+  <section
     className="sticky top-0 left-0 w-full h-screen flex flex-col items-center justify-center overflow-hidden z-10"
-    style={{ transform: `translateY(${-scrollY * 0.3}px)` }}
   >
     <AnimatedBackground />
     <HeroContent />
@@ -528,33 +527,10 @@ const FooterSection = () => (
 )
 
 const LandingPage = () => {
-  const [scrollY, setScrollY] = useState(0)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(
-        window.scrollY ||
-        window.pageYOffset ||
-        document.documentElement.scrollTop ||
-        document.body.scrollTop ||
-        0
-      )
-    }
-
-    handleScroll()
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    document.body.addEventListener('scroll', handleScroll, { passive: true })
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-      document.body.removeEventListener('scroll', handleScroll)
-    }
-  }, [])
-
   return (
     <div className="min-h-screen">
       <NavBar />
-      <HeroSection scrollY={scrollY} />
+      <HeroSection />
       <div className="relative z-20">
         <ApplySection />
         <ScrutinizedSection />
