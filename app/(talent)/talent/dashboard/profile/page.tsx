@@ -125,7 +125,7 @@ export default function TalentProfile() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 overflow-auto">
               <div className="lg:col-span-1">
-                <div className="bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-lg">
+                <div className="bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-lg sticky top-0">
                 <div className="text-center mb-6">
                   <div className="w-24 h-24 rounded-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] mx-auto mb-4 flex items-center justify-center">
                     <span className="text-2xl font-bold text-white">{profile.name.split(' ').map(n => n[0]).join('')}</span>
