@@ -160,17 +160,25 @@ export default function JobBrowser({ jobs }: Props) {
                       }`}
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <div className="text-xs text-gray-400 truncate flex items-center gap-2">
-                            <span>{[job.company, job.location, job.type].filter(Boolean).join(' · ')}</span>
+                        <div className="flex items-start gap-4 min-w-0">
+                          <div className="h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-100 flex items-center justify-center text-[#FF6B00] font-bold text-xl shadow-sm">
+                            {job.company.charAt(0).toUpperCase()}
                           </div>
-                          <div className="mt-0.5 text-base font-semibold text-gray-900 leading-tight">
-                            {job.title}
+                          <div className="min-w-0 flex flex-col justify-center">
+                            <div className="text-base font-semibold text-gray-900 leading-tight truncate">
+                              {job.title}
+                            </div>
+                            <div className="mt-1 text-sm font-medium text-[#FF6B00] truncate">
+                              {job.company}
+                            </div>
+                            <div className="mt-0.5 text-xs text-gray-500 truncate flex items-center gap-2">
+                              <span>{[job.location, job.type].filter(Boolean).join(' • ')}</span>
+                            </div>
                           </div>
                         </div>
-                        <div className="shrink-0 text-right flex flex-col items-end gap-1.5">
+                        <div className="shrink-0 text-right flex flex-col items-end gap-2">
                           <div className="text-xs text-gray-400">{relativeDate(job.posted_at)}</div>
-                          <span className="font-semibold text-green-700 bg-green-50 px-1.5 py-0.5 rounded border border-green-200 text-[10px] leading-tight">
+                          <span className="font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-md border border-green-200 text-[10px] leading-tight shadow-sm">
                             {getMatchScore(job._id)}% Match
                           </span>
                         </div>
