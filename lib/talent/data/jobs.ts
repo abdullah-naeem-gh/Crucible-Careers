@@ -12,7 +12,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.620Z",
-    "description": null
+    "description": "Hire Feed is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699e7632f49b7c274180",
@@ -25,7 +25,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.619Z",
-    "description": null
+    "description": "Hired is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699e7632f49b7c27417f",
@@ -38,7 +38,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.619Z",
-    "description": null
+    "description": "Hire Feed is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699e7632f49b7c27417e",
@@ -51,7 +51,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.618Z",
-    "description": null
+    "description": "Quik Hire Staffing is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699e7632f49b7c27417d",
@@ -64,7 +64,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.618Z",
-    "description": null
+    "description": "Quik Hire Staffing is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699d7632f49b7c27417c",
@@ -77,7 +77,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.617Z",
-    "description": null
+    "description": "Quik Hire Staffing is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699d7632f49b7c27417b",
@@ -90,7 +90,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.617Z",
-    "description": null
+    "description": "Hire Feed is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699d7632f49b7c27417a",
@@ -103,7 +103,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.617Z",
-    "description": null
+    "description": "Hire Feed is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699d7632f49b7c274179",
@@ -116,7 +116,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.616Z",
-    "description": null
+    "description": "Hire Feed is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699d7632f49b7c274178",
@@ -129,7 +129,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.616Z",
-    "description": null
+    "description": "Hire Feed is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699c7632f49b7c274176",
@@ -142,7 +142,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.615Z",
-    "description": null
+    "description": "One Network is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699c7632f49b7c274177",
@@ -155,7 +155,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.615Z",
-    "description": null
+    "description": "Hire Feed is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699c7632f49b7c274175",
@@ -168,7 +168,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.614Z",
-    "description": null
+    "description": "Nayatel is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699c7632f49b7c274174",
@@ -181,7 +181,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.613Z",
-    "description": null
+    "description": "TECEZE is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699c7632f49b7c274173",
@@ -194,7 +194,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.613Z",
-    "description": null
+    "description": "Cyberify is seeking an experienced leader to drive our team to success. As a key player in our organization, you will oversee strategic initiatives, mentor team members, and ensure the delivery of high-quality results.\n\nResponsibilities:\n- Lead and manage a high-performing team.\n- Define and execute project roadmaps.\n- Optimize processes and workflows.\n\nRequirements:\n- 5+ years of relevant experience with proven leadership skills.\n- Excellent strategic thinking and problem-solving abilities.\n- Strong track record of delivering impactful results."
   },
   {
     "_id": "6a32699c7632f49b7c274172",
@@ -207,7 +207,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.612Z",
-    "description": null
+    "description": "Nayatel is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699b7632f49b7c274170",
@@ -220,7 +220,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.611Z",
-    "description": null
+    "description": "ibex is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699b7632f49b7c274171",
@@ -233,7 +233,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.611Z",
-    "description": null
+    "description": "Hired is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699b7632f49b7c27416f",
@@ -246,7 +246,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.611Z",
-    "description": null
+    "description": "Bykea is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699b7632f49b7c27416e",
@@ -259,7 +259,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.610Z",
-    "description": null
+    "description": "Mavericks United is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699b7632f49b7c27416d",
@@ -272,7 +272,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.610Z",
-    "description": null
+    "description": "Quik Hire Staffing is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699a7632f49b7c27416c",
@@ -285,7 +285,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.609Z",
-    "description": null
+    "description": "Instaplast Private Limited is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699a7632f49b7c27416b",
@@ -298,7 +298,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.608Z",
-    "description": null
+    "description": "Bykea is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699a7632f49b7c27416a",
@@ -311,7 +311,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.607Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Pixako Technologies (Pvt.) Ltd. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a32699a7632f49b7c274169",
@@ -324,7 +324,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.606Z",
-    "description": null
+    "description": "Hired is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699a7632f49b7c274168",
@@ -337,7 +337,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.605Z",
-    "description": null
+    "description": "BBI Tech is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a32699a7632f49b7c274167",
@@ -350,7 +350,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.604Z",
-    "description": null
+    "description": "PULSE Innovations Hub Pvt. Ltd is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269997632f49b7c274166",
@@ -363,7 +363,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.604Z",
-    "description": null
+    "description": "Big Entities is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269997632f49b7c274165",
@@ -376,7 +376,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.603Z",
-    "description": null
+    "description": "PULSE Innovations Hub Pvt. Ltd is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269997632f49b7c274164",
@@ -389,7 +389,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.602Z",
-    "description": null
+    "description": "tapmad is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269997632f49b7c274162",
@@ -402,7 +402,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.601Z",
-    "description": null
+    "description": "9D Technologies is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269997632f49b7c274163",
@@ -415,7 +415,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.601Z",
-    "description": null
+    "description": "Mobylogix is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269997632f49b7c274161",
@@ -428,7 +428,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.600Z",
-    "description": null
+    "description": "Sastaticket.pk is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269987632f49b7c27415f",
@@ -441,7 +441,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.599Z",
-    "description": null
+    "description": "Zong 5G is seeking an experienced leader to drive our team to success. As a key player in our organization, you will oversee strategic initiatives, mentor team members, and ensure the delivery of high-quality results.\n\nResponsibilities:\n- Lead and manage a high-performing team.\n- Define and execute project roadmaps.\n- Optimize processes and workflows.\n\nRequirements:\n- 5+ years of relevant experience with proven leadership skills.\n- Excellent strategic thinking and problem-solving abilities.\n- Strong track record of delivering impactful results."
   },
   {
     "_id": "6a3269987632f49b7c274160",
@@ -454,7 +454,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.599Z",
-    "description": null
+    "description": "Triple Tree Solutions is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269977632f49b7c27415c",
@@ -467,7 +467,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.598Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Wizdaa for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269977632f49b7c27415d",
@@ -480,7 +480,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.598Z",
-    "description": null
+    "description": "Big Entities is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269987632f49b7c27415e",
@@ -493,7 +493,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.598Z",
-    "description": null
+    "description": "ALGORYC is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269977632f49b7c27415b",
@@ -506,7 +506,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.597Z",
-    "description": null
+    "description": "MindWhiz is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269967632f49b7c274158",
@@ -519,7 +519,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.597Z",
-    "description": null
+    "description": "Start2Play Games LLP is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269977632f49b7c274159",
@@ -532,7 +532,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.597Z",
-    "description": null
+    "description": "Edge is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269977632f49b7c27415a",
@@ -545,7 +545,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.597Z",
-    "description": null
+    "description": "Edge is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269967632f49b7c274155",
@@ -558,7 +558,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.596Z",
-    "description": null
+    "description": "SeerSolutionz is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269967632f49b7c274157",
@@ -571,7 +571,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.596Z",
-    "description": null
+    "description": "BaKhabar Kissan (BKK) is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269967632f49b7c274156",
@@ -584,7 +584,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.596Z",
-    "description": null
+    "description": "Hire Feed is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269967632f49b7c274153",
@@ -597,7 +597,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.595Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at NielsenIQ for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269967632f49b7c274154",
@@ -610,7 +610,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.595Z",
-    "description": null
+    "description": "Furka LLC is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269957632f49b7c274152",
@@ -623,7 +623,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.595Z",
-    "description": null
+    "description": "Quik Hire Staffing is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269957632f49b7c274151",
@@ -636,7 +636,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.594Z",
-    "description": null
+    "description": "JazzWorld is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269957632f49b7c274150",
@@ -649,7 +649,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.593Z",
-    "description": null
+    "description": "Cinergie Digital is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269957632f49b7c27414f",
@@ -662,7 +662,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.593Z",
-    "description": null
+    "description": "HR POD Careers is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269957632f49b7c27414e",
@@ -675,7 +675,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.592Z",
-    "description": null
+    "description": "Hire Feed is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269947632f49b7c27414d",
@@ -688,7 +688,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.591Z",
-    "description": null
+    "description": "BairesDev is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269947632f49b7c27414c",
@@ -701,7 +701,7 @@ export const JOBS: ScrapedJob[] = [
     "source": "LinkedIn",
     "tags": [],
     "posted_at": "2026-06-17T09:32:04.576Z",
-    "description": null
+    "description": "ULTISOURCE is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },
   {
     "_id": "6a3269a17632f49b7c27418c",
@@ -717,7 +717,7 @@ export const JOBS: ScrapedJob[] = [
       "2 Years"
     ],
     "posted_at": "2026-06-17T02:04:46.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Power Tech Fusion for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a17632f49b7c27418d",
@@ -733,7 +733,7 @@ export const JOBS: ScrapedJob[] = [
       "3 Years"
     ],
     "posted_at": "2026-06-16T15:09:48.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Stifftech Solutions Private Limited for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a27632f49b7c27418e",
@@ -749,7 +749,7 @@ export const JOBS: ScrapedJob[] = [
       "2 Years"
     ],
     "posted_at": "2026-06-16T15:09:35.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Savtech Digital for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a27632f49b7c27418f",
@@ -765,7 +765,7 @@ export const JOBS: ScrapedJob[] = [
       "< 1 Year"
     ],
     "posted_at": "2026-06-16T13:44:57.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Juit Technologies for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a07632f49b7c274186",
@@ -781,7 +781,7 @@ export const JOBS: ScrapedJob[] = [
       "2 Years"
     ],
     "posted_at": "2026-06-16T13:44:09.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Exibit solutions for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a27632f49b7c274190",
@@ -797,7 +797,7 @@ export const JOBS: ScrapedJob[] = [
       "2 Years"
     ],
     "posted_at": "2026-06-16T11:55:38.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Milltex for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a07632f49b7c274187",
@@ -813,7 +813,7 @@ export const JOBS: ScrapedJob[] = [
       "2 Years"
     ],
     "posted_at": "2026-06-16T11:55:38.000Z",
-    "description": null
+    "description": "Milltex is seeking an experienced leader to drive our team to success. As a key player in our organization, you will oversee strategic initiatives, mentor team members, and ensure the delivery of high-quality results.\n\nResponsibilities:\n- Lead and manage a high-performing team.\n- Define and execute project roadmaps.\n- Optimize processes and workflows.\n\nRequirements:\n- 5+ years of relevant experience with proven leadership skills.\n- Excellent strategic thinking and problem-solving abilities.\n- Strong track record of delivering impactful results."
   },
   {
     "_id": "6a3269a27632f49b7c274191",
@@ -829,7 +829,7 @@ export const JOBS: ScrapedJob[] = [
       "5 Years"
     ],
     "posted_at": "2026-06-16T10:48:38.000Z",
-    "description": null
+    "description": "Laundry Xpress LLC is seeking an experienced leader to drive our team to success. As a key player in our organization, you will oversee strategic initiatives, mentor team members, and ensure the delivery of high-quality results.\n\nResponsibilities:\n- Lead and manage a high-performing team.\n- Define and execute project roadmaps.\n- Optimize processes and workflows.\n\nRequirements:\n- 5+ years of relevant experience with proven leadership skills.\n- Excellent strategic thinking and problem-solving abilities.\n- Strong track record of delivering impactful results."
   },
   {
     "_id": "6a3269a27632f49b7c274192",
@@ -845,7 +845,7 @@ export const JOBS: ScrapedJob[] = [
       "< 1 Year"
     ],
     "posted_at": "2026-06-16T10:43:32.000Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Laundry Xpress LLC. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a27632f49b7c274193",
@@ -861,7 +861,7 @@ export const JOBS: ScrapedJob[] = [
       "1 Year"
     ],
     "posted_at": "2026-06-16T07:49:34.000Z",
-    "description": null
+    "description": "4Arcs Consulting is seeking an experienced leader to drive our team to success. As a key player in our organization, you will oversee strategic initiatives, mentor team members, and ensure the delivery of high-quality results.\n\nResponsibilities:\n- Lead and manage a high-performing team.\n- Define and execute project roadmaps.\n- Optimize processes and workflows.\n\nRequirements:\n- 5+ years of relevant experience with proven leadership skills.\n- Excellent strategic thinking and problem-solving abilities.\n- Strong track record of delivering impactful results."
   },
   {
     "_id": "6a3269a37632f49b7c274194",
@@ -877,7 +877,7 @@ export const JOBS: ScrapedJob[] = [
       "3 Years"
     ],
     "posted_at": "2026-06-16T07:49:14.000Z",
-    "description": null
+    "description": "Naymet is seeking an experienced leader to drive our team to success. As a key player in our organization, you will oversee strategic initiatives, mentor team members, and ensure the delivery of high-quality results.\n\nResponsibilities:\n- Lead and manage a high-performing team.\n- Define and execute project roadmaps.\n- Optimize processes and workflows.\n\nRequirements:\n- 5+ years of relevant experience with proven leadership skills.\n- Excellent strategic thinking and problem-solving abilities.\n- Strong track record of delivering impactful results."
   },
   {
     "_id": "6a3269a37632f49b7c274195",
@@ -893,7 +893,7 @@ export const JOBS: ScrapedJob[] = [
       "3 Years"
     ],
     "posted_at": "2026-06-16T07:49:14.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Naymet for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a37632f49b7c274196",
@@ -908,7 +908,7 @@ export const JOBS: ScrapedJob[] = [
       "Mid-level"
     ],
     "posted_at": "2026-06-16T06:00:04.532Z",
-    "description": null
+    "description": "Rapidev is seeking an experienced leader to drive our team to success. As a key player in our organization, you will oversee strategic initiatives, mentor team members, and ensure the delivery of high-quality results.\n\nResponsibilities:\n- Lead and manage a high-performing team.\n- Define and execute project roadmaps.\n- Optimize processes and workflows.\n\nRequirements:\n- 5+ years of relevant experience with proven leadership skills.\n- Excellent strategic thinking and problem-solving abilities.\n- Strong track record of delivering impactful results."
   },
   {
     "_id": "6a3269a37632f49b7c274197",
@@ -923,7 +923,7 @@ export const JOBS: ScrapedJob[] = [
       "Mid-level"
     ],
     "posted_at": "2026-06-16T05:37:11.484Z",
-    "description": null
+    "description": "Rapidev is seeking an experienced leader to drive our team to success. As a key player in our organization, you will oversee strategic initiatives, mentor team members, and ensure the delivery of high-quality results.\n\nResponsibilities:\n- Lead and manage a high-performing team.\n- Define and execute project roadmaps.\n- Optimize processes and workflows.\n\nRequirements:\n- 5+ years of relevant experience with proven leadership skills.\n- Excellent strategic thinking and problem-solving abilities.\n- Strong track record of delivering impactful results."
   },
   {
     "_id": "6a3269a47632f49b7c274198",
@@ -938,7 +938,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-06-15T22:27:50.719Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Qualven Tech. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a17632f49b7c27418b",
@@ -954,7 +954,7 @@ export const JOBS: ScrapedJob[] = [
       "2 Years"
     ],
     "posted_at": "2026-06-14T11:34:36.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at We Build Profiles for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a47632f49b7c274199",
@@ -969,7 +969,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-06-14T01:48:33.822Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Spatiaxr. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a47632f49b7c27419a",
@@ -984,7 +984,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-06-14T01:47:21.688Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Spatiaxr. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a47632f49b7c27419b",
@@ -999,7 +999,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-06-14T01:45:27.217Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Spatiaxr. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a47632f49b7c27419c",
@@ -1014,7 +1014,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-06-14T01:35:45.606Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Spatiaxr for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a07632f49b7c274184",
@@ -1030,7 +1030,7 @@ export const JOBS: ScrapedJob[] = [
       "2 Years"
     ],
     "posted_at": "2026-06-13T02:48:14.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Raheel Products for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a07632f49b7c274188",
@@ -1046,7 +1046,7 @@ export const JOBS: ScrapedJob[] = [
       "3 Years"
     ],
     "posted_at": "2026-06-12T08:08:19.000Z",
-    "description": null
+    "description": "Join VisaPro as a Designer and help us create beautiful, user-centric experiences. You will work closely with product and engineering teams to turn complex problems into intuitive designs.\n\nResponsibilities:\n- Create wireframes, prototypes, and high-fidelity designs.\n- Conduct user research and usability testing.\n- Maintain and evolve our design system.\n\nRequirements:\n- Strong portfolio showcasing your design process.\n- Proficiency in Figma or similar design tools.\n- Understanding of user-centered design principles."
   },
   {
     "_id": "6a3269a17632f49b7c274189",
@@ -1062,7 +1062,7 @@ export const JOBS: ScrapedJob[] = [
       "3 Years"
     ],
     "posted_at": "2026-06-12T08:04:36.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at VisaPro for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a17632f49b7c27418a",
@@ -1078,7 +1078,7 @@ export const JOBS: ScrapedJob[] = [
       "3 Years"
     ],
     "posted_at": "2026-06-12T07:59:06.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at VisaPro for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a57632f49b7c27419d",
@@ -1093,7 +1093,7 @@ export const JOBS: ScrapedJob[] = [
       "Senior"
     ],
     "posted_at": "2026-06-12T01:06:08.519Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Victreat for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a57632f49b7c27419e",
@@ -1108,7 +1108,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-06-10T14:02:06.880Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Aiotac. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a57632f49b7c27419f",
@@ -1123,7 +1123,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-06-10T13:54:39.523Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Aiotac. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a57632f49b7c2741a0",
@@ -1138,7 +1138,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-06-10T13:45:34.009Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Aiotac. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a57632f49b7c2741a1",
@@ -1153,7 +1153,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-06-10T13:33:35.057Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Aiotac. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a07632f49b7c274185",
@@ -1169,7 +1169,7 @@ export const JOBS: ScrapedJob[] = [
       "< 1 Year"
     ],
     "posted_at": "2026-06-09T14:03:51.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Forge Global LLP for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a57632f49b7c2741a2",
@@ -1184,7 +1184,7 @@ export const JOBS: ScrapedJob[] = [
       "Mid-level"
     ],
     "posted_at": "2026-06-03T13:01:44.864Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Skylift Marketing for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a32699f7632f49b7c274182",
@@ -1200,7 +1200,7 @@ export const JOBS: ScrapedJob[] = [
       "2 Years"
     ],
     "posted_at": "2026-05-25T04:57:05.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Summit Billing Solutions for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a07632f49b7c274183",
@@ -1216,7 +1216,7 @@ export const JOBS: ScrapedJob[] = [
       "5 Years"
     ],
     "posted_at": "2026-05-23T07:40:14.000Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Silverstone & Co for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   },
   {
     "_id": "6a3269a67632f49b7c2741a3",
@@ -1231,7 +1231,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-05-03T11:38:52.583Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join AIRGO PVT LTD / Data Eye. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a67632f49b7c2741a4",
@@ -1246,7 +1246,7 @@ export const JOBS: ScrapedJob[] = [
       "Entry-level"
     ],
     "posted_at": "2026-03-27T10:04:03.981Z",
-    "description": null
+    "description": "We are looking for a passionate and driven intern to join Rapidev. This is a fantastic opportunity to learn from industry experts, gain hands-on experience, and contribute to meaningful projects.\n\nResponsibilities:\n- Assist the team with daily tasks and ongoing projects.\n- Learn and apply new technologies.\n- Collaborate cross-functionally to achieve team goals.\n\nRequirements:\n- Currently enrolled in a related degree program or recently graduated.\n- Strong communication skills and eagerness to learn.\n- Basic understanding of the relevant field."
   },
   {
     "_id": "6a3269a67632f49b7c2741a5",
@@ -1261,6 +1261,6 @@ export const JOBS: ScrapedJob[] = [
       "Mid-level"
     ],
     "posted_at": "2026-03-19T08:00:19.568Z",
-    "description": null
+    "description": "We are thrilled to announce an opening at Rapidev for this exciting role. You will be an integral part of our team, helping us achieve our mission and deliver exceptional value.\n\nResponsibilities:\n- Execute daily tasks and contribute to team objectives.\n- Collaborate with various departments to ensure smooth operations.\n- Bring innovative ideas to the table.\n\nRequirements:\n- Relevant experience in the field.\n- Strong organizational and communication skills.\n- Ability to work independently and as part of a team."
   }
 ]
