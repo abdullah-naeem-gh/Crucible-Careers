@@ -1,9 +1,9 @@
 "use client";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/shared/utils";
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { IconMenu2, IconX } from "@tabler/icons-react";
-import { SidebarContext, useSidebar as useSidebarHook } from "@/lib/sidebar";
+import { SidebarContext, useSidebar as useSidebarHook } from "@/lib/shared/sidebar/config";
 import Link from "next/link";
 
 interface Links {
