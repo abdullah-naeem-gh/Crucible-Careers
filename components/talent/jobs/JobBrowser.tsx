@@ -174,6 +174,20 @@ export default function JobBrowser({ jobs }: Props) {
                             <div className="mt-0.5 text-xs text-gray-500 truncate flex items-center gap-2">
                               <span>{[job.location, job.type].filter(Boolean).join(' • ')}</span>
                             </div>
+                            {visibleTags.length > 0 && (
+                              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                {visibleTags.map(tag => (
+                                  <span key={tag} className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-[11px] text-gray-600 font-medium">
+                                    {tag}
+                                  </span>
+                                ))}
+                                {overflow > 0 && (
+                                  <span className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-[11px] text-gray-400 font-medium">
+                                    +{overflow}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="shrink-0 text-right flex flex-col items-end gap-2">
@@ -183,20 +197,6 @@ export default function JobBrowser({ jobs }: Props) {
                           </span>
                         </div>
                       </div>
-                      {visibleTags.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {visibleTags.map(tag => (
-                            <span key={tag} className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-xs text-gray-600">
-                              {tag}
-                            </span>
-                          ))}
-                          {overflow > 0 && (
-                            <span className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-xs text-gray-400">
-                              +{overflow}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </motion.button>
                   </li>
                 )
