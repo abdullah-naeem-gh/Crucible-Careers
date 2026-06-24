@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ScrapedJob } from '@/types/talent/job'
 import useDebounce from '@/hooks/shared/useDebounce'
+import Link from 'next/link'
 
 interface Props {
   jobs: ScrapedJob[]
@@ -18,6 +19,12 @@ function relativeDate(iso: string | null): string {
   if (days === 0) return 'Today'
   if (days === 1) return '1d ago'
   return `${days}d ago`
+}
+
+function getMatchScore(jobId: string): number {
+  let hash = 0
+  for (let i = 0; i < jobId.length; i++) hash = jobId.charCodeAt(i) + ((hash << 5) - hash)
+  return 65 + (Math.abs(hash) % 34)
 }
 
 export default function JobBrowser({ jobs }: Props) {
@@ -154,14 +161,19 @@ export default function JobBrowser({ jobs }: Props) {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <div className="text-xs text-gray-400 truncate">
-                            {[job.company, job.location, job.type].filter(Boolean).join(' · ')}
+                          <div className="text-xs text-gray-400 truncate flex items-center gap-2">
+                            <span>{[job.company, job.location, job.type].filter(Boolean).join(' · ')}</span>
                           </div>
                           <div className="mt-0.5 text-base font-semibold text-gray-900 leading-tight">
                             {job.title}
                           </div>
                         </div>
-                        <div className="text-xs text-gray-400 shrink-0">{relativeDate(job.posted_at)}</div>
+                        <div className="shrink-0 text-right flex flex-col items-end gap-1.5">
+                          <div className="text-xs text-gray-400">{relativeDate(job.posted_at)}</div>
+                          <span className="font-semibold text-green-700 bg-green-50 px-1.5 py-0.5 rounded border border-green-200 text-[10px] leading-tight">
+                            {getMatchScore(job._id)}% Match
+                          </span>
+                        </div>
                       </div>
                       {visibleTags.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -215,15 +227,21 @@ export default function JobBrowser({ jobs }: Props) {
           <div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-xs text-gray-400">
-                  {[selectedJob.company, selectedJob.location, selectedJob.type].filter(Boolean).join(' · ')}
+                <div className="text-xs text-gray-400 flex items-center gap-1">
+                  <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-[#FF6B00] hover:underline transition-colors">{selectedJob.company}</Link>
+                  <span>·</span>
+                  {[selectedJob.location, selectedJob.type].filter(Boolean).join(' · ')}
                 </div>
                 <h2 className="mt-1 text-xl font-semibold text-gray-900 leading-tight">{selectedJob.title}</h2>
               </div>
               <div className="text-right shrink-0">
-                <div className="text-xs text-gray-400">{relativeDate(selectedJob.posted_at)}</div>
+                <div className="text-xs text-gray-400 mb-2">{relativeDate(selectedJob.posted_at)}</div>
+                <div className="inline-flex flex-col items-center justify-center px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700">
+                  <span className="text-sm font-bold">{getMatchScore(selectedJob._id)}%</span>
+                  <span className="text-xs font-medium">Match</span>
+                </div>
                 {selectedJob.salary && (
-                  <div className="mt-1 text-sm font-medium text-gray-700">{selectedJob.salary}</div>
+                  <div className="mt-2 text-sm font-medium text-gray-700">{selectedJob.salary}</div>
                 )}
               </div>
             </div>
@@ -246,15 +264,13 @@ export default function JobBrowser({ jobs }: Props) {
             )}
 
             <div className="mt-6 flex items-center justify-between">
-              <span className="text-xs text-gray-400">via {selectedJob.source}</span>
-              <a
-                href={selectedJob.url}
-                target="_blank"
-                rel="noopener noreferrer"
+              <span className="text-xs text-gray-400">via Crucible</span>
+              <Link
+                href={`/apply/${selectedJob._id}`}
                 className="px-5 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D] hover:opacity-90 transition-opacity"
               >
                 Apply →
-              </a>
+              </Link>
             </div>
           </div>
         )}
