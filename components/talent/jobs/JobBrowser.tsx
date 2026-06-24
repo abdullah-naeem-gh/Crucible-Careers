@@ -221,60 +221,81 @@ export default function JobBrowser({ jobs }: Props) {
       <section className="col-span-4 bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 overflow-auto shadow-lg">
         {!selectedJob ? (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-            Select a job to view details
+            <div className="text-center">
+              <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-orange-50 text-[#FF914D]">◎</div>
+              <h2 className="font-semibold text-gray-900">Select a job to view details</h2>
+              <p className="mt-2 text-sm text-gray-500">Choose a job from the list to see more information.</p>
+            </div>
           </div>
         ) : (
-          <div>
+          <motion.div key={selectedJob._id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-xs text-gray-400 flex items-center gap-1">
-                  <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-[#FF6B00] hover:underline transition-colors">{selectedJob.company}</Link>
-                  <span>·</span>
-                  {[selectedJob.location, selectedJob.type].filter(Boolean).join(' · ')}
+                <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                  <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-[#FF6B00] hover:underline transition-colors font-medium">{selectedJob.company}</Link>
+                  <span>•</span>
+                  {[selectedJob.location, selectedJob.type].filter(Boolean).join(' • ')}
                 </div>
-                <h2 className="mt-1 text-xl font-semibold text-gray-900 leading-tight">{selectedJob.title}</h2>
+                <h1 className="mt-1 text-2xl font-semibold leading-tight text-gray-900">{selectedJob.title}</h1>
               </div>
               <div className="text-right shrink-0">
-                <div className="text-xs text-gray-400 mb-2">{relativeDate(selectedJob.posted_at)}</div>
-                <div className="inline-flex flex-col items-center justify-center px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700">
-                  <span className="text-sm font-bold">{getMatchScore(selectedJob._id)}%</span>
-                  <span className="text-xs font-medium">Match</span>
-                </div>
+                <div className="mb-2 text-xs text-gray-400">{relativeDate(selectedJob.posted_at)}</div>
                 {selectedJob.salary && (
-                  <div className="mt-2 text-sm font-medium text-gray-700">{selectedJob.salary}</div>
+                  <div className="text-sm font-semibold text-[#FF914D]">{selectedJob.salary}</div>
                 )}
               </div>
             </div>
 
-            {selectedJob.tags.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {selectedJob.tags.map(tag => (
-                  <span key={tag} className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-xs text-gray-600">
-                    {tag}
-                  </span>
-                ))}
+            <div className="mt-4 flex items-center justify-between">
+              <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] text-emerald-600 font-medium">
+                Actively Hiring
+              </span>
+              <div className="flex gap-2">
+                <Link
+                  href={`/apply/${selectedJob._id}`}
+                  className="rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-2 text-sm font-medium text-white shadow-[0_4px_12px_rgba(255,107,0,0.15)] hover:opacity-90 transition-opacity"
+                >
+                  Apply Now
+                </Link>
               </div>
-            )}
+            </div>
+
+            <div className="my-6 grid grid-cols-2 gap-3">
+              <MiniMetric label="Match Score" value={`${getMatchScore(selectedJob._id)}%`} accent="text-[#FF914D]" />
+              <MiniMetric label="Applicants" value={getMatchScore(selectedJob._id) - 40} accent="text-sky-500" />
+            </div>
 
             {selectedJob.description && (
-              <div className="mt-5">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">About the role</h3>
-                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{selectedJob.description}</p>
+              <div className="mb-6">
+                <h2 className="mb-3 text-sm font-semibold text-gray-900">Job Description</h2>
+                <p className="text-sm leading-relaxed text-gray-600 whitespace-pre-line">{selectedJob.description}</p>
               </div>
             )}
 
-            <div className="mt-6 flex items-center justify-between">
-              <span className="text-xs text-gray-400">via Crucible</span>
-              <Link
-                href={`/apply/${selectedJob._id}`}
-                className="px-5 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D] hover:opacity-90 transition-opacity"
-              >
-                Apply →
-              </Link>
-            </div>
-          </div>
+            {selectedJob.tags.length > 0 && (
+              <div className="mb-6">
+                <h2 className="mb-3 text-sm font-semibold text-gray-900">Skills & Technologies</h2>
+                <div className="flex flex-wrap gap-2">
+                  {selectedJob.tags.map(tag => (
+                    <span key={tag} className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
         )}
       </section>
+    </div>
+  )
+}
+
+function MiniMetric({ label, value, accent }: { label: string; value: string | number; accent: string }) {
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white/50 p-3 text-center shadow-[inset_1px_1px_4px_rgba(0,0,0,0.02)]">
+      <div className={`text-lg font-semibold ${accent}`}>{value}</div>
+      <div className="mt-1 text-[11px] text-gray-500">{label}</div>
     </div>
   )
 }

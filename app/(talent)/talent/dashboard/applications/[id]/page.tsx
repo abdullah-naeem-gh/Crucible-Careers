@@ -36,7 +36,7 @@ export default function ApplicationDetailPage() {
       </div>
 
       <section className="relative z-10 h-screen">
-        <div className="h-full max-w-7xl mx-auto grid grid-cols-12 gap-8 px-6">
+        <div className="h-full w-full grid grid-cols-12 gap-8 px-6">
           <TalentSidebar applicationCount={0} />
 
           <div className="col-span-9 grid grid-cols-1 gap-8 h-[92vh] self-center overflow-y-auto pr-4 pb-12 pt-8">

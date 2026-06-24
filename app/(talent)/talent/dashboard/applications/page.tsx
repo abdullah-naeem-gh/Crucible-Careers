@@ -82,7 +82,7 @@ export default function TalentApplications() {
       </div>
 
       <section className="relative z-10 h-screen">
-        <div className="h-full max-w-7xl mx-auto grid grid-cols-12 gap-8 px-6">
+        <div className="h-full w-full grid grid-cols-12 gap-8 px-6">
           <TalentSidebar applicationCount={DEMO_APPLICATIONS.length} />
 
           <div className="col-span-9 grid grid-cols-1 gap-8 h-[92vh] self-center">
