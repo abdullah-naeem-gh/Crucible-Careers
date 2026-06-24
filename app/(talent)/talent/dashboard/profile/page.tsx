@@ -16,6 +16,7 @@ interface Profile {
   github?: string
   portfolio?: string
   matchScore: number
+  badges: { id: string, title: string, badge: string, score: string }[]
 }
 
 const DEMO_PROFILE: Profile = {
@@ -30,7 +31,11 @@ const DEMO_PROFILE: Profile = {
   linkedin: 'linkedin.com/in/alexjohnson',
   github: 'github.com/alexjohnson',
   portfolio: 'alexjohnson.dev',
-  matchScore: 86
+  matchScore: 86,
+  badges: [
+    { id: '2', title: 'React Performance Master', score: '92%', badge: 'React Master' },
+    { id: '4', title: 'Fullstack Next.js Developer', score: '88%', badge: 'Next.js Dev' }
+  ]
 }
 
 export default function TalentProfile() {
@@ -243,6 +248,33 @@ export default function TalentProfile() {
                       )}
                     </span>
                   ))}
+                </div>
+              </div>
+
+              <div className="bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Earned Badges</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {profile.badges.map(badge => (
+                    <div key={badge.id} className="relative bg-gradient-to-br from-white to-orange-50 border border-orange-100 rounded-xl p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+                      <div className="w-12 h-12 bg-gradient-to-tr from-[#FF6B00] to-[#FF914D] rounded-full flex items-center justify-center shrink-0 shadow-sm">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-sm">{badge.badge}</h4>
+                        <p className="text-xs text-gray-500 truncate max-w-[140px]">{badge.title}</p>
+                      </div>
+                      <div className="absolute top-2 right-2 text-[10px] font-bold text-[#FF6B00] bg-orange-100 px-1.5 py-0.5 rounded">
+                        {badge.score}
+                      </div>
+                    </div>
+                  ))}
+                  {profile.badges.length === 0 && (
+                    <div className="col-span-full text-sm text-gray-500 py-2">
+                      No badges earned yet. Complete exams to earn badges!
+                    </div>
+                  )}
                 </div>
               </div>
 
