@@ -10,7 +10,7 @@ export const JOBS: ScrapedJob[] = [
     "salary": null,
     "url": "https://pk.linkedin.com/jobs/view/c%23-software-developer-remote-at-hire-feed-4429782758",
     "source": "LinkedIn",
-    "tags": [],
+    "tags": ["remote"],
     "posted_at": "2026-06-17T09:32:04.620Z",
     "description": "Hire Feed is looking for a talented Software Engineer to build scalable and robust solutions. You will collaborate with a fast-paced team to design, develop, and deploy software that impacts our users daily.\n\nResponsibilities:\n- Write clean, maintainable, and efficient code.\n- Participate in code reviews and architecture discussions.\n- Troubleshoot and debug complex issues.\n\nRequirements:\n- Solid experience in modern programming languages and frameworks.\n- Strong understanding of data structures and algorithms.\n- Familiarity with version control and CI/CD pipelines."
   },

@@ -3,6 +3,21 @@
 import { useState } from 'react'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 
+interface Experience {
+  id: string
+  company: string
+  role: string
+  duration: string
+  description: string
+}
+
+interface Project {
+  id: string
+  title: string
+  description: string
+  link?: string
+}
+
 interface Profile {
   name: string
   title: string
@@ -16,6 +31,11 @@ interface Profile {
   github?: string
   portfolio?: string
   matchScore: number
+  badges: { id: string, title: string, badge: string, score: string }[]
+  resumeFilename?: string
+  resumeText?: string
+  experienceList: Experience[]
+  projectsList: Project[]
 }
 
 const DEMO_PROFILE: Profile = {
@@ -30,7 +50,20 @@ const DEMO_PROFILE: Profile = {
   linkedin: 'linkedin.com/in/alexjohnson',
   github: 'github.com/alexjohnson',
   portfolio: 'alexjohnson.dev',
-  matchScore: 86
+  matchScore: 86,
+  badges: [
+    { id: '2', title: 'React Performance Master', score: '92%', badge: 'React Master' },
+    { id: '4', title: 'Fullstack Next.js Developer', score: '88%', badge: 'Next.js Dev' }
+  ],
+  resumeFilename: 'Alex_Johnson_Resume_2026.pdf',
+  experienceList: [
+    { id: 'e1', company: 'TechCorp', role: 'Frontend Engineer', duration: '2021 - Present', description: 'Led the frontend team in building a scalable React architecture. Improved rendering performance by 40%.' },
+    { id: 'e2', company: 'WebSolutions Inc.', role: 'Junior Developer', duration: '2019 - 2021', description: 'Developed responsive web applications using Vue.js and Tailwind CSS. Implemented CI/CD pipelines.' }
+  ],
+  projectsList: [
+    { id: 'p1', title: 'Open Source UI Library', description: 'A collection of accessible React components with Tailwind.', link: 'github.com/alexjohnson/ui-lib' },
+    { id: 'p2', title: 'Crypto Dashboard', description: 'Real-time cryptocurrency tracking app using WebSockets.', link: 'alexjohnson.dev/crypto' }
+  ]
 }
 
 export default function TalentProfile() {
@@ -67,7 +100,7 @@ export default function TalentProfile() {
       </div>
 
       <section className="relative z-10 h-screen">
-        <div className="h-full max-w-7xl mx-auto grid grid-cols-12 gap-8 px-6">
+        <div className="h-full w-full grid grid-cols-12 gap-8 px-6">
           <TalentSidebar />
 
           <div className="col-span-9 grid grid-cols-1 gap-8 h-[92vh] self-center">
@@ -208,6 +241,101 @@ export default function TalentProfile() {
               </div>
 
               <div className="bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-lg">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Resume</h3>
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div className="rounded-xl border-2 border-dashed border-gray-300 p-6 hover:bg-gray-50 transition-colors cursor-pointer flex flex-col items-center justify-center text-center">
+                      <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                      <p className="text-sm font-medium text-gray-700">Click to upload resume (.pdf, .doc)</p>
+                      <p className="text-xs text-gray-500 mt-1">or drag and drop</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Or paste resume text</label>
+                      <textarea
+                        rows={5}
+                        placeholder="Paste your resume text here..."
+                        value={profile.resumeText || ''}
+                        onChange={(e) => setProfile(prev => ({ ...prev, resumeText: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {profile.resumeFilename ? (
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                          </div>
+                          <span className="text-sm font-medium text-gray-700">{profile.resumeFilename}</span>
+                        </div>
+                        <button className="text-sm text-[#FF6B00] hover:underline font-medium px-3 py-1.5 bg-white rounded-lg shadow-sm border border-gray-200">View</button>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No resume uploaded.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Work Experience</h3>
+                  {isEditing && (
+                    <button className="text-sm text-[#FF6B00] hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors font-medium">+ Add Experience</button>
+                  )}
+                </div>
+                <div className="space-y-6">
+                  {profile.experienceList.map(exp => (
+                    <div key={exp.id} className="relative group border-l-2 border-orange-100 pl-4">
+                      {isEditing && (
+                        <button className="absolute -right-2 -top-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-1 shadow-sm">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
+                      <h4 className="font-bold text-gray-900 text-base">{exp.role}</h4>
+                      <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                        <span className="font-medium text-[#FF6B00]">{exp.company}</span>
+                        <span className="text-xs bg-gray-100 px-2 py-1 rounded">{exp.duration}</span>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">{exp.description}</p>
+                    </div>
+                  ))}
+                  {profile.experienceList.length === 0 && <p className="text-sm text-gray-500">No work experience added.</p>}
+                </div>
+              </div>
+
+              <div className="bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Projects</h3>
+                  {isEditing && (
+                    <button className="text-sm text-[#FF6B00] hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors font-medium">+ Add Project</button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {profile.projectsList.map(proj => (
+                    <div key={proj.id} className="bg-white border border-gray-100 rounded-xl p-5 relative group hover:border-orange-200 hover:shadow-md transition-all">
+                      {isEditing && (
+                        <button className="absolute -right-2 -top-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-1 shadow-sm border border-gray-100">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
+                      <h4 className="font-bold text-gray-900 text-base mb-1">{proj.title}</h4>
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">{proj.description}</p>
+                      {proj.link && (
+                        <a href={`https://${proj.link}`} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-[#FF6B00] hover:text-[#FF914D] flex items-center gap-1 w-fit">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                          View Project
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                  {profile.projectsList.length === 0 && <p className="col-span-full text-sm text-gray-500">No projects added.</p>}
+                </div>
+              </div>
+
+              <div className="bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Skills</h3>
                   {isEditing && (
@@ -243,6 +371,33 @@ export default function TalentProfile() {
                       )}
                     </span>
                   ))}
+                </div>
+              </div>
+
+              <div className="bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Earned Badges</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {profile.badges.map(badge => (
+                    <div key={badge.id} className="relative bg-gradient-to-br from-white to-orange-50 border border-orange-100 rounded-xl p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+                      <div className="w-12 h-12 bg-gradient-to-tr from-[#FF6B00] to-[#FF914D] rounded-full flex items-center justify-center shrink-0 shadow-sm">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-sm">{badge.badge}</h4>
+                        <p className="text-xs text-gray-500 truncate max-w-[140px]">{badge.title}</p>
+                      </div>
+                      <div className="absolute top-2 right-2 text-[10px] font-bold text-[#FF6B00] bg-orange-100 px-1.5 py-0.5 rounded">
+                        {badge.score}
+                      </div>
+                    </div>
+                  ))}
+                  {profile.badges.length === 0 && (
+                    <div className="col-span-full text-sm text-gray-500 py-2">
+                      No badges earned yet. Complete exams to earn badges!
+                    </div>
+                  )}
                 </div>
               </div>
 

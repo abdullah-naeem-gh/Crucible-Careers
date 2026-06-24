@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ScrapedJob } from '@/types/talent/job'
 import useDebounce from '@/hooks/shared/useDebounce'
+import Link from 'next/link'
 
 interface Props {
   jobs: ScrapedJob[]
@@ -18,6 +19,12 @@ function relativeDate(iso: string | null): string {
   if (days === 0) return 'Today'
   if (days === 1) return '1d ago'
   return `${days}d ago`
+}
+
+function getMatchScore(jobId: string): number {
+  let hash = 0
+  for (let i = 0; i < jobId.length; i++) hash = jobId.charCodeAt(i) + ((hash << 5) - hash)
+  return 65 + (Math.abs(hash) % 34)
 }
 
 export default function JobBrowser({ jobs }: Props) {
@@ -153,30 +160,43 @@ export default function JobBrowser({ jobs }: Props) {
                       }`}
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <div className="text-xs text-gray-400 truncate">
-                            {[job.company, job.location, job.type].filter(Boolean).join(' · ')}
+                        <div className="flex items-start gap-4 min-w-0">
+                          <div className="h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-100 flex items-center justify-center text-[#FF6B00] font-bold text-xl shadow-sm">
+                            {job.company.charAt(0).toUpperCase()}
                           </div>
-                          <div className="mt-0.5 text-base font-semibold text-gray-900 leading-tight">
-                            {job.title}
+                          <div className="min-w-0 flex flex-col justify-center">
+                            <div className="text-base font-semibold text-gray-900 leading-tight truncate">
+                              {job.title}
+                            </div>
+                            <div className="mt-1 text-sm font-medium text-[#FF6B00] truncate">
+                              {job.company}
+                            </div>
+                            <div className="mt-0.5 text-xs text-gray-500 truncate flex items-center gap-2">
+                              <span>{[job.location, job.type].filter(Boolean).join(' • ')}</span>
+                            </div>
+                            {visibleTags.length > 0 && (
+                              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                {visibleTags.map(tag => (
+                                  <span key={tag} className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-[11px] text-gray-600 font-medium">
+                                    {tag}
+                                  </span>
+                                ))}
+                                {overflow > 0 && (
+                                  <span className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-[11px] text-gray-400 font-medium">
+                                    +{overflow}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="text-xs text-gray-400 shrink-0">{relativeDate(job.posted_at)}</div>
+                        <div className="shrink-0 text-right flex flex-col items-end gap-2">
+                          <div className="text-xs text-gray-400">{relativeDate(job.posted_at)}</div>
+                          <span className="font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-md border border-green-200 text-[10px] leading-tight shadow-sm">
+                            {getMatchScore(job._id)}% Match
+                          </span>
+                        </div>
                       </div>
-                      {visibleTags.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {visibleTags.map(tag => (
-                            <span key={tag} className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-xs text-gray-600">
-                              {tag}
-                            </span>
-                          ))}
-                          {overflow > 0 && (
-                            <span className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-xs text-gray-400">
-                              +{overflow}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </motion.button>
                   </li>
                 )
@@ -209,56 +229,92 @@ export default function JobBrowser({ jobs }: Props) {
       <section className="col-span-4 bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 overflow-auto shadow-lg">
         {!selectedJob ? (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-            Select a job to view details
+            <div className="text-center">
+              <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-orange-50 text-[#FF914D]">◎</div>
+              <h2 className="font-semibold text-gray-900">Select a job to view details</h2>
+              <p className="mt-2 text-sm text-gray-500">Choose a job from the list to see more information.</p>
+            </div>
           </div>
         ) : (
-          <div>
+          <motion.div key={selectedJob._id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}>
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs text-gray-400">
-                  {[selectedJob.company, selectedJob.location, selectedJob.type].filter(Boolean).join(' · ')}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`}>
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-100 flex items-center justify-center text-[#FF6B00] font-bold text-lg shadow-sm hover:shadow-md transition-shadow">
+                      {selectedJob.company.charAt(0).toUpperCase()}
+                    </div>
+                  </Link>
+                  <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`} className="text-base font-semibold text-gray-900 hover:text-[#FF6B00] transition-colors">
+                    {selectedJob.company}
+                  </Link>
                 </div>
-                <h2 className="mt-1 text-xl font-semibold text-gray-900 leading-tight">{selectedJob.title}</h2>
+                <div>
+                  <h1 className="text-2xl font-bold leading-tight text-gray-900">{selectedJob.title}</h1>
+                  <div className="mt-1.5 text-sm text-gray-500 flex flex-wrap items-center gap-1.5">
+                    <span>{[selectedJob.location, selectedJob.type].filter(Boolean).join(', ')}</span>
+                    <span>•</span>
+                    <span className="text-green-700 font-medium">{relativeDate(selectedJob.posted_at)}</span>
+                  </div>
+                </div>
               </div>
               <div className="text-right shrink-0">
-                <div className="text-xs text-gray-400">{relativeDate(selectedJob.posted_at)}</div>
                 {selectedJob.salary && (
-                  <div className="mt-1 text-sm font-medium text-gray-700">{selectedJob.salary}</div>
+                  <div className="text-sm font-semibold text-[#FF914D] mb-2">{selectedJob.salary}</div>
                 )}
               </div>
             </div>
 
-            {selectedJob.tags.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {selectedJob.tags.map(tag => (
-                  <span key={tag} className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-xs text-gray-600">
-                    {tag}
-                  </span>
-                ))}
+            <div className="mt-4 flex items-center justify-between">
+              <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] text-emerald-600 font-medium">
+                Actively Hiring
+              </span>
+              <div className="flex gap-2">
+                <Link
+                  href={`/apply/${selectedJob._id}`}
+                  className="rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-2 text-sm font-medium text-white shadow-[0_4px_12px_rgba(255,107,0,0.15)] hover:opacity-90 transition-opacity"
+                >
+                  Apply Now
+                </Link>
               </div>
-            )}
+            </div>
+
+            <div className="my-6 grid grid-cols-2 gap-3">
+              <MiniMetric label="Match Score" value={`${getMatchScore(selectedJob._id)}%`} accent="text-[#FF914D]" />
+              <MiniMetric label="Applicants" value={getMatchScore(selectedJob._id) - 40} accent="text-sky-500" />
+            </div>
 
             {selectedJob.description && (
-              <div className="mt-5">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">About the role</h3>
-                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{selectedJob.description}</p>
+              <div className="mb-6">
+                <h2 className="mb-3 text-sm font-semibold text-gray-900">Job Description</h2>
+                <p className="text-sm leading-relaxed text-gray-600 whitespace-pre-line">{selectedJob.description}</p>
               </div>
             )}
 
-            <div className="mt-6 flex items-center justify-between">
-              <span className="text-xs text-gray-400">via {selectedJob.source}</span>
-              <a
-                href={selectedJob.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-5 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D] hover:opacity-90 transition-opacity"
-              >
-                Apply →
-              </a>
-            </div>
-          </div>
+            {selectedJob.tags.length > 0 && (
+              <div className="mb-6">
+                <h2 className="mb-3 text-sm font-semibold text-gray-900">Skills & Technologies</h2>
+                <div className="flex flex-wrap gap-2">
+                  {selectedJob.tags.map(tag => (
+                    <span key={tag} className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
         )}
       </section>
+    </div>
+  )
+}
+
+function MiniMetric({ label, value, accent }: { label: string; value: string | number; accent: string }) {
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white/50 p-3 text-center shadow-[inset_1px_1px_4px_rgba(0,0,0,0.02)]">
+      <div className={`text-lg font-semibold ${accent}`}>{value}</div>
+      <div className="mt-1 text-[11px] text-gray-500">{label}</div>
     </div>
   )
 }

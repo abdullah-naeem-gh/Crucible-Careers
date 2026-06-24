@@ -82,7 +82,7 @@ export default function TalentApplications() {
       </div>
 
       <section className="relative z-10 h-screen">
-        <div className="h-full max-w-7xl mx-auto grid grid-cols-12 gap-8 px-6">
+        <div className="h-full w-full grid grid-cols-12 gap-8 px-6">
           <TalentSidebar applicationCount={DEMO_APPLICATIONS.length} />
 
           <div className="col-span-9 grid grid-cols-1 gap-8 h-[92vh] self-center">
@@ -147,9 +147,9 @@ export default function TalentApplications() {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <button className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50">
+                      <Link href={`/talent/dashboard/applications/${application.id}`} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50">
                         View Details
-                      </button>
+                      </Link>
                       <button className="px-4 py-2 rounded-lg text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D]">
                         Follow Up
                       </button>
