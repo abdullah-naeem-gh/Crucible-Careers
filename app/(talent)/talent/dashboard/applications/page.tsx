@@ -147,9 +147,9 @@ export default function TalentApplications() {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <button className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50">
+                      <Link href={`/talent/dashboard/applications/${application.id}`} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50">
                         View Details
-                      </button>
+                      </Link>
                       <button className="px-4 py-2 rounded-lg text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D]">
                         Follow Up
                       </button>
