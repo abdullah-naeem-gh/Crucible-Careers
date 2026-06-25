@@ -4,7 +4,22 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import EmployerSidebar from "@/components/employer/sidebar/EmployerSidebar";
-import { IconMapPin, IconWorld, IconBrandLinkedin, IconBrandX } from "@tabler/icons-react";
+import {
+  IconMapPin,
+  IconWorld,
+  IconBrandLinkedin,
+  IconBrandX,
+  IconCalendar,
+  IconChevronLeft,
+  IconSearch,
+  IconMail,
+  IconPhone,
+  IconBriefcase,
+  IconSchool,
+  IconBrandGithub,
+  IconUsers,
+} from "@tabler/icons-react";
+import JobApplicationsView from "@/components/employer/jobs/JobApplicationsView";
 
 type JobType = "Full-time" | "Part-time" | "Contract" | "Internship";
 type JobStatus = "Active" | "Draft" | "Paused" | "Closed";
@@ -211,6 +226,7 @@ function EmployerDashboardContent() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [profile, setProfile] = useState<CompanyProfile>(DEFAULT_PROFILE);
+  const [viewingJobApplicantsId, setViewingJobApplicantsId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -281,6 +297,7 @@ function EmployerDashboardContent() {
 
   const changeTab = (tab: EmployerTab) => {
     setActiveTab(tab);
+    setViewingJobApplicantsId(null);
     router.replace(
       tab === "overview" ? "/employer/dashboard" : `/employer/dashboard?tab=${tab}`,
       { scroll: false },
@@ -343,15 +360,25 @@ function EmployerDashboardContent() {
                 <OverviewView key="overview" jobs={jobs} analytics={analytics} onOpenJobs={() => changeTab("jobs")} />
               )}
               {activeTab === "jobs" && (
-                <JobsView
-                  key="jobs"
-                  jobs={jobs}
-                  selectedJob={selectedJob}
-                  onSelect={setSelectedJobId}
-                  onNewJob={() => setIsFormOpen(true)}
-                  onUpdate={updateJob}
-                  onRemove={removeJob}
-                />
+                viewingJobApplicantsId ? (
+                  <JobApplicationsView
+                    key="job-applicants"
+                    jobId={viewingJobApplicantsId}
+                    jobs={jobs}
+                    onBack={() => setViewingJobApplicantsId(null)}
+                  />
+                ) : (
+                  <JobsView
+                    key="jobs"
+                    jobs={jobs}
+                    selectedJob={selectedJob}
+                    onSelect={setSelectedJobId}
+                    onNewJob={() => setIsFormOpen(true)}
+                    onUpdate={updateJob}
+                    onRemove={removeJob}
+                    onViewApplications={setViewingJobApplicantsId}
+                  />
+                )
               )}
               {activeTab === "analytics" && (
                 <AnalyticsView key="analytics" jobs={jobs} analytics={analytics} />
@@ -525,6 +552,7 @@ function JobsView({
   onNewJob,
   onUpdate,
   onRemove,
+  onViewApplications,
 }: {
   jobs: EmployerJob[];
   selectedJob: EmployerJob | null;
@@ -532,6 +560,7 @@ function JobsView({
   onNewJob: () => void;
   onUpdate: (id: string, updates: Partial<EmployerJob>) => void;
   onRemove: (id: string) => void;
+  onViewApplications: (id: string) => void;
 }) {
   return (
     <ViewMotion className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
@@ -555,16 +584,23 @@ function JobsView({
 
         <div className="min-h-0 flex-1 space-y-3 overflow-auto p-5">
           {jobs.map((job) => (
-            <motion.button
+            <motion.div
               key={job.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => onSelect(job.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect(job.id);
+                }
+              }}
               whileHover={{ y: -2, scale: 1.01 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className={`w-full rounded-2xl border p-4 text-left cursor-pointer transition-colors duration-150 ${
+              className={`w-full rounded-2xl border p-4 text-left cursor-pointer transition-colors duration-150 outline-none ${
                 selectedJob?.id === job.id
                   ? "border-orange-500/50 bg-orange-500/[0.055] shadow-[0_0_0_2px_rgba(255,107,0,0.1),8px_8px_18px_rgba(0,0,0,0.22)]"
-                  : "border-white/[0.065] bg-[#141414] shadow-[6px_6px_16px_rgba(0,0,0,0.24),-3px_-3px_10px_rgba(255,255,255,0.018)] hover:border-white/10"
+                  : "border-white/[0.065] bg-[#141414] shadow-[6px_6px_16px_rgba(0,0,0,0.24),-3px_-3px_10px_rgba(255,255,255,0.018)] hover:border-white/10 focus:border-white/20"
               }`}
             >
               <div className="flex items-start justify-between gap-4">
@@ -584,9 +620,18 @@ function JobsView({
               </div>
               <div className="mt-4 flex items-center justify-between text-xs">
                 <span className="text-white/45">{job.salary}</span>
-                <span className="text-[#FF914D]">{job.applications} applications</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewApplications(job.id);
+                  }}
+                  className="rounded-lg border border-orange-500/20 bg-orange-500/10 px-2.5 py-1.5 text-xs text-[#FF914D] cursor-pointer hover:bg-orange-500/20 transition-all font-medium"
+                >
+                  View Applications ({job.applications})
+                </button>
               </div>
-            </motion.button>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -596,7 +641,7 @@ function JobsView({
           <div className="grid h-full place-items-center text-center">
             <div>
               <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-orange-500/10 text-[#FF914D]">◎</div>
-              <h2 className="font-semibold">Select a job to view details</h2>
+              <h2 className="font-semibold text-white/80">Select a job to view details</h2>
               <p className="mt-2 text-sm text-white/35">Choose a job from the list to see applications and manage settings.</p>
             </div>
           </div>
@@ -626,6 +671,16 @@ function JobsView({
                   Delete
                 </button>
               </div>
+            </div>
+
+            <div className="mt-4 border-t border-white/[0.07] pt-4">
+              <button
+                onClick={() => onViewApplications(selectedJob.id)}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(255,107,0,0.15)] cursor-pointer hover:from-[#FF7B1A] hover:to-[#FF9D5C] transition-all"
+              >
+                <IconUsers size={16} />
+                View Applications ({selectedJob.applications})
+              </button>
             </div>
 
             <div className="my-6 grid grid-cols-3 gap-2">
@@ -791,9 +846,15 @@ function ProfileView({
 }) {
   const [saved, setSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formState, setFormState] = useState<CompanyProfile>(profile);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  useEffect(() => {
+    setFormState(profile);
+  }, [profile]);
 
   const set = <K extends keyof CompanyProfile>(key: K, value: CompanyProfile[K]) =>
-    onChange({ ...profile, [key]: value });
+    setFormState((prev) => ({ ...prev, [key]: value }));
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -804,6 +865,7 @@ function ProfileView({
   };
 
   const handleSave = () => {
+    onChange(formState);
     setSaved(true);
     setTimeout(() => setSaved(false), 2200);
   };
@@ -831,25 +893,30 @@ function ProfileView({
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto custom-scrollbar p-5">
-          {/* Logo upload */}
+          {/* Profile Photo upload */}
           <div className="mb-6">
-            <p className={labelClass}>Company Logo</p>
+            <p className={labelClass}>Profile Photo</p>
             <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.03] transition-colors hover:border-orange-500/40 hover:bg-orange-500/[0.04]"
+              <div
+                className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
               >
-                {profile.logoDataUrl ? (
+                {formState.logoDataUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profile.logoDataUrl} alt="Company logo" className="h-full w-full object-cover" />
+                  <img
+                    src={formState.logoDataUrl}
+                    alt="Profile photo"
+                    className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition-transform duration-200"
+                    onClick={() => setIsLightboxOpen(true)}
+                  />
                 ) : (
-                  <svg className="h-7 w-7 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+                  <div className="flex flex-col items-center justify-center text-center p-2 text-white/20 select-none">
+                    <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
                 )}
-              </button>
+              </div>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
               <div>
                 <button
@@ -857,9 +924,9 @@ function ProfileView({
                   onClick={() => fileInputRef.current?.click()}
                   className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-xs text-white/55 cursor-pointer hover:bg-white/[0.05] hover:text-white"
                 >
-                  {profile.logoDataUrl ? "Change logo" : "Upload logo"}
+                  {formState.logoDataUrl ? "Change Photo" : "Upload Photo"}
                 </button>
-                {profile.logoDataUrl && (
+                {formState.logoDataUrl && (
                   <button
                     type="button"
                     onClick={() => set("logoDataUrl", null)}
@@ -878,7 +945,7 @@ function ProfileView({
             <div className="sm:col-span-2">
               <label className={labelClass}>Company name</label>
               <input
-                value={profile.name}
+                value={formState.name}
                 onChange={(e) => set("name", e.target.value)}
                 className={fieldClass}
                 placeholder="e.g., TechCorp"
@@ -889,7 +956,7 @@ function ProfileView({
             <div className="sm:col-span-2">
               <label className={labelClass}>Tagline</label>
               <input
-                value={profile.tagline}
+                value={formState.tagline}
                 onChange={(e) => set("tagline", e.target.value)}
                 className={fieldClass}
                 placeholder="A short sentence that captures your mission"
@@ -900,7 +967,7 @@ function ProfileView({
             <div>
               <label className={labelClass}>Industry</label>
               <select
-                value={profile.industry}
+                value={formState.industry}
                 onChange={(e) => set("industry", e.target.value)}
                 className={`${fieldClass} cursor-pointer`}
               >
@@ -914,7 +981,7 @@ function ProfileView({
             <div>
               <label className={labelClass}>Company size</label>
               <select
-                value={profile.companySize}
+                value={formState.companySize}
                 onChange={(e) => set("companySize", e.target.value)}
                 className={`${fieldClass} cursor-pointer`}
               >
@@ -928,7 +995,7 @@ function ProfileView({
             <div>
               <label className={labelClass}>Founded</label>
               <input
-                value={profile.founded}
+                value={formState.founded}
                 onChange={(e) => set("founded", e.target.value)}
                 className={fieldClass}
                 placeholder="2018"
@@ -939,7 +1006,7 @@ function ProfileView({
             <div>
               <label className={labelClass}>Headquarters</label>
               <input
-                value={profile.headquarters}
+                value={formState.headquarters}
                 onChange={(e) => set("headquarters", e.target.value)}
                 className={fieldClass}
                 placeholder="San Francisco, CA"
@@ -950,7 +1017,7 @@ function ProfileView({
             <div className="sm:col-span-2">
               <label className={labelClass}>Website</label>
               <input
-                value={profile.website}
+                value={formState.website}
                 onChange={(e) => set("website", e.target.value)}
                 className={fieldClass}
                 placeholder="https://yourcompany.com"
@@ -961,7 +1028,7 @@ function ProfileView({
             <div className="sm:col-span-2">
               <label className={labelClass}>Company overview</label>
               <textarea
-                value={profile.overview}
+                value={formState.overview}
                 onChange={(e) => set("overview", e.target.value)}
                 rows={3}
                 className={fieldClass}
@@ -973,7 +1040,7 @@ function ProfileView({
             <div className="sm:col-span-2">
               <label className={labelClass}>Culture & values</label>
               <textarea
-                value={profile.culture}
+                value={formState.culture}
                 onChange={(e) => set("culture", e.target.value)}
                 rows={3}
                 className={fieldClass}
@@ -985,7 +1052,7 @@ function ProfileView({
             <div className="sm:col-span-2">
               <label className={labelClass}>Perks & benefits</label>
               <textarea
-                value={profile.benefits}
+                value={formState.benefits}
                 onChange={(e) => set("benefits", e.target.value)}
                 rows={2}
                 className={fieldClass}
@@ -997,7 +1064,7 @@ function ProfileView({
             <div className="sm:col-span-2">
               <label className={labelClass}>Tech stack (comma separated)</label>
               <input
-                value={profile.techStack}
+                value={formState.techStack}
                 onChange={(e) => set("techStack", e.target.value)}
                 className={fieldClass}
                 placeholder="React, Node.js, PostgreSQL, …"
@@ -1008,7 +1075,7 @@ function ProfileView({
             <div>
               <label className={labelClass}>LinkedIn URL</label>
               <input
-                value={profile.linkedin}
+                value={formState.linkedin}
                 onChange={(e) => set("linkedin", e.target.value)}
                 className={fieldClass}
                 placeholder="https://linkedin.com/company/…"
@@ -1017,7 +1084,7 @@ function ProfileView({
             <div>
               <label className={labelClass}>Twitter / X URL</label>
               <input
-                value={profile.twitter}
+                value={formState.twitter}
                 onChange={(e) => set("twitter", e.target.value)}
                 className={fieldClass}
                 placeholder="https://twitter.com/…"
@@ -1037,6 +1104,40 @@ function ProfileView({
         <p className="mb-4 text-xs uppercase tracking-[0.18em] text-white/30">Live preview</p>
         <ProfilePreview profile={profile} />
       </section>
+
+      {/* Lightbox modal for enlarged profile photo */}
+      <AnimatePresence>
+        {isLightboxOpen && formState.logoDataUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md"
+            onClick={() => setIsLightboxOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative max-h-[85vh] max-w-[85vw] overflow-hidden rounded-2xl border border-white/10 bg-[#121212] p-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={formState.logoDataUrl}
+                alt="Enlarged profile photo"
+                className="max-h-[80vh] max-w-[80vw] object-contain rounded-lg"
+              />
+              <button
+                onClick={() => setIsLightboxOpen(false)}
+                className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/80 cursor-pointer hover:bg-black hover:text-white"
+              >
+                ×
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </ViewMotion>
   );
 }
