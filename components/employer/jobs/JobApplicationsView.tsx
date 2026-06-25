@@ -19,7 +19,7 @@ import {
   IconArrowsSort,
   IconChevronDown,
 } from "@tabler/icons-react";
-import { EmployerJob } from "@/app/(employer)/employer/dashboard/page";
+import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
 
 interface CandidateProfile {
   id: string;
