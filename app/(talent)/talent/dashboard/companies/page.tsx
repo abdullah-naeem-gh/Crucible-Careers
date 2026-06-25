@@ -161,7 +161,7 @@ export default function CompaniesPage() {
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
                       placeholder="Search companies by name or city"
-                      className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-205 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 bg-white text-xs"
+                      className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 bg-white text-xs"
                     />
                     <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -252,7 +252,7 @@ export default function CompaniesPage() {
                       <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3.5">Open Roles</h3>
                       <div className="space-y-3">
                         {selectedCompany.openRolesList.map(role => (
-                          <div key={role.id} className="bg-gray-50/50 border border-gray-150 rounded-xl p-3.5 hover:border-orange-200 transition-colors">
+                          <div key={role.id} className="bg-gray-50/50 border border-gray-200 rounded-xl p-3.5 hover:border-orange-200 transition-colors">
                             <h4 className="text-xs font-semibold text-gray-900 leading-snug">{role.title}</h4>
                             <div className="flex flex-wrap gap-2 text-[10px] text-gray-500 mt-2 font-medium">
                               <span>📍 {role.location}</span>

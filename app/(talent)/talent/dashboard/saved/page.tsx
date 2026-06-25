@@ -175,7 +175,7 @@ export default function TalentSaved() {
                           <h3 className="text-sm font-semibold text-gray-900 truncate">{job.title}</h3>
                           <div className="text-[11px] text-gray-600 font-medium mt-1">{job.type} • {job.salary}</div>
                         </div>
-                        <span className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-150 shrink-0 shadow-sm">
+                        <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/20 px-2 py-0.5 rounded shrink-0 shadow-sm">
                           {job.matchScore}% Match
                         </span>
                       </div>

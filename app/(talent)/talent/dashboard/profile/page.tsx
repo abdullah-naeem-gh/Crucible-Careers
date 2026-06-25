@@ -247,7 +247,7 @@ export default function TalentProfile() {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {profile.skills.map(skill => (
-                        <span key={skill} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-150 text-xs text-gray-700 font-medium">
+                        <span key={skill} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 border border-gray-200 text-xs text-gray-800 font-medium dark:bg-white/[0.06] dark:text-gray-300 dark:border-white/[0.08]">
                           {skill}
                           {isEditing && (
                             <button
@@ -341,7 +341,7 @@ export default function TalentProfile() {
                       </div>
                     ) : (
                       profile.resumeFilename ? (
-                        <div className="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-150">
+                        <div className="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-200">
                           <span className="text-xs font-medium text-gray-700">{profile.resumeFilename}</span>
                           <button className="text-[10px] font-bold text-[#FF6B00] bg-white border border-gray-200 px-2 py-1 rounded shadow-sm">View</button>
                         </div>
@@ -373,7 +373,7 @@ export default function TalentProfile() {
                     <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Recent Projects</h3>
                     <div className="grid grid-cols-1 gap-2.5">
                       {profile.projectsList.map(proj => (
-                        <div key={proj.id} className="bg-gray-50/50 border border-gray-150 rounded-xl p-3">
+                        <div key={proj.id} className="bg-gray-50/50 border border-gray-200 rounded-xl p-3">
                           <h4 className="text-xs font-bold text-gray-900">{proj.title}</h4>
                           <p className="text-[11px] text-gray-600 mt-1 mb-2 line-clamp-2">{proj.description}</p>
                           {proj.link && (

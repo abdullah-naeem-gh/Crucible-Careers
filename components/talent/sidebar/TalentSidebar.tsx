@@ -1,6 +1,7 @@
 "use client";
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { DashboardThemeSwitcher } from '@/components/shared/theme/DashboardThemeProvider'
 
 interface TalentSidebarProps {
   jobCount?: number
@@ -14,8 +15,9 @@ export default function TalentSidebar({ jobCount = 4, applicationCount = 12, sav
   const isActive = (path: string) => pathname === path
 
   return (
-    <aside className="flex min-h-[18rem] flex-col rounded-[24px] border border-gray-100 bg-white/70 backdrop-blur-sm p-5 shadow-lg lg:h-[92vh] lg:p-6">
-      <Link href="/gateway" className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-5">
+    <aside className="relative flex min-h-[18rem] flex-col rounded-[24px] border border-gray-100 bg-white/70 backdrop-blur-sm p-5 shadow-lg lg:h-[92vh] lg:p-6">
+      <DashboardThemeSwitcher className="absolute right-4 top-4 sm:right-5 sm:top-5" />
+      <Link href="/gateway" className="mb-5 inline-flex items-center pr-14 text-gray-600 transition-colors hover:text-gray-900">
         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
         Back
       </Link>
@@ -110,3 +112,5 @@ export default function TalentSidebar({ jobCount = 4, applicationCount = 12, sav
     </aside>
   )
 }
+
+

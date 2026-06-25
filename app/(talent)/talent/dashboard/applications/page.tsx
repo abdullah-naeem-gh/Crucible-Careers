@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface Application {
   id: string
@@ -158,16 +159,7 @@ const DEMO_APP_DETAILS: Record<string, ApplicationDetail> = {
   }
 }
 
-const getStatusColor = (status: Application['status']) => {
-  switch (status) {
-    case 'Applied': return 'bg-blue-50 text-blue-700 border border-blue-100'
-    case 'Under Review': return 'bg-amber-50 text-amber-700 border border-amber-100'
-    case 'Interview': return 'bg-purple-50 text-purple-700 border border-purple-100'
-    case 'Offer': return 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-    case 'Rejected': return 'bg-rose-50 text-rose-700 border border-rose-100'
-    default: return 'bg-gray-50 text-gray-700 border border-gray-100'
-  }
-}
+
 
 export default function TalentApplications() {
   const [selectedStatus, setSelectedStatus] = useState<string>('All')
@@ -251,9 +243,7 @@ export default function TalentApplications() {
                           <div className="text-xs text-gray-500 mb-1 truncate">{app.company} • Applied {new Date(app.appliedAt).toLocaleDateString()}</div>
                           <h3 className="text-sm font-semibold text-gray-900 truncate">{app.jobTitle}</h3>
                         </div>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${getStatusColor(app.status)}`}>
-                          {app.status}
-                        </span>
+                        <StatusBadge status={app.status} className="text-[10px]" />
                       </div>
                       <div className="mt-4 flex items-center justify-between text-xs">
                         <span className="text-gray-400">Match score: <strong className="text-gray-700 font-semibold">{app.matchScore}%</strong></span>
@@ -280,9 +270,7 @@ export default function TalentApplications() {
                     <div>
                       <div className="flex items-center justify-between gap-3 mb-2">
                         <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{selectedAppDetail.company}</p>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(selectedAppDetail.status)}`}>
-                          {selectedAppDetail.status}
-                        </span>
+                        <StatusBadge status={selectedAppDetail.status} />
                       </div>
                       <h2 className="text-xl font-bold text-gray-900 leading-tight">{selectedAppDetail.jobTitle}</h2>
                       <p className="text-xs text-gray-400 mt-1">Applied on {new Date(selectedAppDetail.appliedAt).toLocaleDateString()}</p>

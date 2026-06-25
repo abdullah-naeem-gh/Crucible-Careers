@@ -20,6 +20,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import JobApplicationsView from "@/components/employer/jobs/JobApplicationsView";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 type JobType = "Full-time" | "Part-time" | "Contract" | "Internship";
 type JobStatus = "Active" | "Draft" | "Paused" | "Closed";
@@ -769,15 +770,7 @@ function AnalyticsView({ jobs, analytics }: { jobs: EmployerJob[]; analytics: An
   );
 }
 
-function StatusBadge({ status }: { status: JobStatus }) {
-  const styles = {
-    Active: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
-    Draft: "border-amber-500/20 bg-amber-500/10 text-amber-300",
-    Paused: "border-orange-500/20 bg-orange-500/10 text-orange-300",
-    Closed: "border-red-500/20 bg-red-500/10 text-red-300",
-  };
-  return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] ${styles[status]}`}>{status}</span>;
-}
+
 
 function MiniMetric({ label, value, accent }: { label: string; value: string | number; accent: string }) {
   return (
@@ -1239,7 +1232,7 @@ function ProfilePreview({ profile }: { profile: CompanyProfile }) {
             {benefits.map((b) => (
               <span
                 key={b}
-                className="flex items-center gap-1.5 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.07] px-2.5 py-1 text-xs text-emerald-300"
+                className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/15 dark:bg-emerald-500/[0.07] dark:text-emerald-300 px-2.5 py-1 text-xs font-medium"
               >
                 <span className="text-[10px]">✓</span> {b}
               </span>

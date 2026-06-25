@@ -696,10 +696,10 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                 <div className="mt-2">
                   <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-xs font-semibold ${
                     calculateAtsScore(selectedApplicant.skills, job.tags) >= 85
-                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
                       : calculateAtsScore(selectedApplicant.skills, job.tags) >= 70
-                      ? "border-sky-500/20 bg-sky-500/10 text-sky-300"
-                      : "border-amber-500/20 bg-amber-500/10 text-amber-300"
+                      ? "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300"
+                      : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300"
                   }`}>
                     ATS Match: {calculateAtsScore(selectedApplicant.skills, job.tags)}%
                   </span>
@@ -735,8 +735,8 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                       key={skill}
                       className={`rounded-lg border px-2.5 py-1 text-xs transition-colors ${
                         isMatching
-                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300 font-medium"
-                          : "border-white/[0.07] bg-white/[0.025] text-white/45"
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 font-medium"
+                          : "border-gray-200 bg-gray-50/50 text-gray-600 dark:border-white/[0.07] dark:bg-white/[0.025] dark:text-white/45"
                       }`}
                     >
                       {skill} {isMatching && "✓"}

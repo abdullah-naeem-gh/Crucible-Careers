@@ -59,7 +59,7 @@ export default function ExamsPage() {
                             <span className="flex items-center gap-1">🛡️ {exam.type}</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-150 shrink-0 shadow-sm">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20 shrink-0 shadow-sm">
                           {exam.level}
                         </span>
                       </div>
