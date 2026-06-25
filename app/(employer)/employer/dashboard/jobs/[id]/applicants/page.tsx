@@ -152,7 +152,7 @@ export default function EmployerApplicants() {
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left">
               <thead className="bg-gray-50 text-xs text-gray-500">
                 <tr>

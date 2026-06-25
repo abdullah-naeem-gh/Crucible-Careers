@@ -15,6 +15,9 @@ import {
   IconBrandGithub,
   IconWorld,
   IconUsers,
+  IconFilter,
+  IconArrowsSort,
+  IconChevronDown,
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/app/(employer)/employer/dashboard/page";
 
@@ -235,10 +238,43 @@ interface JobApplicationsViewProps {
   onBack: () => void;
 }
 
+const getSortLabel = (val: string) => {
+  switch (val) {
+    case "ats-desc":
+      return "ATS Match: High-Low";
+    case "ats-asc":
+      return "ATS Match: Low-High";
+    case "date-desc":
+      return "Applied: Newest First";
+    case "date-asc":
+      return "Applied: Oldest First";
+    case "exp-desc":
+      return "Experience: Most-Least";
+    case "exp-asc":
+      return "Experience: Least-Most";
+    default:
+      return "ATS Match: High-Low";
+  }
+};
+
 export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicationsViewProps) {
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [expFilter, setExpFilter] = useState("all");
+  const [atsFilter, setAtsFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("ats-desc");
+  const [showFilters, setShowFilters] = useState(false);
+  const [showSort, setShowSort] = useState(false);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (expFilter !== "all") count++;
+    if (atsFilter !== "all") count++;
+    if (locationFilter !== "all") count++;
+    return count;
+  }, [expFilter, atsFilter, locationFilter]);
 
   const job = useMemo(() => jobs.find((j) => j.id === jobId) || null, [jobs, jobId]);
 
@@ -273,18 +309,75 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
     }
   }, [jobId, job]);
 
-  const filteredApplicants = useMemo(() => {
-    return applicants.filter((a) => {
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return true;
-      return (
-        a.name.toLowerCase().includes(q) ||
-        a.title.toLowerCase().includes(q) ||
-        a.location.toLowerCase().includes(q) ||
-        a.skills.some((s) => s.toLowerCase().includes(q))
-      );
+  // Compute unique locations for the filter
+  const uniqueLocations = useMemo(() => {
+    const locs = applicants.map((a) => {
+      if (a.location.toLowerCase().includes("remote")) return "Remote";
+      return a.location;
     });
-  }, [applicants, searchQuery]);
+    return Array.from(new Set(locs));
+  }, [applicants]);
+
+  const filteredApplicants = useMemo(() => {
+    if (!job) return [];
+    return applicants
+      .filter((a) => {
+        // Search query filter
+        const q = searchQuery.toLowerCase().trim();
+        const matchesQuery =
+          !q ||
+          a.name.toLowerCase().includes(q) ||
+          a.title.toLowerCase().includes(q) ||
+          a.location.toLowerCase().includes(q) ||
+          a.skills.some((s) => s.toLowerCase().includes(q));
+
+        // Experience filter
+        let matchesExp = true;
+        if (expFilter === "junior") matchesExp = a.experienceYears <= 2;
+        else if (expFilter === "mid") matchesExp = a.experienceYears >= 3 && a.experienceYears <= 5;
+        else if (expFilter === "senior") matchesExp = a.experienceYears >= 6;
+
+        // ATS Match filter
+        const score = calculateAtsScore(a.skills, job.tags);
+        let matchesAts = true;
+        if (atsFilter === "excellent") matchesAts = score >= 85;
+        else if (atsFilter === "good") matchesAts = score >= 70 && score < 85;
+        else if (atsFilter === "average") matchesAts = score < 70;
+
+        // Location filter
+        let matchesLocation = true;
+        if (locationFilter !== "all") {
+          if (locationFilter === "Remote") {
+            matchesLocation = a.location.toLowerCase().includes("remote");
+          } else {
+            matchesLocation = a.location === locationFilter;
+          }
+        }
+
+        return matchesQuery && matchesExp && matchesAts && matchesLocation;
+      })
+      .sort((a, b) => {
+        const scoreA = calculateAtsScore(a.skills, job.tags);
+        const scoreB = calculateAtsScore(b.skills, job.tags);
+
+        switch (sortBy) {
+          case "ats-desc":
+            return scoreB - scoreA;
+          case "ats-asc":
+            return scoreA - scoreB;
+          case "date-desc":
+            return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
+          case "date-asc":
+            return new Date(a.appliedDate).getTime() - new Date(b.appliedDate).getTime();
+          case "exp-desc":
+            return b.experienceYears - a.experienceYears;
+          case "exp-asc":
+            return a.experienceYears - b.experienceYears;
+          default:
+            return 0;
+        }
+      });
+  }, [applicants, searchQuery, expFilter, atsFilter, locationFilter, sortBy, job]);
 
   // Select first applicant automatically if current selection goes out of filter
   useEffect(() => {
@@ -344,6 +437,168 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
               <IconSearch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20" />
             </div>
           </div>
+
+          {/* Filters & Sorting Row */}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {/* Filters Chip */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowFilters(!showFilters);
+                setShowSort(false);
+              }}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-all cursor-pointer ${
+                showFilters || activeFiltersCount > 0
+                  ? "border-[#FF6B00]/50 bg-[#FF6B00]/10 text-white"
+                  : "border-white/[0.08] bg-white/[0.02] text-white/65 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <IconFilter size={14} className={showFilters || activeFiltersCount > 0 ? "text-[#FF914D]" : "text-white/45"} />
+              <span>Filters</span>
+              {activeFiltersCount > 0 && (
+                <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#FF6B00] text-[9px] font-bold text-white">
+                  {activeFiltersCount}
+                </span>
+              )}
+              <motion.div
+                animate={{ rotate: showFilters ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <IconChevronDown size={14} className="text-white/35" />
+              </motion.div>
+            </button>
+
+            {/* Sort Chip */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowSort(!showSort);
+                setShowFilters(false);
+              }}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-all cursor-pointer ${
+                showSort
+                  ? "border-[#FF6B00]/50 bg-[#FF6B00]/10 text-white"
+                  : "border-white/[0.08] bg-white/[0.02] text-white/65 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <IconArrowsSort size={14} className={showSort ? "text-[#FF914D]" : "text-white/45"} />
+              <span>Sort: {getSortLabel(sortBy)}</span>
+              <motion.div
+                animate={{ rotate: showSort ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <IconChevronDown size={14} className="text-white/35" />
+              </motion.div>
+            </button>
+
+            {/* Clear Filters Helper */}
+            {activeFiltersCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setExpFilter("all");
+                  setAtsFilter("all");
+                  setLocationFilter("all");
+                }}
+                className="text-xs text-[#FF914D] hover:text-[#ff914d]/80 hover:underline cursor-pointer font-medium"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
+
+          {/* Collapsible Drawers */}
+          <AnimatePresence initial={false}>
+            {showFilters && (
+              <motion.div
+                key="filters-drawer"
+                initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="grid grid-cols-1 gap-3 rounded-xl border border-white/[0.06] bg-white/[0.015] p-3.5 sm:grid-cols-3">
+                  {/* Experience level */}
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider text-white/35 mb-1.5 font-medium">Experience Level</label>
+                    <select
+                      value={expFilter}
+                      onChange={(e) => setExpFilter(e.target.value)}
+                      className="w-full rounded-lg border border-white/[0.08] bg-[#121212] px-2.5 py-1.5 text-xs text-white/65 outline-none cursor-pointer focus:border-orange-500/40"
+                    >
+                      <option value="all">All Experience</option>
+                      <option value="junior">Junior (0-2 yrs)</option>
+                      <option value="mid">Mid-level (3-5 yrs)</option>
+                      <option value="senior">Senior (6+ yrs)</option>
+                    </select>
+                  </div>
+
+                  {/* ATS score match */}
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider text-white/35 mb-1.5 font-medium">ATS Match Score</label>
+                    <select
+                      value={atsFilter}
+                      onChange={(e) => setAtsFilter(e.target.value)}
+                      className="w-full rounded-lg border border-white/[0.08] bg-[#121212] px-2.5 py-1.5 text-xs text-white/65 outline-none cursor-pointer focus:border-orange-500/40"
+                    >
+                      <option value="all">All Match Levels</option>
+                      <option value="excellent">Excellent (85%+)</option>
+                      <option value="good">Good (70%+)</option>
+                      <option value="average">Average (&lt;70%)</option>
+                    </select>
+                  </div>
+
+                  {/* Location filter */}
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider text-white/35 mb-1.5 font-medium">Location</label>
+                    <select
+                      value={locationFilter}
+                      onChange={(e) => setLocationFilter(e.target.value)}
+                      className="w-full rounded-lg border border-white/[0.08] bg-[#121212] px-2.5 py-1.5 text-xs text-white/65 outline-none cursor-pointer focus:border-orange-500/40"
+                    >
+                      <option value="all">All Locations</option>
+                      {uniqueLocations.map((loc) => (
+                        <option key={loc} value={loc}>
+                          {loc}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {showSort && (
+              <motion.div
+                key="sort-drawer"
+                initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3.5">
+                  <div className="max-w-xs">
+                    <label className="block text-[10px] uppercase tracking-wider text-white/35 mb-1.5 font-medium">Sort Order</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full rounded-lg border border-orange-500/25 bg-[#121212] px-2.5 py-1.5 text-xs text-[#FF914D] font-medium outline-none cursor-pointer focus:border-orange-500/40"
+                    >
+                      <option value="ats-desc">ATS Match: High-Low</option>
+                      <option value="ats-asc">ATS Match: Low-High</option>
+                      <option value="date-desc">Applied: Newest First</option>
+                      <option value="date-asc">Applied: Oldest First</option>
+                      <option value="exp-desc">Experience: Most-Least</option>
+                      <option value="exp-asc">Experience: Least-Most</option>
+                    </select>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="mt-3 text-xs text-white/35">
             Viewing applicants for <span className="font-semibold text-white/60">{job.title}</span> • {filteredApplicants.length} found
           </div>

@@ -158,3 +158,30 @@ html, body {
   scrollbar-color: rgba(255, 255, 255, 0.12) rgba(255, 255, 255, 0.02);
 }
 
+/* Light background scrollbar styling */
+.bg-white .custom-scrollbar::-webkit-scrollbar-thumb,
+.bg-white.custom-scrollbar::-webkit-scrollbar-thumb,
+.bg-gray-50 .custom-scrollbar::-webkit-scrollbar-thumb,
+.bg-gray-50.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+}
+.bg-white .custom-scrollbar::-webkit-scrollbar-track,
+.bg-white.custom-scrollbar::-webkit-scrollbar-track,
+.bg-gray-50 .custom-scrollbar::-webkit-scrollbar-track,
+.bg-gray-50.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+}
+.bg-white .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.bg-white.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.bg-gray-50 .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.bg-gray-50.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 107, 0, 0.4);
+}
+.bg-white .custom-scrollbar,
+.bg-white.custom-scrollbar,
+.bg-gray-50 .custom-scrollbar,
+.bg-gray-50.custom-scrollbar {
+  scrollbar-color: rgba(0, 0, 0, 0.12) rgba(0, 0, 0, 0.02);
+}
+
+

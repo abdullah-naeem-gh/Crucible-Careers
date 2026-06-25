@@ -505,7 +505,7 @@ function OverviewView({ jobs, analytics, onOpenJobs }: { jobs: EmployerJob[]; an
         </div>
       </section>
 
-      <section className={`${surface} overflow-auto p-5 lg:col-span-4`}>
+      <section className={`${surface} overflow-auto custom-scrollbar p-5 lg:col-span-4`}>
         <div className="mb-5">
           <p className="text-xs uppercase tracking-[0.18em] text-white/30">Live roles</p>
           <h2 className="mt-1 text-xl font-semibold">Job Performance</h2>
@@ -582,7 +582,7 @@ function JobsView({
           <div className="mt-3 text-xs text-white/35">{jobs.length} job{jobs.length === 1 ? "" : "s"} posted</div>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-auto p-5">
+        <div className="min-h-0 flex-1 space-y-3 overflow-auto custom-scrollbar p-5">
           {jobs.map((job) => (
             <motion.div
               key={job.id}
@@ -636,7 +636,7 @@ function JobsView({
         </div>
       </section>
 
-      <section className={`${surface} min-h-[38rem] overflow-auto p-6 lg:col-span-4 lg:min-h-0`}>
+      <section className={`${surface} min-h-[38rem] overflow-auto custom-scrollbar p-6 lg:col-span-4 lg:min-h-0`}>
         {!selectedJob ? (
           <div className="grid h-full place-items-center text-center">
             <div>
@@ -721,7 +721,7 @@ function JobsView({
 function AnalyticsView({ jobs, analytics }: { jobs: EmployerJob[]; analytics: Analytics }) {
   return (
     <ViewMotion className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
-      <section className={`${surface} overflow-auto p-6 lg:col-span-5`}>
+      <section className={`${surface} overflow-auto custom-scrollbar p-6 lg:col-span-5`}>
         <p className="text-xs uppercase tracking-[0.18em] text-[#FF914D]">Crucible Analytics</p>
         <h1 className="mt-1 text-2xl font-semibold">Performance Metrics</h1>
         <div className="mt-6 grid grid-cols-2 gap-3">
@@ -742,7 +742,7 @@ function AnalyticsView({ jobs, analytics }: { jobs: EmployerJob[]; analytics: An
         </div>
       </section>
 
-      <section className={`${surface} overflow-auto p-6 lg:col-span-4`}>
+      <section className={`${surface} overflow-auto custom-scrollbar p-6 lg:col-span-4`}>
         <p className="text-xs uppercase tracking-[0.18em] text-white/30">Ranked by applications</p>
         <h2 className="mt-1 text-xl font-semibold">Top Performing Jobs</h2>
         <div className="mt-6 space-y-3">
