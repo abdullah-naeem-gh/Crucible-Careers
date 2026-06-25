@@ -18,10 +18,14 @@ export default function TalentDashboard() {
         />
       </div>
 
-      <section className="relative z-10 h-screen">
-        <div className="h-full w-full grid grid-cols-12 gap-8 px-6">
-          <TalentSidebar jobCount={JOBS.length} />
-          <JobBrowser jobs={JOBS} />
+      <section className="relative z-10 min-h-screen px-4 py-5 sm:px-6 lg:h-screen lg:py-0">
+        <div className="mx-auto grid min-h-full max-w-[1500px] grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-7">
+          <div className="lg:col-span-3 lg:self-center">
+            <TalentSidebar jobCount={JOBS.length} />
+          </div>
+          <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
+            <JobBrowser jobs={JOBS} />
+          </div>
         </div>
       </section>
     </main>

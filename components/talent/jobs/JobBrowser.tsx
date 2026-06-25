@@ -73,8 +73,8 @@ export default function JobBrowser({ jobs }: Props) {
   const hasFilters = !!(query || activeType)
 
   return (
-    <div className="col-span-9 grid grid-cols-9 gap-8 h-[92vh] self-center">
-      <section className="col-span-5 bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl overflow-hidden flex flex-col shadow-lg">
+    <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
         <div className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70">
           <div className="px-5 pt-4 pb-3 flex items-center gap-3">
             <div className="relative flex-1">
@@ -226,7 +226,7 @@ export default function JobBrowser({ jobs }: Props) {
         )}
       </section>
 
-      <section className="col-span-4 bg-white/60 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 overflow-auto shadow-lg">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
         {!selectedJob ? (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">
             <div className="text-center">
