@@ -192,7 +192,7 @@ export default function JobBrowser({ jobs }: Props) {
                         </div>
                         <div className="shrink-0 text-right flex flex-col items-end gap-2">
                           <div className="text-xs text-gray-400">{relativeDate(job.posted_at)}</div>
-                          <span className="font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-md border border-green-200 text-[10px] leading-tight shadow-sm">
+                          <span className="font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/20 px-2 py-0.5 rounded-md text-[10px] leading-tight shadow-sm">
                             {getMatchScore(job._id)}% Match
                           </span>
                         </div>

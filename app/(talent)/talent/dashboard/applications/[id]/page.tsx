@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const DEMO_APP_DETAIL = {
   id: '1',
@@ -27,16 +28,7 @@ const DEMO_APP_DETAIL = {
   }
 }
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'Applied': return 'bg-blue-50 text-blue-700 border border-blue-100'
-    case 'Under Review': return 'bg-amber-50 text-amber-700 border border-amber-100'
-    case 'Interview': return 'bg-purple-50 text-purple-700 border border-purple-100'
-    case 'Offer': return 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-    case 'Rejected': return 'bg-rose-50 text-rose-700 border border-rose-100'
-    default: return 'bg-gray-50 text-gray-700 border border-gray-100'
-  }
-}
+
 
 export default function ApplicationDetailPage() {
   return (
@@ -71,9 +63,7 @@ export default function ApplicationDetailPage() {
                       <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{DEMO_APP_DETAIL.company}</p>
                       <h1 className="mt-1 text-2xl font-semibold leading-tight">{DEMO_APP_DETAIL.jobTitle}</h1>
                     </div>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold shrink-0 ${getStatusColor(DEMO_APP_DETAIL.status)}`}>
-                      {DEMO_APP_DETAIL.status}
-                    </span>
+                    <StatusBadge status={DEMO_APP_DETAIL.status} />
                   </div>
                 </div>
 

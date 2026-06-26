@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { DashboardThemeSwitcher } from "@/components/shared/theme/DashboardThemeProvider";
 
 type EmployerTab = "overview" | "jobs" | "analytics" | "profile";
 
@@ -34,11 +35,12 @@ export default function EmployerSidebar({
       initial={{ opacity: 0, x: -18 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
-      className="flex min-h-[18rem] flex-col rounded-[24px] border border-white/[0.07] bg-[#171717] p-5 shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)] lg:h-[92vh] lg:p-6"
+      className="relative flex min-h-[18rem] flex-col rounded-[24px] border border-white/[0.07] bg-[#171717] p-5 shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)] lg:h-[92vh] lg:p-6"
     >
+      <DashboardThemeSwitcher className="absolute right-4 top-4 sm:right-5 sm:top-5" />
       <Link
         href="/gateway"
-        className="mb-6 inline-flex items-center text-sm text-white/50 transition-colors hover:text-white"
+        className="mb-6 inline-flex items-center pr-14 text-sm text-white/50 transition-colors hover:text-white"
       >
         <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 19l-7-7 7-7" />
@@ -124,3 +126,5 @@ export default function EmployerSidebar({
     </motion.aside>
   );
 }
+
+

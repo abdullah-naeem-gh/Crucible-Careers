@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation'
+
 export default function TalentJobs() {
-  return null;
+  redirect('/talent/dashboard?tab=jobs')
 }

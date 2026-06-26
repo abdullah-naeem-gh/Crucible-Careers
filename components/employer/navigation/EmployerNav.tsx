@@ -1,6 +1,7 @@
 "use client";
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { DashboardThemeSwitcher } from '@/components/shared/theme/DashboardThemeProvider'
 
 interface EmployerNavProps {
   activeTab?: 'overview' | 'analytics' | 'jobs'
@@ -30,6 +31,7 @@ const EmployerNav = ({ activeTab = 'overview', company = 'TechCorp' }: EmployerN
           </nav>
         </div>
         <div className="flex items-center gap-3">
+          <DashboardThemeSwitcher className="size-9" />
           <button className="hidden md:inline-flex px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-sm text-white/70 hover:bg-white/10 hover:text-white">Company</button>
           <button className="hidden md:inline-flex px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-sm text-white/70 hover:bg-white/10 hover:text-white">Profile</button>
           <Link href="/" className="px-3 py-2 rounded-lg border border-red-500/20 bg-red-500/10 text-sm text-red-300 hover:bg-red-500/20" onClick={() => localStorage.removeItem('recruiter_jobs')}>Logout</Link>
@@ -41,3 +43,5 @@ const EmployerNav = ({ activeTab = 'overview', company = 'TechCorp' }: EmployerN
 }
 
 export default EmployerNav
+
+
