@@ -299,7 +299,7 @@ function EmployerDashboardContent() {
           </div>
 
           <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
-            <AnimatePresence mode="wait">
+            <AnimatePresence initial={false} mode="wait">
               {activeTab === "overview" && (
                 <OverviewTab key="overview" jobs={jobs} analytics={analytics} onOpenJobs={() => changeTab("jobs")} />
               )}
@@ -335,7 +335,7 @@ function EmployerDashboardContent() {
         </div>
       </section>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isFormOpen && (
           <motion.div
             initial={{ opacity: 0 }}

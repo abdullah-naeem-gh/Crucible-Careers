@@ -99,7 +99,7 @@ function TalentDashboardContent() {
             />
           </div>
           <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
-            <AnimatePresence mode="wait">
+            <AnimatePresence initial={false} mode="wait">
               {activeTab === 'jobs' && (
                 <ViewMotion key="jobs">
                   <JobBrowser jobs={JOBS} />

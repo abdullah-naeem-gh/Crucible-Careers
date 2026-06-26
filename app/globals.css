@@ -192,7 +192,7 @@ html, body {
 }
 
 .dashboard-theme-root * {
-  transition-property: background-color, border-color, color, box-shadow, opacity;
+  transition-property: background-color, border-color, color, box-shadow;
   transition-duration: 180ms;
   transition-timing-function: ease;
 }
