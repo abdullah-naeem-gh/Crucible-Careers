@@ -18,8 +18,14 @@ import {
   IconFilter,
   IconArrowsSort,
   IconChevronDown,
+  IconCheck,
+  IconPlus,
+  IconSparkles,
+  IconX,
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
+
+type ScreeningStatus = "unscreened" | "shortlisted" | "rejected";
 
 interface CandidateProfile {
   id: string;
@@ -36,6 +42,7 @@ interface CandidateProfile {
   linkedin?: string;
   github?: string;
   portfolio?: string;
+  screeningStatus?: ScreeningStatus;
 }
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
@@ -257,16 +264,37 @@ const getSortLabel = (val: string) => {
   }
 };
 
+const statusFilterOptions: { key: ScreeningStatus; label: string }[] = [
+  { key: "unscreened", label: "Unscreened" },
+  { key: "rejected", label: "Rejected" },
+  { key: "shortlisted", label: "Shortlisted" },
+];
+
 export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicationsViewProps) {
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilters, setStatusFilters] = useState<Record<ScreeningStatus, boolean>>({
+    unscreened: false,
+    rejected: false,
+    shortlisted: false,
+  });
   const [expFilter, setExpFilter] = useState("all");
   const [atsFilter, setAtsFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [sortBy, setSortBy] = useState("ats-desc");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
+  const [showAutoShortlist, setShowAutoShortlist] = useState(false);
+  const [autoCriteria, setAutoCriteria] = useState({
+    atsEnabled: false,
+    atsMinimum: 80,
+    experienceEnabled: false,
+    experienceMinimum: 3,
+    matchedSkillsEnabled: false,
+    matchedSkillsMinimum: 2,
+  });
+  const [semanticTerms, setSemanticTerms] = useState<string[]>([""]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -309,6 +337,67 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
     }
   }, [jobId, job]);
 
+  const persistApplicants = (nextApplicants: CandidateProfile[]) => {
+    setApplicants(nextApplicants);
+    localStorage.setItem(`recruiter_job_${jobId}_applicants`, JSON.stringify(nextApplicants));
+  };
+
+  const setApplicantStatus = (applicantId: string, status: ScreeningStatus) => {
+    const nextApplicants = applicants.map((applicant) => {
+      if (applicant.id !== applicantId) return applicant;
+      const nextStatus = (applicant.screeningStatus || "unscreened") === status ? undefined : status;
+      return { ...applicant, screeningStatus: nextStatus };
+    });
+
+    persistApplicants(nextApplicants);
+    setSelectedApplicant((current) => {
+      if (current?.id !== applicantId) return current;
+      const nextStatus = (current.screeningStatus || "unscreened") === status ? undefined : status;
+      return { ...current, screeningStatus: nextStatus };
+    });
+  };
+
+  const toggleStatusFilter = (status: ScreeningStatus) => {
+    setStatusFilters((current) => ({
+      ...current,
+      [status]: !current[status],
+    }));
+  };
+
+  const runAutoShortlist = () => {
+    if (!job) return;
+
+    const semanticNeedles = semanticTerms.map((term) => term.trim().toLowerCase()).filter(Boolean);
+    const nextApplicants = applicants.map((applicant) => {
+      const score = calculateAtsScore(applicant.skills, job.tags);
+      const matchedSkills = applicant.skills.filter((skill) =>
+        job.tags.some((tag) => tag.toLowerCase() === skill.toLowerCase())
+      ).length;
+      const semanticMatch =
+        semanticNeedles.length === 0 ||
+        semanticNeedles.some((term) =>
+          [applicant.name, applicant.title, applicant.bio, applicant.education, ...applicant.skills]
+            .join(" ")
+            .toLowerCase()
+            .includes(term)
+        );
+
+      const passesCriteria =
+        (!autoCriteria.atsEnabled || score >= autoCriteria.atsMinimum) &&
+        (!autoCriteria.experienceEnabled || applicant.experienceYears >= autoCriteria.experienceMinimum) &&
+        (!autoCriteria.matchedSkillsEnabled || matchedSkills >= autoCriteria.matchedSkillsMinimum) &&
+        semanticMatch;
+
+      return passesCriteria ? { ...applicant, screeningStatus: "shortlisted" as ScreeningStatus } : applicant;
+    });
+
+    persistApplicants(nextApplicants);
+    setSelectedApplicant((current) =>
+      current ? nextApplicants.find((applicant) => applicant.id === current.id) || current : current
+    );
+    setShowAutoShortlist(false);
+  };
+
   // Compute unique locations for the filter
   const uniqueLocations = useMemo(() => {
     const locs = applicants.map((a) => {
@@ -320,6 +409,8 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
 
   const filteredApplicants = useMemo(() => {
     if (!job) return [];
+    const hasStatusFilter = Object.values(statusFilters).some(Boolean);
+
     return applicants
       .filter((a) => {
         // Search query filter
@@ -354,7 +445,10 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
           }
         }
 
-        return matchesQuery && matchesExp && matchesAts && matchesLocation;
+        const currentStatus = a.screeningStatus || "unscreened";
+        const matchesStatus = !hasStatusFilter || statusFilters[currentStatus];
+
+        return matchesQuery && matchesExp && matchesAts && matchesLocation && matchesStatus;
       })
       .sort((a, b) => {
         const scoreA = calculateAtsScore(a.skills, job.tags);
@@ -377,7 +471,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
             return 0;
         }
       });
-  }, [applicants, searchQuery, expFilter, atsFilter, locationFilter, sortBy, job]);
+  }, [applicants, searchQuery, statusFilters, expFilter, atsFilter, locationFilter, sortBy, job]);
 
   // Select first applicant automatically if current selection goes out of filter
   useEffect(() => {
@@ -436,10 +530,18 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
               />
               <IconSearch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20" />
             </div>
+            <button
+              type="button"
+              onClick={() => setShowAutoShortlist(true)}
+              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl bg-[#FF6B00] px-4 text-xs font-semibold text-white shadow-[0_10px_24px_rgba(255,107,0,0.22)] transition-all hover:bg-[#ff7a1a] cursor-pointer"
+            >
+              <IconSparkles size={15} />
+              Auto Shortlist
+            </button>
           </div>
 
           {/* Filters & Sorting Row */}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="mt-4 flex flex-nowrap items-center gap-3">
             {/* Filters Chip */}
             <button
               type="button"
@@ -447,7 +549,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                 setShowFilters(!showFilters);
                 setShowSort(false);
               }}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-all cursor-pointer ${
+              className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-xs font-medium transition-all cursor-pointer ${
                 showFilters || activeFiltersCount > 0
                   ? "border-[#FF6B00]/50 bg-[#FF6B00]/10 text-white"
                   : "border-white/[0.08] bg-white/[0.02] text-white/65 hover:bg-white/5 hover:text-white"
@@ -475,7 +577,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                 setShowSort(!showSort);
                 setShowFilters(false);
               }}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-all cursor-pointer ${
+              className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-xs font-medium transition-all cursor-pointer ${
                 showSort
                   ? "border-[#FF6B00]/50 bg-[#FF6B00]/10 text-white"
                   : "border-white/[0.08] bg-white/[0.02] text-white/65 hover:bg-white/5 hover:text-white"
@@ -500,11 +602,28 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                   setAtsFilter("all");
                   setLocationFilter("all");
                 }}
-                className="text-xs text-[#FF914D] hover:text-[#ff914d]/80 hover:underline cursor-pointer font-medium"
+                className="shrink-0 whitespace-nowrap text-xs text-[#FF914D] hover:text-[#ff914d]/80 hover:underline cursor-pointer font-medium"
               >
                 Clear all filters
               </button>
             )}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {statusFilterOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => toggleStatusFilter(option.key)}
+                className={`rounded-full border px-2.5 py-1.5 text-[11px] font-medium leading-none transition-all cursor-pointer ${
+                  statusFilters[option.key]
+                    ? "border-[#FF6B00]/45 bg-[#FF6B00]/10 text-[#C2410C] dark:text-[#FF914D]"
+                    : "border-gray-200 bg-gray-50 text-gray-400 hover:text-gray-600 dark:border-white/[0.06] dark:bg-transparent dark:text-white/25 dark:hover:text-white/45"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
 
           {/* Collapsible Drawers */}
@@ -610,6 +729,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
             filteredApplicants.map((applicant) => {
               const score = calculateAtsScore(applicant.skills, job.tags);
               const isSelected = selectedApplicant?.id === applicant.id;
+              const currentStatus = applicant.screeningStatus || "unscreened";
 
               // Color classes based on score
               const scoreColor =
@@ -620,14 +740,29 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                   : "text-amber-400";
 
               return (
-                <motion.button
+                <motion.div
                   key={applicant.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedApplicant(applicant)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedApplicant(applicant);
+                    }
+                  }}
                   whileHover={{ y: -2, scale: 1.01 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   className={`w-full rounded-2xl border p-4 text-left cursor-pointer transition-colors duration-150 ${
-                    isSelected
+                    isSelected && currentStatus === "shortlisted"
+                      ? "border-orange-500/60 bg-emerald-500/[0.07] shadow-[0_0_0_2px_rgba(255,107,0,0.18),0_0_26px_rgba(16,185,129,0.16),8px_8px_18px_rgba(0,0,0,0.22)]"
+                      : isSelected && currentStatus === "rejected"
+                      ? "border-orange-500/60 bg-red-500/[0.045] shadow-[0_0_0_2px_rgba(255,107,0,0.18),8px_8px_18px_rgba(0,0,0,0.22)]"
+                      : currentStatus === "shortlisted"
+                      ? "border-emerald-500/45 bg-emerald-500/[0.07] shadow-[0_0_0_1px_rgba(16,185,129,0.12),0_0_26px_rgba(16,185,129,0.16),8px_8px_18px_rgba(0,0,0,0.22)]"
+                      : currentStatus === "rejected"
+                      ? "border-red-500/30 bg-red-500/[0.045] shadow-[8px_8px_18px_rgba(0,0,0,0.22)]"
+                      : isSelected
                       ? "border-orange-500/50 bg-orange-500/[0.055] shadow-[0_0_0_2px_rgba(255,107,0,0.1),8px_8px_18px_rgba(0,0,0,0.22)]"
                       : "border-white/[0.065] bg-[#141414] shadow-[6px_6px_16px_rgba(0,0,0,0.24)] hover:border-white/10"
                   }`}
@@ -643,9 +778,43 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                         <h3 className="truncate text-base font-semibold leading-tight text-white">
                           {applicant.name}
                         </h3>
-                        <span className={`shrink-0 text-xs font-semibold ${scoreColor}`}>
-                          ATS Match: {score}%
-                        </span>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className={`text-xs font-semibold ${scoreColor}`}>
+                            ATS Match: {score}%
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              title="Shortlist candidate"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setApplicantStatus(applicant.id, "shortlisted");
+                              }}
+                              className={`grid h-7 w-7 place-items-center rounded-lg border transition-all cursor-pointer ${
+                                currentStatus === "shortlisted"
+                                  ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-300"
+                                  : "border-white/[0.08] bg-white/[0.025] text-white/45 hover:border-emerald-400/45 hover:text-emerald-300"
+                              }`}
+                            >
+                              <IconCheck size={15} stroke={2.3} />
+                            </button>
+                            <button
+                              type="button"
+                              title="Reject candidate"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setApplicantStatus(applicant.id, "rejected");
+                              }}
+                              className={`grid h-7 w-7 place-items-center rounded-lg border transition-all cursor-pointer ${
+                                currentStatus === "rejected"
+                                  ? "border-red-400/60 bg-red-500/20 text-red-300"
+                                  : "border-white/[0.08] bg-white/[0.025] text-white/45 hover:border-red-400/45 hover:text-red-300"
+                              }`}
+                            >
+                              <IconX size={15} stroke={2.3} />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                       <p className="mt-1 truncate text-sm text-white/60">{applicant.title}</p>
                       
@@ -661,7 +830,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                       </div>
                     </div>
                   </div>
-                </motion.button>
+                </motion.div>
               );
             })
           ) : (
@@ -686,7 +855,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
             className="space-y-6"
           >
             {/* Header / Avatar */}
-            <div className="flex items-center gap-4 border-b border-white/[0.07] pb-5">
+            <div className="flex items-start gap-4 border-b border-white/[0.07] pb-5">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-2xl font-bold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]">
                 {selectedApplicant.name.split(" ").map((n) => n[0]).join("")}
               </div>
@@ -704,6 +873,22 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                     ATS Match: {calculateAtsScore(selectedApplicant.skills, job.tags)}%
                   </span>
                 </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setApplicantStatus(selectedApplicant.id, "rejected")}
+                  className="text-xs font-semibold text-red-300 transition-colors hover:text-red-200 cursor-pointer"
+                >
+                  Reject
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setApplicantStatus(selectedApplicant.id, "shortlisted")}
+                  className="text-xs font-semibold text-emerald-300 transition-colors hover:text-emerald-200 cursor-pointer"
+                >
+                  Shortlist
+                </button>
               </div>
             </div>
 
@@ -798,7 +983,188 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
           </div>
         )}
       </section>
+
+      <AnimatePresence>
+        {showAutoShortlist && (
+          <motion.div
+            className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm dark:bg-black/70"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowAutoShortlist(false)}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Auto shortlist criteria"
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 12 }}
+              transition={{ duration: 0.18 }}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full max-w-2xl rounded-[24px] border border-gray-200 bg-white p-5 shadow-[12px_12px_30px_rgba(15,23,42,0.12),-6px_-6px_18px_rgba(255,255,255,0.8)] dark:border-white/[0.07] dark:bg-[#171717] dark:shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]"
+            >
+              <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-4 dark:border-white/[0.07]">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-950 dark:text-white">Auto Shortlist</h2>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-white/45">Configure recruiter criteria and semantic terms for this job.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAutoShortlist(false)}
+                  className="grid h-9 w-9 place-items-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:border-white/[0.08] dark:text-white/45 dark:hover:bg-white/[0.04] dark:hover:text-white cursor-pointer"
+                >
+                  <IconX size={18} />
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-5">
+                <div>
+                  <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-white/35">Criteria</h3>
+                  <div className="space-y-3">
+                    <AutoCriterionRow
+                      label="ATS match"
+                      enabled={autoCriteria.atsEnabled}
+                      value={autoCriteria.atsMinimum}
+                      suffix="% or greater"
+                      min={0}
+                      max={100}
+                      onToggle={() => setAutoCriteria((current) => ({ ...current, atsEnabled: !current.atsEnabled }))}
+                      onChange={(value) => setAutoCriteria((current) => ({ ...current, atsMinimum: value }))}
+                    />
+                    <AutoCriterionRow
+                      label="Experience"
+                      enabled={autoCriteria.experienceEnabled}
+                      value={autoCriteria.experienceMinimum}
+                      suffix="years or greater"
+                      min={0}
+                      max={20}
+                      onToggle={() => setAutoCriteria((current) => ({ ...current, experienceEnabled: !current.experienceEnabled }))}
+                      onChange={(value) => setAutoCriteria((current) => ({ ...current, experienceMinimum: value }))}
+                    />
+                    <AutoCriterionRow
+                      label="Matched job skills"
+                      enabled={autoCriteria.matchedSkillsEnabled}
+                      value={autoCriteria.matchedSkillsMinimum}
+                      suffix="skills or greater"
+                      min={0}
+                      max={10}
+                      onToggle={() => setAutoCriteria((current) => ({ ...current, matchedSkillsEnabled: !current.matchedSkillsEnabled }))}
+                      onChange={(value) => setAutoCriteria((current) => ({ ...current, matchedSkillsMinimum: value }))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-white/35">Semantics</h3>
+                    <button
+                      type="button"
+                      onClick={() => setSemanticTerms((current) => [...current, ""])}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-950 dark:border-white/[0.08] dark:bg-white/[0.025] dark:text-white/60 dark:hover:bg-white/[0.05] dark:hover:text-white cursor-pointer"
+                    >
+                      <IconPlus size={14} />
+                      Add term
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {semanticTerms.map((term, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={term}
+                          onChange={(event) =>
+                            setSemanticTerms((current) =>
+                              current.map((item, itemIndex) => (itemIndex === index ? event.target.value : item))
+                            )
+                          }
+                          placeholder={index === 0 ? "React, Python, Frontend..." : "Add another semantic term"}
+                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-orange-500/45 focus:ring-2 focus:ring-orange-500/10 dark:border-white/[0.08] dark:bg-[#121212] dark:text-white dark:placeholder:text-white/20"
+                        />
+                        {semanticTerms.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setSemanticTerms((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-600 dark:border-white/[0.08] dark:text-white/35 dark:hover:border-red-500/35 dark:hover:text-red-300 cursor-pointer"
+                          >
+                            <IconX size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-white/30">Semantic vector search will connect here; for now terms are matched across profile text and skills.</p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-white/[0.07]">
+                <button
+                  type="button"
+                  onClick={() => setShowAutoShortlist(false)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-950 dark:border-white/[0.08] dark:text-white/55 dark:hover:bg-white/[0.04] dark:hover:text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={runAutoShortlist}
+                  className="rounded-xl bg-[#FF6B00] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(255,107,0,0.2)] hover:bg-[#ff7a1a] cursor-pointer"
+                >
+                  Apply Shortlist
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
+  );
+}
+
+function AutoCriterionRow({
+  label,
+  enabled,
+  value,
+  suffix,
+  min,
+  max,
+  onToggle,
+  onChange,
+}: {
+  label: string;
+  enabled: boolean;
+  value: number;
+  suffix: string;
+  min: number;
+  max: number;
+  onToggle: () => void;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3.5 dark:border-white/[0.06] dark:bg-white/[0.015] sm:flex-row sm:items-center sm:justify-between">
+      <label className="flex min-w-0 items-center gap-3">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={onToggle}
+          className="h-4 w-4 rounded border-gray-300 bg-white accent-[#FF6B00] dark:border-white/20 dark:bg-[#121212] cursor-pointer"
+        />
+        <span className={enabled ? "text-sm font-medium text-gray-800 dark:text-white/75" : "text-sm font-medium text-gray-400 dark:text-white/35"}>{label}</span>
+      </label>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-500 dark:text-white/35">Greater than</span>
+        <input
+          type="number"
+          min={min}
+          max={max}
+          value={value}
+          disabled={!enabled}
+          onChange={(event) => onChange(Number(event.target.value))}
+          className="h-9 w-20 rounded-lg border border-gray-200 bg-white px-2 text-sm font-semibold text-gray-800 outline-none disabled:cursor-not-allowed disabled:opacity-35 focus:border-orange-500/40 dark:border-white/[0.08] dark:bg-[#121212] dark:text-white/70"
+        />
+        <span className="min-w-[6.5rem] text-xs text-gray-500 dark:text-white/35">{suffix}</span>
+      </div>
+    </div>
   );
 }
 
