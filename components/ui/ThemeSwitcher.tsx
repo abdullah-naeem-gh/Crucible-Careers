@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { IconMoon, IconSun } from "@tabler/icons-react";
 import { useCallback, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -84,7 +85,9 @@ export const useThemeToggle = ({
         return;
       }
 
-      const switchTheme = () => setTheme(nextTheme);
+      const switchTheme = () => {
+        flushSync(() => setTheme(nextTheme));
+      };
       const viewTransitionDocument = document as ViewTransitionDocument;
 
       if (!viewTransitionDocument.startViewTransition) {

@@ -44,23 +44,21 @@ export default function DashboardThemeProvider({
   defaultTheme,
   storageKey,
 }: DashboardThemeProviderProps) {
-  const [theme, setTheme] = useState<DashboardTheme>(defaultTheme);
+  const [theme, setTheme] = useState<DashboardTheme>(() => {
+    if (typeof window === "undefined") return defaultTheme;
+
+    try {
+      const savedTheme = window.localStorage.getItem(storageKey);
+      return savedTheme === "light" || savedTheme === "dark" ? savedTheme : defaultTheme;
+    } catch {
+      return defaultTheme;
+    }
+  });
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    try {
-      const savedTheme = window.localStorage.getItem(storageKey);
-      if (savedTheme === "light" || savedTheme === "dark") {
-        setTheme(savedTheme);
-      } else {
-        setTheme(defaultTheme);
-      }
-    } catch {
-      setTheme(defaultTheme);
-    } finally {
-      setHydrated(true);
-    }
-  }, [defaultTheme, storageKey]);
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (!hydrated) return;

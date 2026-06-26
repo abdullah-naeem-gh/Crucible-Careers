@@ -22,10 +22,20 @@ import {
   IconPlus,
   IconSparkles,
   IconX,
+  IconSend,
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
 
 type ScreeningStatus = "unscreened" | "shortlisted" | "rejected";
+type EmailAudience = "all" | "shortlisted" | "rejected" | "manual";
+
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  custom?: boolean;
+}
 
 interface CandidateProfile {
   id: string;
@@ -270,6 +280,34 @@ const statusFilterOptions: { key: ScreeningStatus; label: string }[] = [
   { key: "shortlisted", label: "Shortlisted" },
 ];
 
+const emailAudienceOptions: { key: EmailAudience; label: string }[] = [
+  { key: "all", label: "Select all" },
+  { key: "shortlisted", label: "Select all shortlisted" },
+  { key: "rejected", label: "Select all rejected" },
+  { key: "manual", label: "Select manually" },
+];
+
+const emailTemplates: EmailTemplate[] = [
+  {
+    id: "shortlist-next-steps",
+    name: "Shortlist next steps",
+    subject: "Next steps for your application",
+    body: "Hi {{name}},\n\nThank you for applying for the {{jobTitle}} role. We reviewed your profile and would like to move you forward to the next stage.\n\nWe will follow up shortly with scheduling details.\n\nBest,\nCrucible Recruiting",
+  },
+  {
+    id: "rejection-professional",
+    name: "Professional rejection",
+    subject: "Update on your application",
+    body: "Hi {{name}},\n\nThank you for applying for the {{jobTitle}} role. After reviewing your profile, we will not be moving forward at this time.\n\nWe appreciate the time you invested and wish you the best in your search.\n\nBest,\nCrucible Recruiting",
+  },
+  {
+    id: "request-info",
+    name: "Request more information",
+    subject: "A quick follow-up on your application",
+    body: "Hi {{name}},\n\nThank you for applying for the {{jobTitle}} role. We would like to learn a little more about your experience before making a decision.\n\nCould you reply with any additional portfolio links, project examples, or availability details you would like us to consider?\n\nBest,\nCrucible Recruiting",
+  },
+];
+
 export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicationsViewProps) {
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
@@ -285,6 +323,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
   const [sortBy, setSortBy] = useState("ats-desc");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
+  const [showEmailPanel, setShowEmailPanel] = useState(false);
   const [showAutoShortlist, setShowAutoShortlist] = useState(false);
   const [autoCriteria, setAutoCriteria] = useState({
     atsEnabled: false,
@@ -295,6 +334,16 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
     matchedSkillsMinimum: 2,
   });
   const [semanticTerms, setSemanticTerms] = useState<string[]>([""]);
+  const [emailAudience, setEmailAudience] = useState<EmailAudience>("all");
+  const [manualEmailIds, setManualEmailIds] = useState<string[]>([]);
+  const [emailSubject, setEmailSubject] = useState(emailTemplates[0].subject);
+  const [emailBody, setEmailBody] = useState(emailTemplates[0].body);
+  const [emailTemplateName, setEmailTemplateName] = useState("Custom follow-up");
+  const [selectedEmailTemplateId, setSelectedEmailTemplateId] = useState(emailTemplates[0].id);
+  const [customEmailTemplates, setCustomEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [emailDraftStatus, setEmailDraftStatus] = useState("");
+
+  const allEmailTemplates = useMemo(() => [...emailTemplates, ...customEmailTemplates], [customEmailTemplates]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -362,6 +411,50 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
       ...current,
       [status]: !current[status],
     }));
+  };
+
+  const applyEmailTemplate = (templateId: string) => {
+    const template = allEmailTemplates.find((item) => item.id === templateId);
+    if (!template) return;
+    setSelectedEmailTemplateId(template.id);
+    setEmailTemplateName(template.name);
+    setEmailSubject(template.subject);
+    setEmailBody(template.body);
+    setEmailDraftStatus(`Loaded template: ${template.name}`);
+  };
+
+  const saveEmailTemplate = () => {
+    const name = emailTemplateName.trim() || "Custom template";
+    const existingCustom = customEmailTemplates.find((template) => template.id === selectedEmailTemplateId);
+
+    if (existingCustom) {
+      setCustomEmailTemplates((current) =>
+        current.map((template) =>
+          template.id === existingCustom.id ? { ...template, name, subject: emailSubject, body: emailBody } : template
+        )
+      );
+      setEmailDraftStatus(`Updated template: ${name}`);
+      return;
+    }
+
+    const nextTemplate: EmailTemplate = {
+      id: `custom-${Date.now()}`,
+      name,
+      subject: emailSubject,
+      body: emailBody,
+      custom: true,
+    };
+    setCustomEmailTemplates((current) => [...current, nextTemplate]);
+    setSelectedEmailTemplateId(nextTemplate.id);
+    setEmailDraftStatus(`Created template: ${name}`);
+  };
+
+  const toggleManualEmailRecipient = (applicantId: string) => {
+    setManualEmailIds((current) =>
+      current.includes(applicantId)
+        ? current.filter((id) => id !== applicantId)
+        : [...current, applicantId]
+    );
   };
 
   const runAutoShortlist = () => {
@@ -473,6 +566,29 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
       });
   }, [applicants, searchQuery, statusFilters, expFilter, atsFilter, locationFilter, sortBy, job]);
 
+  const emailRecipients = useMemo(() => {
+    switch (emailAudience) {
+      case "shortlisted":
+        return applicants.filter((applicant) => applicant.screeningStatus === "shortlisted");
+      case "rejected":
+        return applicants.filter((applicant) => applicant.screeningStatus === "rejected");
+      case "manual":
+        return applicants.filter((applicant) => manualEmailIds.includes(applicant.id));
+      default:
+        return applicants;
+    }
+  }, [applicants, emailAudience, manualEmailIds]);
+
+  const sendEmailDraft = () => {
+    const recipientCount = emailRecipients.length;
+    if (!recipientCount) {
+      setEmailDraftStatus("Select at least one applicant before sending.");
+      return;
+    }
+
+    setEmailDraftStatus(`Prepared email for ${recipientCount} applicant${recipientCount === 1 ? "" : "s"}. Mail service integration pending.`);
+  };
+
   // Select first applicant automatically if current selection goes out of filter
   useEffect(() => {
     if (filteredApplicants.length > 0) {
@@ -548,6 +664,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
               onClick={() => {
                 setShowFilters(!showFilters);
                 setShowSort(false);
+                setShowEmailPanel(false);
               }}
               className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-xs font-medium transition-all cursor-pointer ${
                 showFilters || activeFiltersCount > 0
@@ -576,6 +693,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
               onClick={() => {
                 setShowSort(!showSort);
                 setShowFilters(false);
+                setShowEmailPanel(false);
               }}
               className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-xs font-medium transition-all cursor-pointer ${
                 showSort
@@ -591,6 +709,24 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
               >
                 <IconChevronDown size={14} className="text-white/35" />
               </motion.div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowEmailPanel(!showEmailPanel);
+                setShowFilters(false);
+                setShowSort(false);
+              }}
+              className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-xs font-medium transition-all cursor-pointer ${
+                showEmailPanel
+                  ? "border-[#FF6B00]/50 bg-[#FF6B00]/10 text-white"
+                  : "border-white/[0.08] bg-white/[0.02] text-white/65 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <IconMail size={14} className={showEmailPanel ? "text-[#FF914D]" : "text-white/45"} />
+              <span>Email applicants</span>
+              <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/45">{emailRecipients.length}</span>
             </button>
 
             {/* Clear Filters Helper */}
@@ -688,6 +824,119 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
               </motion.div>
             )}
 
+
+
+            {showEmailPanel && (
+              <motion.div
+                key="email-drawer"
+                initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3.5">
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                    <div className="lg:col-span-4">
+                      <label className="block text-[10px] uppercase tracking-wider text-white/35 mb-1.5 font-medium">Recipients</label>
+                      <div className="grid gap-2">
+                        {emailAudienceOptions.map((option) => (
+                          <button
+                            key={option.key}
+                            type="button"
+                            onClick={() => {
+                              setEmailAudience(option.key);
+                              setEmailDraftStatus(option.key === "manual" ? "Use the checkboxes on applicant cards to choose recipients." : "");
+                            }}
+                            className={`rounded-lg border px-3 py-2 text-left text-xs transition-all cursor-pointer ${
+                              emailAudience === option.key
+                                ? "border-[#FF6B00]/45 bg-[#FF6B00]/10 text-[#FF914D]"
+                                : "border-white/[0.07] bg-[#121212] text-white/55 hover:border-white/12 hover:text-white"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mt-3 rounded-lg border border-white/[0.06] bg-[#121212] px-3 py-2 text-xs text-white/45">
+                        {emailRecipients.length} recipient{emailRecipients.length === 1 ? "" : "s"} selected
+                      </div>
+                    </div>
+
+                    <div className="lg:col-span-8">
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <label className="text-[10px] uppercase tracking-wider text-white/35 font-medium">Templates</label>
+                        <div className="flex flex-wrap gap-2">
+                          {allEmailTemplates.map((template) => (
+                            <button
+                              key={template.id}
+                              type="button"
+                              onClick={() => applyEmailTemplate(template.id)}
+                              className={`rounded-lg border px-2.5 py-1.5 text-[11px] cursor-pointer ${
+                                selectedEmailTemplateId === template.id
+                                  ? "border-orange-500/35 bg-orange-500/10 text-[#FF914D]"
+                                  : "border-white/[0.08] bg-[#121212] text-white/55 hover:border-orange-500/35 hover:text-[#FF914D]"
+                              }`}
+                            >
+                              {template.name}{template.custom ? " *" : ""}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+                        <input
+                          type="text"
+                          value={emailTemplateName}
+                          onChange={(event) => setEmailTemplateName(event.target.value)}
+                          placeholder="Template name"
+                          className="w-full rounded-lg border border-white/[0.08] bg-[#121212] px-3 py-2 text-xs text-white/70 outline-none placeholder:text-white/25 focus:border-orange-500/40"
+                        />
+                        <button
+                          type="button"
+                          onClick={saveEmailTemplate}
+                          className="rounded-lg border border-orange-500/25 bg-orange-500/10 px-3 py-2 text-xs font-semibold text-[#FF914D] hover:bg-orange-500/15 cursor-pointer"
+                        >
+                          {customEmailTemplates.some((template) => template.id === selectedEmailTemplateId) ? "Update template" : "Create template"}
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={emailSubject}
+                        onChange={(event) => setEmailSubject(event.target.value)}
+                        placeholder="Email subject"
+                        className="mb-2 w-full rounded-lg border border-white/[0.08] bg-[#121212] px-3 py-2 text-xs text-white/70 outline-none placeholder:text-white/25 focus:border-orange-500/40"
+                      />
+                      <textarea
+                        value={emailBody}
+                        onChange={(event) => setEmailBody(event.target.value)}
+                        rows={7}
+                        placeholder="Write an email or load a template..."
+                        className="w-full resize-none rounded-lg border border-white/[0.08] bg-[#121212] px-3 py-2 text-xs leading-relaxed text-white/70 outline-none placeholder:text-white/25 focus:border-orange-500/40"
+                      />
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-xs text-white/35">Use {"{{name}}"} and {"{{jobTitle}}"} for candidate-specific personalization.</p>
+                        <button
+                          type="button"
+                          onClick={sendEmailDraft}
+                          className="inline-flex items-center gap-2 rounded-lg bg-[#FF6B00] px-3.5 py-2 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(255,107,0,0.18)] hover:bg-[#ff7a1a] cursor-pointer"
+                        >
+                          <IconSend size={14} />
+                          Send email
+                        </button>
+                      </div>
+                      {emailDraftStatus && (
+                        <div className="mt-2 rounded-lg border border-orange-500/20 bg-orange-500/10 px-3 py-2 text-xs text-[#FF914D]">
+                          {emailDraftStatus}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {showSort && (
               <motion.div
                 key="sort-drawer"
@@ -768,6 +1017,18 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                   }`}
                 >
                   <div className="flex items-start gap-4">
+                    {showEmailPanel && emailAudience === "manual" && (
+                      <label className="mt-3 flex shrink-0 items-center" onClick={(event) => event.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={manualEmailIds.includes(applicant.id)}
+                          onChange={() => toggleManualEmailRecipient(applicant.id)}
+                          className="h-4 w-4 rounded border-white/20 bg-[#121212] accent-[#FF6B00] cursor-pointer"
+                          aria-label={`Select ${applicant.name} for email`}
+                        />
+                      </label>
+                    )}
+
                     {/* Profile Photo / Avatar placeholder */}
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B00]/20 to-[#FF914D]/10 text-base font-bold text-[#FF914D] border border-white/[0.08]">
                       {applicant.name.split(" ").map((n) => n[0]).join("")}
@@ -792,8 +1053,8 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                               }}
                               className={`grid h-7 w-7 place-items-center rounded-lg border transition-all cursor-pointer ${
                                 currentStatus === "shortlisted"
-                                  ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-300"
-                                  : "border-white/[0.08] bg-white/[0.025] text-white/45 hover:border-emerald-400/45 hover:text-emerald-300"
+                                  ? "border-emerald-700/45 bg-emerald-700/15 text-emerald-800 dark:border-emerald-400/60 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                  : "border-white/[0.08] bg-white/[0.025] text-white/45 hover:border-emerald-700/45 hover:text-emerald-800 dark:hover:border-emerald-400/45 dark:hover:text-emerald-300"
                               }`}
                             >
                               <IconCheck size={15} stroke={2.3} />
@@ -807,8 +1068,8 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                               }}
                               className={`grid h-7 w-7 place-items-center rounded-lg border transition-all cursor-pointer ${
                                 currentStatus === "rejected"
-                                  ? "border-red-400/60 bg-red-500/20 text-red-300"
-                                  : "border-white/[0.08] bg-white/[0.025] text-white/45 hover:border-red-400/45 hover:text-red-300"
+                                  ? "border-red-800/40 bg-red-800/10 text-red-800 dark:border-red-400/60 dark:bg-red-500/20 dark:text-red-300"
+                                  : "border-white/[0.08] bg-white/[0.025] text-white/45 hover:border-red-800/45 hover:text-red-800 dark:hover:border-red-400/45 dark:hover:text-red-300"
                               }`}
                             >
                               <IconX size={15} stroke={2.3} />
@@ -878,14 +1139,14 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                 <button
                   type="button"
                   onClick={() => setApplicantStatus(selectedApplicant.id, "rejected")}
-                  className="text-xs font-semibold text-red-300 transition-colors hover:text-red-200 cursor-pointer"
+                  className="text-xs font-semibold text-red-800 transition-colors hover:text-red-700 dark:text-red-300 dark:hover:text-red-200 cursor-pointer"
                 >
                   Reject
                 </button>
                 <button
                   type="button"
                   onClick={() => setApplicantStatus(selectedApplicant.id, "shortlisted")}
-                  className="text-xs font-semibold text-emerald-300 transition-colors hover:text-emerald-200 cursor-pointer"
+                  className="text-xs font-semibold text-emerald-800 transition-colors hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-200 cursor-pointer"
                 >
                   Shortlist
                 </button>

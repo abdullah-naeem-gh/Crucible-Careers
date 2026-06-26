@@ -254,7 +254,7 @@ export default function JobBrowser({ jobs }: Props) {
                   <div className="mt-1.5 text-sm text-gray-500 flex flex-wrap items-center gap-1.5">
                     <span>{[selectedJob.location, selectedJob.type].filter(Boolean).join(', ')}</span>
                     <span>•</span>
-                    <span className="text-green-700 font-medium">{relativeDate(selectedJob.posted_at)}</span>
+                    <span className="font-medium text-emerald-900 dark:text-emerald-300">{relativeDate(selectedJob.posted_at)}</span>
                   </div>
                 </div>
               </div>
@@ -266,7 +266,7 @@ export default function JobBrowser({ jobs }: Props) {
             </div>
 
             <div className="mt-4 flex items-center justify-between">
-              <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] text-emerald-600 font-medium">
+              <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
                 Actively Hiring
               </span>
               <div className="flex gap-2">
