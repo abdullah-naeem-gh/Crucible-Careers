@@ -456,7 +456,14 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
         : [...current, applicantId]
     );
   };
+  const personalizeEmail = (value: string, applicant: CandidateProfile) =>
+    value.replaceAll("{{name}}", applicant.name).replaceAll("{{jobTitle}}", job?.title || "the role");
 
+  const openApplicantEmail = (applicant: CandidateProfile) => {
+    const subject = personalizeEmail(emailSubject, applicant);
+    const body = personalizeEmail(emailBody, applicant);
+    window.location.href = `mailto:${encodeURIComponent(applicant.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
   const runAutoShortlist = () => {
     if (!job) return;
 
@@ -586,7 +593,18 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
       return;
     }
 
-    setEmailDraftStatus(`Prepared email for ${recipientCount} applicant${recipientCount === 1 ? "" : "s"}. Mail service integration pending.`);
+    if (recipientCount === 1) {
+      openApplicantEmail(emailRecipients[0]);
+      setEmailDraftStatus(`Opened email draft for ${emailRecipients[0].name}.`);
+      return;
+    }
+
+    const subject = emailSubject.replaceAll("{{jobTitle}}", job?.title || "the role");
+    const body = emailBody.replaceAll("{{jobTitle}}", job?.title || "the role");
+    const bcc = emailRecipients.map((recipient) => recipient.email).join(",");
+
+    window.location.href = `mailto:?bcc=${encodeURIComponent(bcc)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setEmailDraftStatus(`Opened email draft for ${recipientCount} applicants.`);
   };
 
   // Select first applicant automatically if current selection goes out of filter
@@ -714,7 +732,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
             <button
               type="button"
               onClick={() => {
-                setShowEmailPanel(!showEmailPanel);
+                setShowEmailPanel(true);
                 setShowFilters(false);
                 setShowSort(false);
               }}
@@ -825,118 +843,6 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
             )}
 
 
-
-            {showEmailPanel && (
-              <motion.div
-                key="email-drawer"
-                initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                animate={{ height: "auto", opacity: 1, marginTop: 12 }}
-                exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3.5">
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                    <div className="lg:col-span-4">
-                      <label className="block text-[10px] uppercase tracking-wider text-white/35 mb-1.5 font-medium">Recipients</label>
-                      <div className="grid gap-2">
-                        {emailAudienceOptions.map((option) => (
-                          <button
-                            key={option.key}
-                            type="button"
-                            onClick={() => {
-                              setEmailAudience(option.key);
-                              setEmailDraftStatus(option.key === "manual" ? "Use the checkboxes on applicant cards to choose recipients." : "");
-                            }}
-                            className={`rounded-lg border px-3 py-2 text-left text-xs transition-all cursor-pointer ${
-                              emailAudience === option.key
-                                ? "border-[#FF6B00]/45 bg-[#FF6B00]/10 text-[#FF914D]"
-                                : "border-white/[0.07] bg-[#121212] text-white/55 hover:border-white/12 hover:text-white"
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="mt-3 rounded-lg border border-white/[0.06] bg-[#121212] px-3 py-2 text-xs text-white/45">
-                        {emailRecipients.length} recipient{emailRecipients.length === 1 ? "" : "s"} selected
-                      </div>
-                    </div>
-
-                    <div className="lg:col-span-8">
-                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                        <label className="text-[10px] uppercase tracking-wider text-white/35 font-medium">Templates</label>
-                        <div className="flex flex-wrap gap-2">
-                          {allEmailTemplates.map((template) => (
-                            <button
-                              key={template.id}
-                              type="button"
-                              onClick={() => applyEmailTemplate(template.id)}
-                              className={`rounded-lg border px-2.5 py-1.5 text-[11px] cursor-pointer ${
-                                selectedEmailTemplateId === template.id
-                                  ? "border-orange-500/35 bg-orange-500/10 text-[#FF914D]"
-                                  : "border-white/[0.08] bg-[#121212] text-white/55 hover:border-orange-500/35 hover:text-[#FF914D]"
-                              }`}
-                            >
-                              {template.name}{template.custom ? " *" : ""}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
-                        <input
-                          type="text"
-                          value={emailTemplateName}
-                          onChange={(event) => setEmailTemplateName(event.target.value)}
-                          placeholder="Template name"
-                          className="w-full rounded-lg border border-white/[0.08] bg-[#121212] px-3 py-2 text-xs text-white/70 outline-none placeholder:text-white/25 focus:border-orange-500/40"
-                        />
-                        <button
-                          type="button"
-                          onClick={saveEmailTemplate}
-                          className="rounded-lg border border-orange-500/25 bg-orange-500/10 px-3 py-2 text-xs font-semibold text-[#FF914D] hover:bg-orange-500/15 cursor-pointer"
-                        >
-                          {customEmailTemplates.some((template) => template.id === selectedEmailTemplateId) ? "Update template" : "Create template"}
-                        </button>
-                      </div>
-
-                      <input
-                        type="text"
-                        value={emailSubject}
-                        onChange={(event) => setEmailSubject(event.target.value)}
-                        placeholder="Email subject"
-                        className="mb-2 w-full rounded-lg border border-white/[0.08] bg-[#121212] px-3 py-2 text-xs text-white/70 outline-none placeholder:text-white/25 focus:border-orange-500/40"
-                      />
-                      <textarea
-                        value={emailBody}
-                        onChange={(event) => setEmailBody(event.target.value)}
-                        rows={7}
-                        placeholder="Write an email or load a template..."
-                        className="w-full resize-none rounded-lg border border-white/[0.08] bg-[#121212] px-3 py-2 text-xs leading-relaxed text-white/70 outline-none placeholder:text-white/25 focus:border-orange-500/40"
-                      />
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-xs text-white/35">Use {"{{name}}"} and {"{{jobTitle}}"} for candidate-specific personalization.</p>
-                        <button
-                          type="button"
-                          onClick={sendEmailDraft}
-                          className="inline-flex items-center gap-2 rounded-lg bg-[#FF6B00] px-3.5 py-2 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(255,107,0,0.18)] hover:bg-[#ff7a1a] cursor-pointer"
-                        >
-                          <IconSend size={14} />
-                          Send email
-                        </button>
-                      </div>
-                      {emailDraftStatus && (
-                        <div className="mt-2 rounded-lg border border-orange-500/20 bg-orange-500/10 px-3 py-2 text-xs text-[#FF914D]">
-                          {emailDraftStatus}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
             {showSort && (
               <motion.div
                 key="sort-drawer"
@@ -1017,17 +923,6 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                   }`}
                 >
                   <div className="flex items-start gap-4">
-                    {showEmailPanel && emailAudience === "manual" && (
-                      <label className="mt-3 flex shrink-0 items-center" onClick={(event) => event.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={manualEmailIds.includes(applicant.id)}
-                          onChange={() => toggleManualEmailRecipient(applicant.id)}
-                          className="h-4 w-4 rounded border-white/20 bg-[#121212] accent-[#FF6B00] cursor-pointer"
-                          aria-label={`Select ${applicant.name} for email`}
-                        />
-                      </label>
-                    )}
 
                     {/* Profile Photo / Avatar placeholder */}
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B00]/20 to-[#FF914D]/10 text-base font-bold text-[#FF914D] border border-white/[0.08]">
@@ -1073,6 +968,17 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                               }`}
                             >
                               <IconX size={15} stroke={2.3} />
+                            </button>
+                            <button
+                              type="button"
+                              title="Email candidate"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openApplicantEmail(applicant);
+                              }}
+                              className="grid h-7 w-7 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/45 transition-all hover:border-orange-500/40 hover:text-[#FF914D] cursor-pointer"
+                            >
+                              <IconMail size={15} stroke={2.3} />
                             </button>
                           </div>
                         </div>
@@ -1149,6 +1055,14 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                   className="text-xs font-semibold text-emerald-800 transition-colors hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-200 cursor-pointer"
                 >
                   Shortlist
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openApplicantEmail(selectedApplicant)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#FF914D] transition-colors hover:text-[#ffae73] cursor-pointer"
+                >
+                  <IconMail size={14} />
+                  Email
                 </button>
               </div>
             </div>
@@ -1245,6 +1159,180 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
         )}
       </section>
 
+      <AnimatePresence>
+        {showEmailPanel && (
+          <motion.div
+            className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowEmailPanel(false)}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Email applicants composer"
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 12 }}
+              transition={{ duration: 0.18 }}
+              onClick={(event) => event.stopPropagation()}
+              className="flex h-[min(86vh,780px)] w-full max-w-6xl flex-col overflow-hidden rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[18px_18px_44px_rgba(0,0,0,0.42),-8px_-8px_24px_rgba(255,255,255,0.025)]"
+            >
+              <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] p-5">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Email applicants</h2>
+                  <p className="mt-1 text-sm text-white/45">Compose emails for all, shortlisted, rejected, or manually selected applicants.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailPanel(false)}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/[0.08] text-white/45 hover:bg-white/[0.04] hover:text-white cursor-pointer"
+                  aria-label="Close email composer"
+                >
+                  <IconX size={18} />
+                </button>
+              </div>
+
+              <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 lg:grid-cols-12">
+                <aside className="min-h-0 border-b border-white/[0.07] p-5 lg:col-span-4 lg:border-b-0 lg:border-r">
+                  <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-white/35">Recipients</label>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-1">
+                    {emailAudienceOptions.map((option) => (
+                      <button
+                        key={option.key}
+                        type="button"
+                        onClick={() => {
+                          setEmailAudience(option.key);
+                          setEmailDraftStatus(option.key === "manual" ? "Choose individual recipients in the list below." : "");
+                        }}
+                        className={`rounded-xl border px-3 py-2.5 text-left text-xs transition-all cursor-pointer ${
+                          emailAudience === option.key
+                            ? "border-[#FF6B00]/45 bg-[#FF6B00]/10 text-[#FF914D]"
+                            : "border-white/[0.07] bg-[#121212] text-white/55 hover:border-white/12 hover:text-white"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-white/[0.06] bg-[#121212] p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-medium text-white/65">Selected</span>
+                      <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-white/45">
+                        {emailRecipients.length} recipient{emailRecipients.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <div className="mt-3 max-h-80 space-y-2 overflow-auto pr-1 custom-scrollbar">
+                      {applicants.map((applicant) => {
+                        const isManual = manualEmailIds.includes(applicant.id);
+                        const isIncluded = emailRecipients.some((recipient) => recipient.id === applicant.id);
+                        return (
+                          <label
+                            key={applicant.id}
+                            className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-xs transition-colors ${
+                              emailAudience === "manual"
+                                ? "cursor-pointer border-white/[0.07] bg-white/[0.02] text-white/65 hover:border-orange-500/35"
+                                : isIncluded
+                                ? "border-orange-500/20 bg-orange-500/10 text-white/70"
+                                : "border-white/[0.04] bg-transparent text-white/25"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              disabled={emailAudience !== "manual"}
+                              checked={emailAudience === "manual" ? isManual : isIncluded}
+                              onChange={() => toggleManualEmailRecipient(applicant.id)}
+                              className="h-4 w-4 rounded border-white/20 bg-[#121212] accent-[#FF6B00] disabled:opacity-35 cursor-pointer disabled:cursor-not-allowed"
+                              aria-label={`Select ${applicant.name} for email`}
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-medium text-white/75">{applicant.name}</span>
+                              <span className="block truncate text-white/35">{applicant.email}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </aside>
+
+                <section className="min-h-0 overflow-auto p-5 custom-scrollbar lg:col-span-8">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-white/35">Templates</label>
+                    <div className="flex flex-wrap gap-2">
+                      {allEmailTemplates.map((template) => (
+                        <button
+                          key={template.id}
+                          type="button"
+                          onClick={() => applyEmailTemplate(template.id)}
+                          className={`rounded-lg border px-2.5 py-1.5 text-[11px] cursor-pointer ${
+                            selectedEmailTemplateId === template.id
+                              ? "border-orange-500/35 bg-orange-500/10 text-[#FF914D]"
+                              : "border-white/[0.08] bg-[#121212] text-white/55 hover:border-orange-500/35 hover:text-[#FF914D]"
+                          }`}
+                        >
+                          {template.name}{template.custom ? " *" : ""}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+                    <input
+                      type="text"
+                      value={emailTemplateName}
+                      onChange={(event) => setEmailTemplateName(event.target.value)}
+                      placeholder="Template name"
+                      className="w-full rounded-xl border border-white/[0.08] bg-[#121212] px-3 py-2.5 text-sm text-white/70 outline-none placeholder:text-white/25 focus:border-orange-500/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={saveEmailTemplate}
+                      className="rounded-xl border border-orange-500/25 bg-orange-500/10 px-4 py-2.5 text-sm font-semibold text-[#FF914D] hover:bg-orange-500/15 cursor-pointer"
+                    >
+                      {customEmailTemplates.some((template) => template.id === selectedEmailTemplateId) ? "Update template" : "Create template"}
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={emailSubject}
+                    onChange={(event) => setEmailSubject(event.target.value)}
+                    placeholder="Email subject"
+                    className="mb-3 w-full rounded-xl border border-white/[0.08] bg-[#121212] px-3 py-2.5 text-sm text-white/70 outline-none placeholder:text-white/25 focus:border-orange-500/40"
+                  />
+                  <textarea
+                    value={emailBody}
+                    onChange={(event) => setEmailBody(event.target.value)}
+                    rows={15}
+                    placeholder="Write an email or load a template..."
+                    className="min-h-[22rem] w-full resize-none rounded-xl border border-white/[0.08] bg-[#121212] px-3 py-3 text-sm leading-relaxed text-white/70 outline-none placeholder:text-white/25 focus:border-orange-500/40"
+                  />
+
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] pt-4">
+                    <p className="text-xs text-white/35">Use {"{{name}}"} and {"{{jobTitle}}"} for candidate-specific personalization.</p>
+                    <button
+                      type="button"
+                      onClick={sendEmailDraft}
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#FF6B00] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(255,107,0,0.18)] hover:bg-[#ff7a1a] cursor-pointer"
+                    >
+                      <IconSend size={16} />
+                      Send email
+                    </button>
+                  </div>
+                  {emailDraftStatus && (
+                    <div className="mt-3 rounded-xl border border-orange-500/20 bg-orange-500/10 px-3 py-2.5 text-xs text-[#FF914D]">
+                      {emailDraftStatus}
+                    </div>
+                  )}
+                </section>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {showAutoShortlist && (
           <motion.div
