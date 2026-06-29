@@ -26,4 +26,6 @@ export interface CandidateProfile {
   portfolio?: string;
   screeningStatus?: ScreeningStatus;
   customAnswers?: CustomAnswer[];
+  rating?: number;
+  note?: string;
 }

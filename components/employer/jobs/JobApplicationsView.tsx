@@ -59,6 +59,8 @@ interface CandidateProfile {
     value: any;
     semanticType: string;
   }>;
+  rating?: number;
+  note?: string;
 }
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
@@ -275,6 +277,10 @@ const getSortLabel = (val: string) => {
       return "Experience: Most-Least";
     case "exp-asc":
       return "Experience: Least-Most";
+    case "rating-desc":
+      return "Rating: High-Low";
+    case "rating-asc":
+      return "Rating: Low-High";
     default:
       return "ATS Match: High-Low";
   }
@@ -318,6 +324,12 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [noteText, setNoteText] = useState("");
+  const [ratingFilter, setRatingFilter] = useState("all");
+
+  useEffect(() => {
+    setNoteText(selectedApplicant?.note || "");
+  }, [selectedApplicant]);
   const [statusFilters, setStatusFilters] = useState<Record<ScreeningStatus, boolean>>({
     unscreened: false,
     rejected: false,
@@ -356,8 +368,9 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
     if (expFilter !== "all") count++;
     if (atsFilter !== "all") count++;
     if (locationFilter !== "all") count++;
+    if (ratingFilter !== "all") count++;
     return count;
-  }, [expFilter, atsFilter, locationFilter]);
+  }, [expFilter, atsFilter, locationFilter, ratingFilter]);
 
   const job = useMemo(() => jobs.find((j) => j.id === jobId) || null, [jobs, jobId]);
 
@@ -395,6 +408,24 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
   const persistApplicants = (nextApplicants: CandidateProfile[]) => {
     setApplicants(nextApplicants);
     localStorage.setItem(`recruiter_job_${jobId}_applicants`, JSON.stringify(nextApplicants));
+  };
+
+  const handleSaveRating = (applicantId: string, rating: number) => {
+    const nextApplicants = applicants.map((app) => {
+      if (app.id !== applicantId) return app;
+      return { ...app, rating };
+    });
+    persistApplicants(nextApplicants);
+    setSelectedApplicant((curr) => (curr?.id === applicantId ? { ...curr, rating } : curr));
+  };
+
+  const handleSaveNote = (applicantId: string, note: string) => {
+    const nextApplicants = applicants.map((app) => {
+      if (app.id !== applicantId) return app;
+      return { ...app, note };
+    });
+    persistApplicants(nextApplicants);
+    setSelectedApplicant((curr) => (curr?.id === applicantId ? { ...curr, note } : curr));
   };
 
   const setApplicantStatus = (applicantId: string, status: ScreeningStatus) => {
@@ -554,7 +585,19 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
         const currentStatus = a.screeningStatus || "unscreened";
         const matchesStatus = !hasStatusFilter || statusFilters[currentStatus];
 
-        return matchesQuery && matchesExp && matchesAts && matchesLocation && matchesStatus;
+        // Rating filter
+        let matchesRating = true;
+        if (ratingFilter !== "all") {
+          const rating = a.rating || 0;
+          if (ratingFilter === "unrated") {
+            matchesRating = rating === 0;
+          } else {
+            const minStars = parseInt(ratingFilter, 10);
+            matchesRating = rating >= minStars;
+          }
+        }
+
+        return matchesQuery && matchesExp && matchesAts && matchesLocation && matchesStatus && matchesRating;
       })
       .sort((a, b) => {
         const scoreA = calculateAtsScore(a.skills, job.tags);
@@ -573,11 +616,15 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
             return b.experienceYears - a.experienceYears;
           case "exp-asc":
             return a.experienceYears - b.experienceYears;
+          case "rating-desc":
+            return (b.rating || 0) - (a.rating || 0);
+          case "rating-asc":
+            return (a.rating || 0) - (b.rating || 0);
           default:
             return 0;
         }
       });
-  }, [applicants, searchQuery, statusFilters, expFilter, atsFilter, locationFilter, sortBy, job]);
+  }, [applicants, searchQuery, statusFilters, expFilter, atsFilter, locationFilter, ratingFilter, sortBy, job]);
 
   const emailRecipients = useMemo(() => {
     switch (emailAudience) {
@@ -797,7 +844,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <div className="grid grid-cols-1 gap-3 rounded-xl border border-white/[0.06] bg-white/[0.015] p-3.5 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 rounded-xl border border-white/[0.06] bg-white/[0.015] p-3.5 sm:grid-cols-4">
                   {/* Experience level */}
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider text-white/35 mb-1.5 font-medium">Experience Level</label>
@@ -844,6 +891,24 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                       ))}
                     </select>
                   </div>
+
+                  {/* Rating filter */}
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider text-white/35 mb-1.5 font-medium">Consider Rating</label>
+                    <select
+                      value={ratingFilter}
+                      onChange={(e) => setRatingFilter(e.target.value)}
+                      className="w-full rounded-lg border border-white/[0.08] bg-[#121212] px-2.5 py-1.5 text-xs text-white/65 outline-none cursor-pointer focus:border-orange-500/40"
+                    >
+                      <option value="all">All Ratings</option>
+                      <option value="5">5 Stars only</option>
+                      <option value="4">4+ Stars</option>
+                      <option value="3">3+ Stars</option>
+                      <option value="2">2+ Stars</option>
+                      <option value="1">1+ Stars</option>
+                      <option value="unrated">Unrated</option>
+                    </select>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -872,6 +937,8 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                       <option value="date-asc">Applied: Oldest First</option>
                       <option value="exp-desc">Experience: Most-Least</option>
                       <option value="exp-asc">Experience: Least-Most</option>
+                      <option value="rating-desc">Rating: High-Low</option>
+                      <option value="rating-asc">Rating: Low-High</option>
                     </select>
                   </div>
                 </div>
@@ -979,6 +1046,20 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                         </div>
                       </div>
                       <p className="mt-1 truncate text-sm text-white/60">{applicant.title}</p>
+
+                      {applicant.rating && applicant.rating > 0 ? (
+                        <div className="flex items-center gap-0.5 text-amber-400 mt-1">
+                          {Array.from({ length: applicant.rating }).map((_, i) => (
+                            <span key={i} className="text-xs">★</span>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {applicant.note ? (
+                        <p className="mt-1 text-[11px] text-[#FF914D] italic truncate">
+                          Note: {applicant.note}
+                        </p>
+                      ) : null}
                       
                       <div className="mt-3.5 flex flex-wrap gap-x-3.5 gap-y-1.5 text-xs text-white/45">
                         <span className="flex items-center gap-1">
@@ -1070,6 +1151,52 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
               <QuickFactDetail label="Experience" value={`${selectedApplicant.experienceYears} Years`} icon="experience" />
               <div className="sm:col-span-2">
                 <QuickFactDetail label="Education" value={selectedApplicant.education} icon="education" />
+              </div>
+            </div>
+
+            {/* Rating and custom notes panel */}
+            <div className="rounded-2xl border border-white/[0.065] bg-[#141414] p-4 shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2)] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Recruiter Evaluation</span>
+                <div className="flex items-center gap-0.5 text-amber-400">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => handleSaveRating(selectedApplicant.id, star)}
+                      className="text-lg hover:scale-110 transition-transform cursor-pointer"
+                    >
+                      {star <= (selectedApplicant.rating || 0) ? "★" : "☆"}
+                    </button>
+                  ))}
+                  {(selectedApplicant.rating || 0) > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleSaveRating(selectedApplicant.id, 0)}
+                      className="text-[10px] text-white/35 hover:text-white ml-2 underline cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  maxLength={100}
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  onBlur={() => handleSaveNote(selectedApplicant.id, noteText)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSaveNote(selectedApplicant.id, noteText);
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  placeholder="Add a quick note about this candidate (max 100 chars)..."
+                  className="w-full rounded-xl border border-white/[0.08] bg-[#121212] px-3 py-2 text-xs text-white outline-none placeholder:text-white/20 focus:border-orange-500/45 focus:ring-2 focus:ring-orange-500/10"
+                />
               </div>
             </div>
 
