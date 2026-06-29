@@ -969,17 +969,6 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                             >
                               <IconX size={15} stroke={2.3} />
                             </button>
-                            <button
-                              type="button"
-                              title="Email candidate"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openApplicantEmail(applicant);
-                              }}
-                              className="grid h-7 w-7 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/45 transition-all hover:border-orange-500/40 hover:text-[#FF914D] cursor-pointer"
-                            >
-                              <IconMail size={15} stroke={2.3} />
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -1549,3 +1538,4 @@ function QuickFactDetail({ label, value, icon }: { label: string; value: string;
     </div>
   );
 }
+
