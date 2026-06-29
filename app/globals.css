@@ -327,8 +327,24 @@ html, body {
   border-color: rgba(229, 231, 235, 0.95) !important;
 }
 
+.dashboard-theme-light [class*="border-gray-100"] {
+  border-color: rgba(226, 232, 240, 0.95) !important;
+}
+
+.dashboard-theme-light [class*="border-gray-200"] {
+  border-color: rgba(203, 213, 225, 0.98) !important;
+}
+
 .dashboard-theme-light [class*="divide-white"] > :not(:last-child) {
   border-color: rgba(229, 231, 235, 0.9) !important;
+}
+
+.dashboard-theme-light [class*="divide-gray-100"] > :not(:last-child) {
+  border-color: rgba(226, 232, 240, 0.9) !important;
+}
+
+.dashboard-theme-light [class*="divide-gray-200"] > :not(:last-child) {
+  border-color: rgba(203, 213, 225, 0.9) !important;
 }
 
 .dashboard-theme-light :not([class*="from-[#FF6B00]"]):not([class*="bg-gradient-to-r"])[class*="text-white"] {

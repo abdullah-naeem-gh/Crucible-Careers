@@ -269,6 +269,44 @@ export default function ApplyFormPage() {
       const updatedApplicants = [newCandidate, ...currentApplicants]
       localStorage.setItem(storageKey, JSON.stringify(updatedApplicants))
 
+      // 5b. Save application details to talent side
+      const talentApp = {
+        id: newCandidate.id,
+        jobId: slug,
+        jobTitle: jobInfo.title,
+        company: jobInfo.company,
+        appliedAt: new Date().toISOString().split('T')[0],
+        status: 'Applied',
+        matchScore,
+        lastUpdated: 'Just now',
+        averageApplicantScore: 70,
+        totalApplicants: updatedApplicants.length,
+        rank: matchScore >= 85 ? 'Top 10%' : matchScore >= 70 ? 'Top 25%' : 'Top 50%',
+        timeline: [
+          { step: 'Application Submitted', date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), completed: true, current: true },
+          { step: 'Under Review', date: 'Pending', completed: false, current: false },
+          { step: 'Initial Interview', date: 'Pending', completed: false, current: false },
+          { step: 'Technical Assessment', date: 'Pending', completed: false, current: false },
+          { step: 'Final Offer', date: 'Pending', completed: false, current: false },
+        ],
+        insights: {
+          strengths: skills.length > 0 ? skills.slice(0, 3).map(s => `${s} matching requirement`) : ['Applied with profile credentials'],
+          gaps: ['No direct certifications uploaded']
+        },
+        customAnswers
+      }
+
+      try {
+        const rawTalentApps = localStorage.getItem('talent_applications')
+        let talentApps = []
+        if (rawTalentApps) {
+          talentApps = JSON.parse(rawTalentApps)
+        }
+        localStorage.setItem('talent_applications', JSON.stringify([talentApp, ...talentApps]))
+      } catch (e) {
+        console.error('Failed to save to talent applications', e)
+      }
+
       // 6. Update the job's application count in `recruiter_jobs`
       const rawJobs = localStorage.getItem('recruiter_jobs')
       if (rawJobs) {

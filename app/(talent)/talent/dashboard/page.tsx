@@ -46,6 +46,9 @@ function TalentDashboardContent() {
   ) ? (requestedTab as TalentTab) : 'jobs'
 
   const [activeTab, setActiveTab] = useState<TalentTab>(initialTab)
+  const [jobs, setJobs] = useState<any[]>(JOBS)
+  const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
+  const [savedCount, setSavedCount] = useState(DEMO_SAVED_JOBS.length)
 
   useEffect(() => {
     if (requestedTab) {
@@ -64,6 +67,52 @@ function TalentDashboardContent() {
       setActiveTab('jobs')
     }
   }, [requestedTab])
+
+  useEffect(() => {
+    // Load recruiter jobs
+    try {
+      const savedRecruiterJobs = localStorage.getItem('recruiter_jobs')
+      const recruiterJobs = savedRecruiterJobs ? JSON.parse(savedRecruiterJobs) : []
+      const activeRecruiterJobs = recruiterJobs.filter((j: any) => j.status === 'Active')
+      
+      const mappedRecruiter = activeRecruiterJobs.map((job: any) => ({
+        _id: job.id,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        type: job.type ? job.type.toLowerCase() : 'full-time',
+        salary: job.salary || null,
+        url: `/apply/${job.id}`,
+        source: 'Crucible',
+        description: job.description,
+        tags: job.tags || [],
+        posted_at: job.postedAt === 'Just now' ? new Date().toISOString() : job.postedAt || new Date().toISOString(),
+        isRecruiterJob: true
+      }))
+      
+      setJobs([...mappedRecruiter, ...JOBS])
+    } catch (e) {
+      console.error('Failed to load recruiter jobs', e)
+    }
+
+    // Load applications count
+    try {
+      const savedApps = localStorage.getItem('talent_applications')
+      const talentApps = savedApps ? JSON.parse(savedApps) : []
+      setAppCount(DEMO_APPLICATIONS.length + talentApps.length)
+    } catch (e) {
+      console.error('Failed to load talent applications count', e)
+    }
+
+    // Load saved count
+    try {
+      const savedBookmarked = localStorage.getItem('talent_saved_jobs')
+      const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
+      setSavedCount(DEMO_SAVED_JOBS.length + bookmarked.length)
+    } catch (e) {
+      console.error('Failed to load saved jobs count', e)
+    }
+  }, [])
 
   const changeTab = (tab: string) => {
     const validTab = tab as TalentTab
@@ -84,7 +133,7 @@ function TalentDashboardContent() {
             backgroundImage: 'linear-gradient(to right, #111 1px, transparent 1px), linear-gradient(to bottom, #111 1px, transparent 1px)',
             backgroundSize: '40px 40px',
           }}
-        />
+          />
       </div>
 
       <section className="relative z-10 min-h-screen px-2 py-5 sm:px-4 lg:px-4 lg:h-screen lg:py-0">
@@ -93,16 +142,16 @@ function TalentDashboardContent() {
             <TalentSidebar 
               activeTab={activeTab}
               onTabChange={changeTab}
-              jobCount={JOBS.length}
-              applicationCount={DEMO_APPLICATIONS.length}
-              savedCount={DEMO_SAVED_JOBS.length}
+              jobCount={jobs.length}
+              applicationCount={appCount}
+              savedCount={savedCount}
             />
           </div>
           <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
             <AnimatePresence initial={false} mode="wait">
               {activeTab === 'jobs' && (
                 <ViewMotion key="jobs">
-                  <JobBrowser jobs={JOBS} />
+                  <JobBrowser jobs={jobs} />
                 </ViewMotion>
               )}
               {activeTab === 'companies' && (

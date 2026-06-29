@@ -1,15 +1,19 @@
 'use client'
 
+import { use, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { JOBS } from '@/lib/talent/data/jobs'
+import { DEMO_APPLICATIONS } from '@/components/talent/dashboard/ApplicationsTab'
+import { DEMO_SAVED_JOBS } from '@/components/talent/dashboard/SavedTab'
 
 const DEMO_APP_DETAIL = {
   id: '1',
   jobTitle: 'Senior Frontend Engineer',
   company: 'Salik Labs',
-  status: 'Under Review',
+  status: 'Under Review' as const,
   appliedAt: '2024-01-15',
   matchScore: 86,
   averageApplicantScore: 72,
@@ -28,9 +32,151 @@ const DEMO_APP_DETAIL = {
   }
 }
 
+const mapStatus = (recruiterStatus: string): 'Applied' | 'Under Review' | 'Interview' | 'Offer' | 'Rejected' => {
+  if (recruiterStatus === 'shortlisted') return 'Under Review';
+  if (recruiterStatus === 'interviewing') return 'Interview';
+  if (recruiterStatus === 'offered') return 'Offer';
+  if (recruiterStatus === 'rejected') return 'Rejected';
+  return 'Applied';
+}
 
+export default function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
+  const appId = resolvedParams?.id || '1'
 
-export default function ApplicationDetailPage() {
+  const [appDetail, setAppDetail] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [jobCount, setJobCount] = useState(JOBS.length)
+  const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
+  const [savedCount, setSavedCount] = useState(DEMO_SAVED_JOBS.length)
+
+  useEffect(() => {
+    try {
+      const rawTalentApps = localStorage.getItem('talent_applications')
+      let foundApp = null
+      
+      if (rawTalentApps) {
+        const parsedTalentApps = JSON.parse(rawTalentApps) as any[]
+        const app = parsedTalentApps.find(a => a.id === appId)
+        if (app) {
+          let currentStatus = app.status
+          let timeline = [...app.timeline]
+
+          // Cross-reference recruiter dashboard
+          const recruiterApplicantsKey = `recruiter_job_${app.jobId}_applicants`
+          const rawRecruiterApplicants = localStorage.getItem(recruiterApplicantsKey)
+          if (rawRecruiterApplicants) {
+            const recruiterApplicants = JSON.parse(rawRecruiterApplicants) as any[]
+            const matchingRecruiterApp = recruiterApplicants.find(a => a.id === app.id)
+            if (matchingRecruiterApp) {
+              const mapped = mapStatus(matchingRecruiterApp.screeningStatus)
+              currentStatus = mapped
+              
+              timeline = [
+                { step: 'Application Submitted', date: new Date(app.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), completed: true, current: mapped === 'Applied' },
+                { step: 'Under Review', date: mapped !== 'Applied' ? 'Completed' : 'Pending', completed: mapped !== 'Applied', current: mapped === 'Under Review' },
+                { step: 'Initial Interview', date: (mapped === 'Interview' || mapped === 'Offer') ? 'Scheduled' : 'Pending', completed: mapped === 'Interview' || mapped === 'Offer', current: mapped === 'Interview' },
+                { step: 'Technical Assessment', date: mapped === 'Offer' ? 'Passed' : 'Pending', completed: mapped === 'Offer', current: false },
+                { 
+                  step: mapped === 'Rejected' ? 'Application Rejected' : 'Final Offer', 
+                  date: mapped === 'Offer' ? 'Sent' : mapped === 'Rejected' ? 'Processed' : 'Pending', 
+                  completed: mapped === 'Offer' || mapped === 'Rejected', 
+                  current: mapped === 'Offer' || mapped === 'Rejected' 
+                },
+              ]
+            }
+          }
+
+          foundApp = {
+            id: app.id,
+            jobTitle: app.jobTitle,
+            company: app.company,
+            status: currentStatus,
+            appliedAt: app.appliedAt,
+            matchScore: app.matchScore,
+            averageApplicantScore: app.averageApplicantScore || 70,
+            totalApplicants: app.totalApplicants || 1,
+            rank: app.rank || 'Top 50%',
+            timeline,
+            insights: app.insights || { strengths: [], gaps: [] },
+            customAnswers: app.customAnswers || []
+          }
+        }
+      }
+
+      if (!foundApp) {
+        // Fall back to demo
+        if (appId === '1') foundApp = DEMO_APP_DETAIL
+        else if (appId === '2') {
+          foundApp = {
+            id: '2',
+            jobTitle: 'Machine Learning Engineer',
+            company: 'Vyro',
+            status: 'Interview' as const,
+            appliedAt: '2024-01-10',
+            matchScore: 73,
+            averageApplicantScore: 68,
+            totalApplicants: 98,
+            rank: 'Top 25%',
+            timeline: [
+              { step: 'Application Submitted', date: 'Jan 10, 2024', completed: true, current: false },
+              { step: 'Under Review', date: 'Jan 12, 2024', completed: true, current: false },
+              { step: 'Initial Interview', date: 'Jan 15, 2024', completed: true, current: true },
+              { step: 'Technical Assessment', date: 'Pending', completed: false, current: false },
+              { step: 'Final Offer', date: 'Pending', completed: false, current: false },
+            ],
+            insights: {
+              strengths: ['PyTorch proficiency', 'Experience with large language models', 'Strong mathematical background'],
+              gaps: ['No public MLOps project portfolio', 'Limited experience with cloud deployment pipelines']
+            }
+          }
+        } else {
+          foundApp = DEMO_APP_DETAIL
+        }
+      }
+
+      setAppDetail(foundApp)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+
+    // Load counts for sidebar
+    try {
+      const savedRecruiterJobs = localStorage.getItem('recruiter_jobs')
+      const recruiterJobs = savedRecruiterJobs ? JSON.parse(savedRecruiterJobs) : []
+      const activeRecruiterJobs = recruiterJobs.filter((j: any) => j.status === 'Active')
+      setJobCount(JOBS.length + activeRecruiterJobs.length)
+    } catch (e) {
+      console.error(e)
+    }
+
+    try {
+      const savedApps = localStorage.getItem('talent_applications')
+      const talentApps = savedApps ? JSON.parse(savedApps) : []
+      setAppCount(DEMO_APPLICATIONS.length + talentApps.length)
+    } catch (e) {
+      console.error(e)
+    }
+
+    try {
+      const savedBookmarked = localStorage.getItem('talent_saved_jobs')
+      const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
+      setSavedCount(DEMO_SAVED_JOBS.length + bookmarked.length)
+    } catch (e) {
+      console.error(e)
+    }
+  }, [appId])
+
+  if (loading || !appDetail) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-[#101010] text-white/45">
+        Loading...
+      </div>
+    )
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-orange-50 via-white to-gray-50 text-gray-900">
       <div className="pointer-events-none absolute inset-0 z-0">
@@ -46,7 +192,7 @@ export default function ApplicationDetailPage() {
       <section className="relative z-10 min-h-screen px-2 py-5 sm:px-4 lg:px-4 lg:h-screen lg:py-0">
         <div className="mx-auto grid min-h-full max-w-[1720px] grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-7">
           <div className="lg:col-span-3 lg:self-center">
-            <TalentSidebar applicationCount={0} />
+            <TalentSidebar jobCount={jobCount} applicationCount={appCount} savedCount={savedCount} />
           </div>
 
           <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
@@ -60,10 +206,10 @@ export default function ApplicationDetailPage() {
                   </Link>
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{DEMO_APP_DETAIL.company}</p>
-                      <h1 className="mt-1 text-2xl font-semibold leading-tight">{DEMO_APP_DETAIL.jobTitle}</h1>
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{appDetail.company}</p>
+                      <h1 className="mt-1 text-2xl font-semibold leading-tight">{appDetail.jobTitle}</h1>
                     </div>
-                    <StatusBadge status={DEMO_APP_DETAIL.status} />
+                    <StatusBadge status={appDetail.status} />
                   </div>
                 </div>
 
@@ -74,35 +220,35 @@ export default function ApplicationDetailPage() {
                     <div className="grid grid-cols-3 gap-2 text-center mb-4">
                       <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-3">
                         <div className="text-[10px] text-gray-500">Your Match</div>
-                        <div className="text-base font-bold text-[#FF6B00]">{DEMO_APP_DETAIL.matchScore}%</div>
+                        <div className="text-base font-bold text-[#FF6B00]">{appDetail.matchScore}%</div>
                       </div>
                       <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-3">
                         <div className="text-[10px] text-gray-500">Avg Match</div>
-                        <div className="text-base font-bold text-gray-600">{DEMO_APP_DETAIL.averageApplicantScore}%</div>
+                        <div className="text-base font-bold text-gray-600">{appDetail.averageApplicantScore}%</div>
                       </div>
                       <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-3">
                         <div className="text-[10px] text-gray-500">Rank</div>
-                        <div className="text-base font-bold text-green-600">{DEMO_APP_DETAIL.rank}</div>
+                        <div className="text-base font-bold text-green-600">{appDetail.rank}</div>
                       </div>
                     </div>
                     <div className="relative pt-4 pb-2">
                       <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden flex relative">
                         <div 
                           className="h-full bg-gray-300 rounded-full"
-                          style={{ width: `${DEMO_APP_DETAIL.averageApplicantScore}%` }}
+                          style={{ width: `${appDetail.averageApplicantScore}%` }}
                         />
                         <div 
                           className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] rounded-full"
-                          style={{ width: `${DEMO_APP_DETAIL.matchScore}%`, opacity: 0.85 }}
+                          style={{ width: `${appDetail.matchScore}%`, opacity: 0.85 }}
                         />
                       </div>
                       <div className="flex justify-between items-center text-[10px] text-gray-400 mt-2">
-                        <span>Average: {DEMO_APP_DETAIL.averageApplicantScore}%</span>
-                        <span className="text-[#FF6B00] font-semibold">You: {DEMO_APP_DETAIL.matchScore}%</span>
+                        <span>Average: {appDetail.averageApplicantScore}%</span>
+                        <span className="text-[#FF6B00] font-semibold">You: {appDetail.matchScore}%</span>
                       </div>
                     </div>
                     <p className="text-xs text-gray-500 text-center mt-3">
-                      You are in the <strong className="text-gray-800">{DEMO_APP_DETAIL.rank}</strong> out of {DEMO_APP_DETAIL.totalApplicants} total applicants.
+                      You are in the <strong className="text-gray-800">{appDetail.rank}</strong> out of {appDetail.totalApplicants} total applicants.
                     </p>
                   </div>
 
@@ -115,7 +261,7 @@ export default function ApplicationDetailPage() {
                           <span className="w-1.5 h-1.5 bg-green-500 rounded-full" /> Profile Strengths
                         </h4>
                         <ul className="space-y-1.5 text-xs text-green-700">
-                          {DEMO_APP_DETAIL.insights.strengths.map((s, i) => (
+                          {appDetail.insights.strengths.map((s: string, i: number) => (
                             <li key={i} className="flex items-start gap-1">
                               <span>•</span> <span>{s}</span>
                             </li>
@@ -127,7 +273,7 @@ export default function ApplicationDetailPage() {
                           <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" /> Identified Gaps
                         </h4>
                         <ul className="space-y-1.5 text-xs text-orange-700">
-                          {DEMO_APP_DETAIL.insights.gaps.map((g, i) => (
+                          {appDetail.insights.gaps.map((g: string, i: number) => (
                             <li key={i} className="flex items-start gap-1">
                               <span>•</span> <span>{g}</span>
                             </li>
@@ -136,6 +282,28 @@ export default function ApplicationDetailPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Submitted Answers Recap */}
+                  {appDetail.customAnswers && appDetail.customAnswers.length > 0 && (
+                    <div className="border-t border-gray-100 pt-5">
+                      <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Submitted Responses</h3>
+                      <div className="space-y-3.5 bg-gray-50/50 border border-gray-100 rounded-xl p-4">
+                        {appDetail.customAnswers.map((ans: any, idx: number) => (
+                          <div key={idx} className="text-xs">
+                            <div className="text-gray-500 font-medium mb-1">{ans.label}</div>
+                            <div className="text-gray-900 font-semibold leading-relaxed">
+                              {Array.isArray(ans.value) 
+                                ? ans.value.join(', ') 
+                                : typeof ans.value === 'boolean' 
+                                  ? (ans.value ? 'Yes' : 'No') 
+                                  : String(ans.value || '—')
+                              }
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
 
@@ -147,7 +315,7 @@ export default function ApplicationDetailPage() {
                 </div>
                 
                 <div className="relative border-l border-gray-200 ml-2 pl-4 space-y-6">
-                  {DEMO_APP_DETAIL.timeline.map((item, idx) => (
+                  {appDetail.timeline.map((item: any, idx: number) => (
                     <div key={idx} className="relative">
                       <span className={`absolute -left-[21px] top-1 rounded-full w-2.5 h-2.5 border-2 border-white flex items-center justify-center ${
                         item.completed 

@@ -44,31 +44,31 @@ export default function DashboardThemeProvider({
   defaultTheme,
   storageKey,
 }: DashboardThemeProviderProps) {
-  const [theme, setTheme] = useState<DashboardTheme>(() => {
-    if (typeof window === "undefined") return defaultTheme;
+  const [theme, setTheme] = useState<DashboardTheme>(defaultTheme);
+  const [mounted, setMounted] = useState(false);
 
+  // Load saved theme from localStorage after mounting to avoid SSR hydration mismatch
+  useEffect(() => {
     try {
       const savedTheme = window.localStorage.getItem(storageKey);
-      return savedTheme === "light" || savedTheme === "dark" ? savedTheme : defaultTheme;
+      if (savedTheme === "light" || savedTheme === "dark") {
+        setTheme(savedTheme);
+      }
     } catch {
-      return defaultTheme;
+      /* Ignore storage failures */
     }
-  });
-  const [hydrated, setHydrated] = useState(false);
+    setMounted(true);
+  }, [storageKey]);
 
   useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
+    if (!mounted) return;
 
     try {
       window.localStorage.setItem(storageKey, theme);
     } catch {
       /* Ignore storage failures; the in-memory theme still works. */
     }
-  }, [hydrated, storageKey, theme]);
+  }, [mounted, storageKey, theme]);
 
   // Synchronize theme with document.documentElement for full scalability (portals, modals, etc.)
   useEffect(() => {

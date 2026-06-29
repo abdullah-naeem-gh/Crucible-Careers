@@ -94,8 +94,8 @@ export default function SavedTab() {
   return (
     <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
       {/* Left Column: Saved Jobs list (col-span-5) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
-        <div className="border-b border-gray-100 px-5 py-5 flex items-end justify-between">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
+        <div className="border-b border-gray-200 px-5 py-5 flex items-end justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">Bookmarks</p>
             <h1 className="mt-1 text-2xl font-semibold">Saved Jobs</h1>
@@ -107,7 +107,7 @@ export default function SavedTab() {
         </div>
 
         {/* Filters */}
-        <div className="border-b border-gray-100/50 bg-gray-50/50 p-4 grid grid-cols-2 gap-3">
+        <div className="border-b border-gray-200/50 bg-gray-50/50 p-4 grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[10px] uppercase tracking-wider font-semibold text-gray-500 mb-1.5">Company</label>
             <select
@@ -144,7 +144,7 @@ export default function SavedTab() {
               className={`w-full text-left p-4 rounded-xl border transition-all ${
                 selectedJob?.id === job.id
                   ? 'border-[#FF6B00]/60 ring-2 ring-[#FF6B00]/20 bg-white shadow-md'
-                  : 'border-gray-100 bg-white/50 hover:shadow-sm hover:bg-white'
+                  : 'border-gray-200 bg-white/50 hover:shadow-sm hover:bg-white hover:border-gray-300'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -168,7 +168,7 @@ export default function SavedTab() {
       </section>
 
       {/* Right Column: Job details (col-span-4) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
         {!selectedJob ? (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">
             Select a job to view details
@@ -205,9 +205,9 @@ export default function SavedTab() {
             </div>
 
             {/* Match Metric */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t border-gray-200 pt-5">
               <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Crucible AI Alignment</h3>
-              <div className="flex items-center gap-4 bg-gray-50/50 border border-gray-100 rounded-xl p-3.5">
+              <div className="flex items-center gap-4 bg-gray-50/50 border border-gray-200 rounded-xl p-3.5">
                 <div className="text-2xl font-bold text-[#FF6B00]">{selectedJob.matchScore}%</div>
                 <div className="flex-1">
                   <div className="h-2.5 bg-gray-200/70 rounded-full overflow-hidden">
@@ -222,13 +222,13 @@ export default function SavedTab() {
             </div>
 
             {/* Description */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t border-gray-200 pt-5">
               <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Job Description</h3>
               <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{selectedJob.description}</p>
             </div>
 
             {/* Skills & Technologies */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t border-gray-200 pt-5">
               <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Skills & Technologies</h3>
               <div className="flex flex-wrap gap-1.5">
                 {selectedJob.tags.map(tag => (
@@ -239,7 +239,7 @@ export default function SavedTab() {
               </div>
             </div>
 
-            <div className="text-[10px] text-gray-400 text-center border-t border-gray-100 pt-4">
+            <div className="text-[10px] text-gray-400 text-center border-t border-gray-200 pt-4">
               Job posted {selectedJob.postedAt} • Bookmarked on {new Date(selectedJob.savedAt).toLocaleDateString()}
             </div>
           </motion.div>

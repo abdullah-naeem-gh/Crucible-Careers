@@ -96,8 +96,8 @@ export default function ProfileTab() {
   return (
     <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
       {/* Left Column: Personal details & skills (col-span-5) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
-        <div className="border-b border-gray-100 px-5 py-5 flex items-center justify-between">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
+        <div className="border-b border-gray-200 px-5 py-5 flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">Profile</p>
             <h1 className="mt-1 text-2xl font-semibold">Personal Details</h1>
@@ -115,7 +115,7 @@ export default function ProfileTab() {
 
         <div className="flex-1 overflow-auto p-5 space-y-6">
           {/* Bio Card in Left Column */}
-          <div className="text-center pb-6 border-b border-gray-100">
+          <div className="text-center pb-6 border-b border-gray-200">
             <div className="w-20 h-20 rounded-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] mx-auto mb-3 flex items-center justify-center shadow-md">
               <span className="text-xl font-bold text-white">{profile.name.split(' ').map(n => n[0]).join('')}</span>
             </div>
@@ -203,7 +203,7 @@ export default function ProfileTab() {
           </div>
 
           {/* Skills Section */}
-          <div className="border-t border-gray-100 pt-5">
+          <div className="border-t border-gray-200 pt-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Skills & Core Competencies</h3>
               {isEditing && (
@@ -243,7 +243,7 @@ export default function ProfileTab() {
           </div>
 
           {/* Social Links */}
-          <div className="border-t border-gray-100 pt-5">
+          <div className="border-t border-gray-200 pt-5">
             <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Social Links</h3>
             <div className="grid grid-cols-2 gap-2 text-xs">
               {profile.linkedin && (
@@ -265,7 +265,7 @@ export default function ProfileTab() {
           </div>
 
           {/* Profile Completion */}
-          <div className="border-t border-gray-100 pt-5">
+          <div className="border-t border-gray-200 pt-5">
             <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Profile Completion</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-600">
@@ -288,7 +288,7 @@ export default function ProfileTab() {
       </section>
 
       {/* Right Column: Experience, Bio, Projects, Badges (col-span-4) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
         <div className="mb-5">
           <p className="text-xs uppercase tracking-[0.18em] text-gray-400">Professional</p>
           <h2 className="mt-1 text-xl font-semibold">Experience & Projects</h2>
@@ -312,7 +312,7 @@ export default function ProfileTab() {
           </div>
 
           {/* Resume upload */}
-          <div className="border-t border-gray-100 pt-5">
+          <div className="border-t border-gray-200 pt-5">
             <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Resume File</h3>
             {isEditing ? (
               <div className="rounded-xl border border-dashed border-gray-300 p-4 bg-gray-50/50 hover:bg-gray-50 flex flex-col items-center justify-center text-center cursor-pointer">
@@ -332,7 +332,7 @@ export default function ProfileTab() {
           </div>
 
           {/* Experience List */}
-          <div className="border-t border-gray-100 pt-5">
+          <div className="border-t border-gray-200 pt-5">
             <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Work Experience</h3>
             <div className="space-y-4">
               {profile.experienceList.map(exp => (
@@ -349,7 +349,7 @@ export default function ProfileTab() {
           </div>
 
           {/* Projects List */}
-          <div className="border-t border-gray-100 pt-5">
+          <div className="border-t border-gray-200 pt-5">
             <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Recent Projects</h3>
             <div className="grid grid-cols-1 gap-2.5">
               {profile.projectsList.map(proj => (
@@ -367,7 +367,7 @@ export default function ProfileTab() {
           </div>
 
           {/* Earned Badges */}
-          <div className="border-t border-gray-100 pt-5">
+          <div className="border-t border-gray-200 pt-5">
             <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Earned Badges</h3>
             <div className="grid grid-cols-2 gap-2">
               {profile.badges.map(badge => (

@@ -110,8 +110,8 @@ export default function SettingsTab() {
   return (
     <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
       {/* Left Column: Settings Tabs (col-span-4) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-4">
-        <div className="border-b border-gray-100 px-5 py-5">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-4">
+        <div className="border-b border-gray-200 px-5 py-5">
           <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">Settings</p>
           <h1 className="mt-1 text-2xl font-semibold">Account Preferences</h1>
         </div>
@@ -142,8 +142,8 @@ export default function SettingsTab() {
       </section>
 
       {/* Right Column: Settings Details Form (col-span-5) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
-        <div className="border-b border-gray-100 px-5 py-5 flex items-center justify-between">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
+        <div className="border-b border-gray-200 px-5 py-5 flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-gray-450">Preferences</p>
             <h2 className="mt-1 text-xl font-semibold leading-tight">{getTabLabel(activeSubTab)}</h2>
@@ -160,7 +160,7 @@ export default function SettingsTab() {
         <div className="flex-1 overflow-auto p-5">
           {activeSubTab === 'notifications' && (
             <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-              <div className="flex items-center justify-between p-3.5 border border-gray-100 bg-white/40 rounded-xl">
+              <div className="flex items-center justify-between p-3.5 border border-gray-200 bg-white/40 rounded-xl">
                 <div>
                   <h3 className="text-xs font-semibold text-gray-900">Email Notifications</h3>
                   <p className="text-[10px] text-gray-500">Receive notifications via email</p>
@@ -176,7 +176,7 @@ export default function SettingsTab() {
                 </label>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 border border-gray-100 bg-white/40 rounded-xl">
+              <div className="flex items-center justify-between p-3.5 border border-gray-200 bg-white/40 rounded-xl">
                 <div>
                   <h3 className="text-xs font-semibold text-gray-900">Push Notifications</h3>
                   <p className="text-[10px] text-gray-500">Receive notifications in your browser</p>
@@ -192,7 +192,7 @@ export default function SettingsTab() {
                 </label>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 border border-gray-100 bg-white/40 rounded-xl">
+              <div className="flex items-center justify-between p-3.5 border border-gray-200 bg-white/40 rounded-xl">
                 <div>
                   <h3 className="text-xs font-semibold text-gray-900">Job Matches</h3>
                   <p className="text-[10px] text-gray-500">Get notified about new job matches</p>
@@ -208,7 +208,7 @@ export default function SettingsTab() {
                 </label>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 border border-gray-100 bg-white/40 rounded-xl">
+              <div className="flex items-center justify-between p-3.5 border border-gray-200 bg-white/40 rounded-xl">
                 <div>
                   <h3 className="text-xs font-semibold text-gray-900">Application Updates</h3>
                   <p className="text-[10px] text-gray-500">Get notified about status changes</p>
@@ -241,7 +241,7 @@ export default function SettingsTab() {
                 </select>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 border border-gray-100 bg-white/40 rounded-xl">
+              <div className="flex items-center justify-between p-3.5 border border-gray-200 bg-white/40 rounded-xl">
                 <div>
                   <h3 className="text-xs font-semibold text-gray-900">Show Email Address</h3>
                   <p className="text-[10px] text-gray-500">Allow employers to see your email</p>
@@ -257,7 +257,7 @@ export default function SettingsTab() {
                 </label>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 border border-gray-100 bg-white/40 rounded-xl">
+              <div className="flex items-center justify-between p-3.5 border border-gray-200 bg-white/40 rounded-xl">
                 <div>
                   <h3 className="text-xs font-semibold text-gray-900">Show Location</h3>
                   <p className="text-[10px] text-gray-500">Display location on your profile</p>
@@ -281,7 +281,7 @@ export default function SettingsTab() {
                 <label className="block text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-1.5">Preferred Job Types</label>
                 <div className="grid grid-cols-2 gap-2">
                   {['Full-time', 'Part-time', 'Contract', 'Internship'].map(type => (
-                    <label key={type} className="flex items-center gap-2 bg-white/40 border border-gray-100 rounded-lg p-2.5 cursor-pointer">
+                    <label key={type} className="flex items-center gap-2 bg-white/40 border border-gray-200 rounded-lg p-2.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={settings.preferences.jobTypes.includes(type)}
@@ -361,7 +361,7 @@ export default function SettingsTab() {
                 />
               </div>
 
-              <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
+              <div className="pt-4 border-t border-gray-200 flex justify-between items-center">
                 <span className="text-[10px] text-gray-400">Permanently close account</span>
                 <button className="px-3.5 py-2 text-xs font-semibold text-red-600 border border-red-200 bg-white rounded-xl hover:bg-red-50 transition-colors cursor-pointer">
                   Delete Account

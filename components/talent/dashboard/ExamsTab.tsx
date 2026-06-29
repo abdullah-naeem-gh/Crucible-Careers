@@ -15,8 +15,8 @@ export default function ExamsTab() {
   return (
     <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
       {/* Left Column: Available Exams (col-span-5) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
-        <div className="border-b border-gray-100 px-5 py-5">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
+        <div className="border-b border-gray-200 px-5 py-5">
           <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">Assessments</p>
           <h1 className="mt-1 text-2xl font-semibold">Available Exams</h1>
         </div>
@@ -28,7 +28,7 @@ export default function ExamsTab() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
-              className="bg-white/50 border border-gray-100 rounded-2xl p-4 flex flex-col justify-between gap-3.5 hover:border-orange-200 transition-all hover:bg-white"
+              className="bg-white/50 border border-gray-200 rounded-2xl p-4 flex flex-col justify-between gap-3.5 hover:border-orange-200 transition-all hover:bg-white"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -52,8 +52,8 @@ export default function ExamsTab() {
       </section>
 
       {/* Right Column: Earned Badges (col-span-4) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-4">
-        <div className="border-b border-gray-100 px-5 py-5">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-4">
+        <div className="border-b border-gray-200 px-5 py-5">
           <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">Achievements</p>
           <h1 className="mt-1 text-2xl font-semibold">Earned Badges</h1>
         </div>

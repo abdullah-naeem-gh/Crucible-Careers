@@ -1,9 +1,12 @@
 'use client'
 
-import { use } from 'react'
+import { use, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
+import { JOBS } from '@/lib/talent/data/jobs'
+import { DEMO_APPLICATIONS } from '@/components/talent/dashboard/ApplicationsTab'
+import { DEMO_SAVED_JOBS } from '@/components/talent/dashboard/SavedTab'
 
 const DEMO_COMPANIES_DETAILS: Record<string, { id: string; name: string; about: string; culture: string; location: string; website: string; logo: string; color: string; openRoles: { id: string; title: string; type: string; location: string; salary: string }[] }> = {
   'salik-labs': {
@@ -92,7 +95,115 @@ const DEMO_COMPANIES_DETAILS: Record<string, { id: string; name: string; about: 
 export default function CompanyProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
   const companyId = resolvedParams?.id || 'salik-labs'
-  const company = DEMO_COMPANIES_DETAILS[companyId] || DEMO_COMPANIES_DETAILS['salik-labs']
+
+  const [company, setCompany] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [jobCount, setJobCount] = useState(JOBS.length)
+  const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
+  const [savedCount, setSavedCount] = useState(DEMO_SAVED_JOBS.length)
+
+  useEffect(() => {
+    try {
+      const savedProfile = localStorage.getItem('recruiter_profile')
+      let matchedRecruiter = false
+      
+      if (savedProfile) {
+        const profile = JSON.parse(savedProfile)
+        const recruiterCompanyId = profile.name.toLowerCase().replace(/\s+/g, '-')
+        
+        if (companyId === recruiterCompanyId || companyId === 'recruiter-company') {
+          matchedRecruiter = true
+          
+          const savedJobs = localStorage.getItem('recruiter_jobs')
+          const recruiterJobs = savedJobs ? JSON.parse(savedJobs) : []
+          const activeJobs = recruiterJobs.filter((j: any) => j.status === 'Active')
+          
+          const openRoles = activeJobs.map((j: any) => ({
+            id: j.id,
+            title: j.title,
+            type: j.type,
+            location: j.location,
+            salary: j.salary || '—'
+          }))
+
+          setCompany({
+            id: recruiterCompanyId,
+            name: profile.name,
+            tagline: profile.tagline,
+            industry: profile.industry,
+            companySize: profile.companySize,
+            founded: profile.founded,
+            website: profile.website,
+            location: profile.headquarters || 'Remote',
+            about: profile.overview || '',
+            culture: profile.culture || '',
+            benefits: profile.benefits || '',
+            techStack: profile.techStack || '',
+            linkedin: profile.linkedin,
+            twitter: profile.twitter,
+            logoDataUrl: profile.logoDataUrl,
+            logo: profile.name.charAt(0).toUpperCase(),
+            color: 'from-[#FF6B00] to-[#FF914D]',
+            openRoles
+          })
+        }
+      }
+      
+      if (!matchedRecruiter) {
+        const demoDetails = DEMO_COMPANIES_DETAILS[companyId] || DEMO_COMPANIES_DETAILS['salik-labs']
+        setCompany({
+          ...demoDetails,
+          tagline: 'Building the future of technology',
+          industry: 'Software & Technology',
+          companySize: '51–200 employees',
+          founded: '2019',
+          benefits: 'Health insurance, flexible hours, remote options',
+          techStack: 'React, TypeScript, Node.js',
+          linkedin: '',
+          twitter: '',
+          logoDataUrl: null
+        })
+      }
+    } catch (e) {
+      console.error('Failed to load company details', e)
+    } finally {
+      setLoading(false)
+    }
+
+    // Load counts for sidebar
+    try {
+      const savedRecruiterJobs = localStorage.getItem('recruiter_jobs')
+      const recruiterJobs = savedRecruiterJobs ? JSON.parse(savedRecruiterJobs) : []
+      const activeRecruiterJobs = recruiterJobs.filter((j: any) => j.status === 'Active')
+      setJobCount(JOBS.length + activeRecruiterJobs.length)
+    } catch (e) {
+      console.error(e)
+    }
+
+    try {
+      const savedApps = localStorage.getItem('talent_applications')
+      const talentApps = savedApps ? JSON.parse(savedApps) : []
+      setAppCount(DEMO_APPLICATIONS.length + talentApps.length)
+    } catch (e) {
+      console.error(e)
+    }
+
+    try {
+      const savedBookmarked = localStorage.getItem('talent_saved_jobs')
+      const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
+      setSavedCount(DEMO_SAVED_JOBS.length + bookmarked.length)
+    } catch (e) {
+      console.error(e)
+    }
+  }, [companyId])
+
+  if (loading || !company) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-[#101010] text-white/45">
+        Loading...
+      </div>
+    )
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-orange-50 via-white to-gray-50 text-gray-900">
@@ -109,7 +220,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
       <section className="relative z-10 min-h-screen px-2 py-5 sm:px-4 lg:px-4 lg:h-screen lg:py-0">
         <div className="mx-auto grid min-h-full max-w-[1720px] grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-7">
           <div className="lg:col-span-3 lg:self-center">
-            <TalentSidebar />
+            <TalentSidebar jobCount={jobCount} applicationCount={appCount} savedCount={savedCount} />
           </div>
 
           <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
@@ -122,13 +233,20 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
                     Back to Companies
                   </Link>
                   <div className="flex items-center gap-4">
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${company.color} flex items-center justify-center shadow-inner shrink-0`}>
-                      <span className="text-xl font-bold text-white">{company.logo}</span>
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${company.color} flex items-center justify-center shadow-inner shrink-0 overflow-hidden`}>
+                      {company.logoDataUrl ? (
+                        <img src={company.logoDataUrl} alt={company.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xl font-bold text-white">{company.logo}</span>
+                      )}
                     </div>
                     <div>
                       <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">Profile</p>
                       <h1 className="text-xl font-bold text-gray-900 leading-tight">{company.name}</h1>
-                      <div className="text-[10px] text-gray-500 mt-0.5">{company.location}</div>
+                      {company.tagline && (
+                        <p className="text-xs text-gray-500 font-medium mt-0.5">{company.tagline}</p>
+                      )}
+                      <div className="text-[10px] text-gray-400 mt-1">📍 {company.location}</div>
                     </div>
                   </div>
                 </div>
@@ -137,22 +255,95 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
                   {/* About */}
                   <div>
                     <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">About Us</h3>
-                    <p className="text-xs text-gray-600 leading-relaxed">{company.about}</p>
+                    <p className="text-xs text-gray-600 leading-relaxed">{company.about || 'No description provided.'}</p>
                   </div>
 
                   {/* Culture */}
-                  <div className="border-t border-gray-100 pt-5">
-                    <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Culture & Values</h3>
-                    <p className="text-xs text-gray-600 leading-relaxed">{company.culture}</p>
-                  </div>
+                  {company.culture && (
+                    <div className="border-t border-gray-100 pt-5">
+                      <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Culture & Values</h3>
+                      <p className="text-xs text-gray-600 leading-relaxed">{company.culture}</p>
+                    </div>
+                  )}
 
-                  {/* Links */}
-                  <div className="border-t border-gray-100 pt-5">
-                    <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Links</h3>
-                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-xs text-[#FF6B00] font-semibold hover:underline flex items-center gap-1">
-                      🔗 Official Website ↗
-                    </a>
-                  </div>
+                  {/* Quick Facts Grid */}
+                  {(company.industry || company.companySize || company.founded || company.website || company.linkedin || company.twitter) && (
+                    <div className="border-t border-gray-100 pt-5">
+                      <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Company Details</h3>
+                      <div className="grid grid-cols-2 gap-y-3.5 gap-x-2 text-xs">
+                        {company.industry && (
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">Industry</span>
+                            <span className="text-gray-700 font-medium">{company.industry}</span>
+                          </div>
+                        )}
+                        {company.companySize && (
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">Company Size</span>
+                            <span className="text-gray-700 font-medium">{company.companySize}</span>
+                          </div>
+                        )}
+                        {company.founded && (
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">Founded</span>
+                            <span className="text-gray-700 font-medium">Est. {company.founded}</span>
+                          </div>
+                        )}
+                        {company.website && (
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">Website</span>
+                            <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-[#FF6B00] font-semibold hover:underline truncate">
+                              {company.website.replace(/^https?:\/\//, '')} ↗
+                            </a>
+                          </div>
+                        )}
+                        {company.linkedin && (
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">LinkedIn</span>
+                            <a href={company.linkedin} target="_blank" rel="noopener noreferrer" className="text-[#FF6B00] font-semibold hover:underline truncate">
+                              View Profile ↗
+                            </a>
+                          </div>
+                        )}
+                        {company.twitter && (
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">Twitter / X</span>
+                            <a href={company.twitter} target="_blank" rel="noopener noreferrer" className="text-[#FF6B00] font-semibold hover:underline truncate">
+                              View Profile ↗
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tech Stack */}
+                  {company.techStack && (
+                    <div className="border-t border-gray-100 pt-5">
+                      <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Tech Stack</h3>
+                      <div className="flex flex-wrap gap-1.5">
+                        {company.techStack.split(',').map((tag: string) => tag.trim()).filter(Boolean).map((tag: string) => (
+                          <span key={tag} className="px-2.5 py-1 rounded-lg border border-gray-200 bg-gray-50/50 text-[11px] text-gray-600">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Perks & Benefits */}
+                  {company.benefits && (
+                    <div className="border-t border-gray-100 pt-5">
+                      <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Perks & Benefits</h3>
+                      <div className="flex flex-wrap gap-1.5">
+                        {company.benefits.split(',').map((b: string) => b.trim()).filter(Boolean).map((b: string) => (
+                          <span key={b} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-green-100 bg-green-50/50 text-[11px] text-green-700 font-medium">
+                            ✓ {b}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
 
@@ -169,7 +360,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
                 </div>
 
                 <div className="flex-1 overflow-auto p-5 space-y-3.5">
-                  {company.openRoles.map((role, idx) => (
+                  {company.openRoles.map((role: any, idx: number) => (
                     <motion.div 
                       key={role.id}
                       initial={{ opacity: 0, y: 12 }}

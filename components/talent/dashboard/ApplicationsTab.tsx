@@ -1,5 +1,4 @@
-"use client";
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -26,6 +25,7 @@ interface ApplicationDetail {
   rank: string
   timeline: { step: string; date: string; completed: boolean; current: boolean }[]
   insights: { strengths: string[]; gaps: string[] }
+  customAnswers?: any[]
 }
 
 export const DEMO_APPLICATIONS: Application[] = [
@@ -157,35 +157,121 @@ const DEMO_APP_DETAILS: Record<string, ApplicationDetail> = {
   }
 }
 
+const mapStatus = (recruiterStatus: string): 'Applied' | 'Under Review' | 'Interview' | 'Offer' | 'Rejected' => {
+  if (recruiterStatus === 'shortlisted') return 'Under Review';
+  if (recruiterStatus === 'interviewing') return 'Interview';
+  if (recruiterStatus === 'offered') return 'Offer';
+  if (recruiterStatus === 'rejected') return 'Rejected';
+  return 'Applied';
+}
+
 export default function ApplicationsTab() {
   const [selectedStatus, setSelectedStatus] = useState<string>('All')
+  const [applicationsList, setApplicationsList] = useState<Application[]>(DEMO_APPLICATIONS)
+  const [appDetailsMap, setAppDetailsMap] = useState<Record<string, ApplicationDetail>>(DEMO_APP_DETAILS)
   const [selectedAppId, setSelectedAppId] = useState<string>(DEMO_APPLICATIONS[0].id)
 
   const statuses = ['All', 'Applied', 'Under Review', 'Interview', 'Offer', 'Rejected']
+
+  useEffect(() => {
+    try {
+      const rawTalentApps = localStorage.getItem('talent_applications')
+      if (rawTalentApps) {
+        const parsedTalentApps = JSON.parse(rawTalentApps) as any[]
+        
+        const updatedAppsList: Application[] = []
+        const updatedDetailsMap: Record<string, ApplicationDetail> = { ...DEMO_APP_DETAILS }
+
+        parsedTalentApps.forEach(app => {
+          let currentStatus = app.status
+          let timeline = [...app.timeline]
+
+          // Cross-reference recruiter dashboard
+          const recruiterApplicantsKey = `recruiter_job_${app.jobId}_applicants`
+          const rawRecruiterApplicants = localStorage.getItem(recruiterApplicantsKey)
+          if (rawRecruiterApplicants) {
+            const recruiterApplicants = JSON.parse(rawRecruiterApplicants) as any[]
+            const matchingRecruiterApp = recruiterApplicants.find(a => a.id === app.id)
+            if (matchingRecruiterApp) {
+              const mapped = mapStatus(matchingRecruiterApp.screeningStatus)
+              currentStatus = mapped
+              
+              timeline = [
+                { step: 'Application Submitted', date: new Date(app.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), completed: true, current: mapped === 'Applied' },
+                { step: 'Under Review', date: mapped !== 'Applied' ? 'Completed' : 'Pending', completed: mapped !== 'Applied', current: mapped === 'Under Review' },
+                { step: 'Initial Interview', date: (mapped === 'Interview' || mapped === 'Offer') ? 'Scheduled' : 'Pending', completed: mapped === 'Interview' || mapped === 'Offer', current: mapped === 'Interview' },
+                { step: 'Technical Assessment', date: mapped === 'Offer' ? 'Passed' : 'Pending', completed: mapped === 'Offer', current: false },
+                { 
+                  step: mapped === 'Rejected' ? 'Application Rejected' : 'Final Offer', 
+                  date: mapped === 'Offer' ? 'Sent' : mapped === 'Rejected' ? 'Processed' : 'Pending', 
+                  completed: mapped === 'Offer' || mapped === 'Rejected', 
+                  current: mapped === 'Offer' || mapped === 'Rejected' 
+                },
+              ]
+            }
+          }
+
+          updatedAppsList.push({
+            id: app.id,
+            jobTitle: app.jobTitle,
+            company: app.company,
+            appliedAt: app.appliedAt,
+            status: currentStatus,
+            matchScore: app.matchScore,
+            lastUpdated: app.lastUpdated
+          })
+
+          updatedDetailsMap[app.id] = {
+            id: app.id,
+            jobTitle: app.jobTitle,
+            company: app.company,
+            status: currentStatus,
+            appliedAt: app.appliedAt,
+            matchScore: app.matchScore,
+            averageApplicantScore: app.averageApplicantScore || 70,
+            totalApplicants: app.totalApplicants || 1,
+            rank: app.rank || 'Top 50%',
+            timeline,
+            insights: app.insights || { strengths: [], gaps: [] },
+            customAnswers: app.customAnswers || []
+          }
+        })
+
+        setApplicationsList([...updatedAppsList, ...DEMO_APPLICATIONS])
+        setAppDetailsMap(updatedDetailsMap)
+        
+        if (updatedAppsList.length > 0) {
+          setSelectedAppId(updatedAppsList[0].id)
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load dynamic talent applications', e)
+    }
+  }, [])
   
   const filteredApplications = selectedStatus === 'All' 
-    ? DEMO_APPLICATIONS 
-    : DEMO_APPLICATIONS.filter(app => app.status === selectedStatus)
+    ? applicationsList 
+    : applicationsList.filter(app => app.status === selectedStatus)
 
-  const selectedAppDetail = DEMO_APP_DETAILS[selectedAppId] ?? null
+  const selectedAppDetail = appDetailsMap[selectedAppId] ?? null
 
   return (
     <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
       {/* Left Column: Applications List (col-span-5) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
-        <div className="border-b border-gray-100 px-5 py-5 flex items-end justify-between">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
+        <div className="border-b border-gray-200 px-5 py-5 flex items-end justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">Applications</p>
             <h1 className="mt-1 text-2xl font-semibold">My Applications</h1>
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold text-gray-900">{DEMO_APPLICATIONS.length}</div>
+            <div className="text-xl font-bold text-gray-900">{filteredApplications.length}</div>
             <div className="text-[10px] uppercase tracking-wider text-gray-400">Total</div>
           </div>
         </div>
 
         {/* Status Filter */}
-        <div className="border-b border-gray-100/50 bg-gray-50/50 p-4">
+        <div className="border-b border-gray-200/50 bg-gray-50/50 p-4">
           <div className="flex flex-wrap gap-1.5">
             {statuses.map(status => (
               <button
@@ -213,7 +299,7 @@ export default function ApplicationsTab() {
               className={`w-full text-left p-4 rounded-xl border transition-all ${
                 selectedAppId === app.id
                   ? 'border-[#FF6B00]/60 ring-2 ring-[#FF6B00]/20 bg-white shadow-md'
-                  : 'border-gray-100 bg-white/50 hover:shadow-sm hover:bg-white'
+                  : 'border-gray-200 bg-white/50 hover:shadow-sm hover:bg-white hover:border-gray-300'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -238,7 +324,7 @@ export default function ApplicationsTab() {
       </section>
 
       {/* Right Column: Application Details (col-span-4) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
         {!selectedAppDetail ? (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">
             Select an application to view details
@@ -265,18 +351,18 @@ export default function ApplicationsTab() {
             </div>
 
             {/* Competitive Positioning */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t border-gray-200 pt-5">
               <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Competitive Positioning</h3>
               <div className="grid grid-cols-3 gap-2 text-center mb-4">
-                <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-2">
+                <div className="bg-gray-50/50 border border-gray-200 rounded-xl p-2">
                   <div className="text-[10px] text-gray-500">Your Match</div>
                   <div className="text-base font-bold text-[#FF6B00]">{selectedAppDetail.matchScore}%</div>
                 </div>
-                <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-2">
+                <div className="bg-gray-50/50 border border-gray-200 rounded-xl p-2">
                   <div className="text-[10px] text-gray-500">Avg Match</div>
                   <div className="text-base font-bold text-gray-600">{selectedAppDetail.averageApplicantScore}%</div>
                 </div>
-                <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-2">
+                <div className="bg-gray-50/50 border border-gray-200 rounded-xl p-2">
                   <div className="text-[10px] text-gray-500">Rank</div>
                   <div className="text-base font-bold text-green-600">{selectedAppDetail.rank}</div>
                 </div>
@@ -303,7 +389,7 @@ export default function ApplicationsTab() {
             </div>
 
             {/* AI Insights */}
-            <div className="border-t border-gray-100 pt-5 space-y-4">
+            <div className="border-t border-gray-200 pt-5 space-y-4">
               <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Crucible AI Insights</h3>
               <div className="space-y-3">
                 <div className="bg-green-50/30 border border-green-100/50 rounded-xl p-3.5">
@@ -333,8 +419,30 @@ export default function ApplicationsTab() {
               </div>
             </div>
 
+            {/* Submitted Answers Recap */}
+            {selectedAppDetail.customAnswers && selectedAppDetail.customAnswers.length > 0 && (
+              <div className="border-t border-gray-200 pt-5">
+                <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Submitted Responses</h3>
+                <div className="space-y-3 bg-gray-50/50 border border-gray-200 rounded-xl p-3.5">
+                  {selectedAppDetail.customAnswers.map((ans: any, idx: number) => (
+                    <div key={idx} className="text-xs">
+                      <div className="text-gray-500 font-medium mb-1">{ans.label}</div>
+                      <div className="text-gray-900 font-semibold leading-relaxed">
+                        {Array.isArray(ans.value) 
+                          ? ans.value.join(', ') 
+                          : typeof ans.value === 'boolean' 
+                            ? (ans.value ? 'Yes' : 'No') 
+                            : String(ans.value || '—')
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Timeline */}
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t border-gray-200 pt-5">
               <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-4">Application Timeline</h3>
               <div className="relative border-l border-gray-200 ml-2 pl-4 space-y-5">
                 {selectedAppDetail.timeline.map((t, idx) => (

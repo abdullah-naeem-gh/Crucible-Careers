@@ -74,8 +74,8 @@ export default function JobBrowser({ jobs }: Props) {
 
   return (
     <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
-        <div className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
+        <div className="sticky top-0 z-10 border-b border-gray-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70">
           <div className="px-5 pt-4 pb-3 flex items-center gap-3">
             <div className="relative flex-1">
               <input
@@ -108,7 +108,7 @@ export default function JobBrowser({ jobs }: Props) {
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="px-5 pb-4 overflow-hidden border-t border-gray-100"
+                className="px-5 pb-4 overflow-hidden border-t border-gray-200"
               >
                 <div className="mt-3 flex flex-wrap gap-2">
                   {JOB_TYPES.map(t => (
@@ -156,7 +156,7 @@ export default function JobBrowser({ jobs }: Props) {
                       className={`w-full text-left p-4 rounded-xl border transition-shadow ${
                         selectedJob?._id === job._id
                           ? 'border-[#FF6B00]/60 ring-2 ring-[#FF6B00]/20 bg-white shadow-md'
-                          : 'border-gray-100 bg-white hover:shadow-sm'
+                          : 'border-gray-200 bg-white hover:shadow-sm hover:border-gray-300'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -195,6 +195,11 @@ export default function JobBrowser({ jobs }: Props) {
                           <span className="font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/20 px-2 py-0.5 rounded-md text-[10px] leading-tight shadow-sm">
                             {getMatchScore(job._id)}% Match
                           </span>
+                          {job.source === 'Crucible' && (
+                            <span className="text-[9px] uppercase tracking-wider text-orange-600 bg-orange-50 border border-orange-200 dark:text-orange-300 dark:bg-orange-500/10 dark:border-orange-500/20 px-1.5 py-0.5 rounded font-bold">
+                              Platform
+                            </span>
+                          )}
                         </div>
                       </div>
                     </motion.button>
@@ -206,7 +211,7 @@ export default function JobBrowser({ jobs }: Props) {
         </div>
 
         {totalPages > 1 && (
-          <div className="border-t border-gray-100 px-5 py-3 flex items-center justify-between bg-white/60">
+          <div className="border-t border-gray-200 px-5 py-3 flex items-center justify-between bg-white/60">
             <button
               disabled={page <= 1}
               onClick={() => setPage(p => p - 1)}
@@ -226,7 +231,7 @@ export default function JobBrowser({ jobs }: Props) {
         )}
       </section>
 
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
+      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
         {!selectedJob ? (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">
             <div className="text-center">
@@ -266,9 +271,16 @@ export default function JobBrowser({ jobs }: Props) {
             </div>
 
             <div className="mt-4 flex items-center justify-between">
-              <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-                Actively Hiring
-              </span>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                  Actively Hiring
+                </span>
+                {selectedJob.source === 'Crucible' && (
+                  <span className="inline-flex rounded-full border border-orange-300 bg-orange-50 px-2.5 py-1 text-[11px] font-medium text-orange-950 border-orange-200 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300">
+                    ★ Platform Verified
+                  </span>
+                )}
+              </div>
               <div className="flex gap-2">
                 <Link
                   href={`/apply/${selectedJob._id}`}
@@ -312,7 +324,7 @@ export default function JobBrowser({ jobs }: Props) {
 
 function MiniMetric({ label, value, accent }: { label: string; value: string | number; accent: string }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white/50 p-3 text-center shadow-[inset_1px_1px_4px_rgba(0,0,0,0.02)]">
+    <div className="rounded-2xl border border-gray-200 bg-white/50 p-3 text-center shadow-[inset_1px_1px_4px_rgba(0,0,0,0.02)]">
       <div className={`text-lg font-semibold ${accent}`}>{value}</div>
       <div className="mt-1 text-[11px] text-gray-500">{label}</div>
     </div>
