@@ -53,6 +53,12 @@ interface CandidateProfile {
   github?: string;
   portfolio?: string;
   screeningStatus?: ScreeningStatus;
+  customAnswers?: Array<{
+    fieldId: string;
+    label: string;
+    value: any;
+    semanticType: string;
+  }>;
 }
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
@@ -1134,6 +1140,29 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                 )}
               </div>
             </div>
+
+            {/* Custom form answers section */}
+            {selectedApplicant.customAnswers && selectedApplicant.customAnswers.length > 0 && (
+              <div className="border-t border-white/[0.07] pt-5">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Questionnaire Answers</h3>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {selectedApplicant.customAnswers.map((ans) => (
+                    <div key={ans.fieldId} className={`${insetSurface} p-4 sm:col-span-2`}>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-white/35 mb-1">{ans.label}</div>
+                      <div className="text-sm font-medium text-white/80 whitespace-pre-line">
+                        {typeof ans.value === "boolean"
+                          ? ans.value
+                            ? "Yes"
+                            : "No"
+                          : Array.isArray(ans.value)
+                          ? ans.value.join(", ")
+                          : ans.value || "—"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         ) : (
           <div className="grid h-full place-items-center text-center">

@@ -22,29 +22,11 @@ import {
   type EmployerAnalyticsSnapshot,
 } from "@/lib/employer/analytics/buildEmployerAnalytics";
 
-export type JobType = "Full-time" | "Part-time" | "Contract" | "Internship";
-export type JobStatus = "Active" | "Draft" | "Paused" | "Closed";
+import { EmployerJob, JobType, JobStatus } from "@/types/employer/job";
+import { FORM_TEMPLATES } from "@/lib/shared/formTemplates";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
 type AnalyticsView = "overview" | "roles" | "candidates" | "sources";
-
-export interface EmployerJob {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  type: JobType;
-  status: JobStatus;
-  salary?: string;
-  tags: string[];
-  postedAt: string;
-  description: string;
-  responsibilities: string[];
-  requirements: string[];
-  applications: number;
-  views: number;
-  matchScore: number;
-}
 
 export interface Analytics {
   totalJobs: number;
@@ -426,8 +408,17 @@ function OverviewView({ snapshot, rangeLabel }: { snapshot: EmployerAnalyticsSna
   );
 }
 
-function RolesView({ snapshot }: { snapshot: EmployerAnalyticsSnapshot }) {
+function RolesView({
+  snapshot,
+  jobs,
+  applicantGroups,
+}: {
+  snapshot: EmployerAnalyticsSnapshot;
+  jobs: EmployerJob[];
+  applicantGroups: EmployerApplicantGroups;
+}) {
   const attentionRoles = snapshot.roleInsights.filter((role) => role.health === "attention");
+  const [selectedJobId, setSelectedJobId] = useState<string>(jobs[0]?.id || "");
 
   return (
     <section className={`${surface} min-h-0 overflow-auto p-5 custom-scrollbar`}>
@@ -439,6 +430,16 @@ function RolesView({ snapshot }: { snapshot: EmployerAnalyticsSnapshot }) {
       <div className="mt-5"><RoleTable snapshot={snapshot} /></div>
       <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
         {snapshot.roleInsights.map((role) => <RoleDiagnosticCard key={role.id} role={role} />)}
+      </div>
+
+      {/* Dynamic Questionnaire responses visual charts */}
+      <div className="mt-6 border-t border-white/[0.07] pt-6">
+        <QuestionnaireAnalytics
+          selectedJobId={selectedJobId}
+          onJobChange={setSelectedJobId}
+          jobs={jobs}
+          applicantGroups={applicantGroups}
+        />
       </div>
     </section>
   );
@@ -601,10 +602,187 @@ export default function AnalyticsTab({ jobs }: AnalyticsTabProps) {
 
       <div className="min-h-0 shrink-0">
         {activeView === "overview" && <OverviewView snapshot={snapshot} rangeLabel={rangeLabel} />}
-        {activeView === "roles" && <RolesView snapshot={snapshot} />}
+        {activeView === "roles" && <RolesView snapshot={snapshot} jobs={jobs} applicantGroups={applicantGroups} />}
         {activeView === "candidates" && <CandidatesView snapshot={snapshot} />}
         {activeView === "sources" && <SourcesView snapshot={snapshot} />}
       </div>
     </ViewMotion>
+  );
+}
+
+function QuestionnaireAnalytics({
+  selectedJobId,
+  onJobChange,
+  jobs,
+  applicantGroups,
+}: {
+  selectedJobId: string;
+  onJobChange: (id: string) => void;
+  jobs: EmployerJob[];
+  applicantGroups: EmployerApplicantGroups;
+}) {
+  const currentJob = jobs.find((j) => j.id === selectedJobId) || jobs[0] || null;
+  if (!currentJob) return null;
+
+  const applicants = applicantGroups[currentJob.id] || [];
+  const formConfig = currentJob.formConfig || FORM_TEMPLATES.find((t) => t.id === "comprehensive") || FORM_TEMPLATES[0];
+
+  return (
+    <div className={`${insetSurface} p-5`}>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div>
+          <h2 className="text-base font-semibold text-white">Form Field Analytics</h2>
+          <p className="text-xs text-white/35">Aggregated response statistics for the job application questionnaire.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-white/40 font-medium">Select Job:</span>
+          <select
+            value={selectedJobId}
+            onChange={(e) => onJobChange(e.target.value)}
+            className="rounded-lg border border-white/[0.08] bg-[#141414] px-2.5 py-1.5 text-xs text-white outline-none cursor-pointer focus:border-orange-500/50"
+          >
+            {jobs.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.title} ({applicants.length} applicants)
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {applicants.length === 0 ? (
+        <div className="text-center py-10 text-xs text-white/35">No applicants yet for this job role. Response charts will appear after candidates apply.</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          {formConfig.fields.map((field) => {
+            // Aggregate answers for this field
+            const answers = applicants
+              .map((app: any) => {
+                const ans = app.customAnswers?.find((a: any) => a.fieldId === field.id);
+                return ans ? ans.value : null;
+              })
+              .filter((val) => val !== null && val !== undefined && val !== "");
+
+            return (
+              <div key={field.id} className="rounded-xl border border-white/[0.05] bg-white/[0.015] p-4 space-y-3">
+                <div className="flex items-start justify-between border-b border-white/[0.05] pb-2">
+                  <div>
+                    <h4 className="text-xs font-semibold text-white">{field.label}</h4>
+                    <span className="text-[9px] uppercase tracking-wider text-white/35">{field.type} Field • Map: {field.semanticType}</span>
+                  </div>
+                  <span className="text-[10px] text-orange-400/80 font-bold bg-orange-400/10 px-1.5 py-0.5 rounded">
+                    {answers.length} response{answers.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+
+                {/* Render chart based on field type */}
+                {answers.length === 0 ? (
+                  <div className="text-xs text-white/25 py-2">No responses provided for this question yet.</div>
+                ) : field.type === "number" ? (
+                  /* Number Aggregates */
+                  (() => {
+                    const nums = answers.map((n) => Number(n)).filter((n) => !isNaN(n));
+                    if (nums.length === 0) return <div className="text-xs text-white/25">Invalid numeric responses.</div>;
+                    const min = Math.min(...nums);
+                    const max = Math.max(...nums);
+                    const avg = Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
+                    return (
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-[#121212] p-2.5 rounded-lg border border-white/[0.04]">
+                          <div className="text-sm font-bold text-[#FF914D]">{avg}</div>
+                          <div className="text-[9px] uppercase tracking-wider text-white/35">Average</div>
+                        </div>
+                        <div className="bg-[#121212] p-2.5 rounded-lg border border-white/[0.04]">
+                          <div className="text-sm font-bold text-sky-400">{min}</div>
+                          <div className="text-[9px] uppercase tracking-wider text-white/35">Minimum</div>
+                        </div>
+                        <div className="bg-[#121212] p-2.5 rounded-lg border border-white/[0.04]">
+                          <div className="text-sm font-bold text-emerald-400">{max}</div>
+                          <div className="text-[9px] uppercase tracking-wider text-white/35">Maximum</div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : ["select", "multi-select", "radio"].includes(field.type) ? (
+                  /* Choice Options Counts */
+                  <div className="space-y-2">
+                    {(() => {
+                      const counts: Record<string, number> = {};
+                      field.options?.forEach((opt) => {
+                        counts[opt] = 0;
+                      });
+
+                      answers.forEach((ans) => {
+                        if (Array.isArray(ans)) {
+                          ans.forEach((opt) => {
+                            counts[opt] = (counts[opt] || 0) + 1;
+                          });
+                        } else {
+                          counts[ans] = (counts[ans] || 0) + 1;
+                        }
+                      });
+
+                      const totalSelections = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+
+                      return field.options?.map((opt) => {
+                        const count = counts[opt] || 0;
+                        const pct = Math.round((count / totalSelections) * 100);
+                        return (
+                          <div key={opt} className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-white/60">{opt}</span>
+                              <span className="text-white/35">{count} ({pct}%)</span>
+                            </div>
+                            <ProgressBar value={pct} tone="orange" />
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                ) : field.type === "checkbox" ? (
+                  /* Checkbox Yes/No Split */
+                  (() => {
+                    const yesCount = answers.filter((a) => !!a).length;
+                    const noCount = answers.length - yesCount;
+                    const yesPct = Math.round((yesCount / answers.length) * 100);
+                    const noPct = 100 - yesPct;
+                    return (
+                      <div className="space-y-2">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-white/60">Yes / Confirmed</span>
+                            <span className="text-white/35">{yesCount} ({yesPct}%)</span>
+                          </div>
+                          <ProgressBar value={yesPct} tone="emerald" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-white/60">No / Unchecked</span>
+                            <span className="text-white/35">{noCount} ({noPct}%)</span>
+                          </div>
+                          <ProgressBar value={noPct} tone="red" />
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  /* Text/Paragraph Written Responses */
+                  <div className="space-y-2">
+                    <div className="text-[10px] text-white/35 font-medium uppercase tracking-wider">Recent Answers:</div>
+                    <div className="space-y-1.5">
+                      {answers.slice(-3).reverse().map((ans, idx) => (
+                        <div key={idx} className="bg-[#121212] p-2 rounded-lg border border-white/[0.04] text-[11px] text-white/65 italic leading-relaxed truncate">
+                          "{String(ans)}"
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

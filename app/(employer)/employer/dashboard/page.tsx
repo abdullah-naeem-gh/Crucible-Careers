@@ -348,7 +348,7 @@ function EmployerDashboardContent() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className={`${surface} w-full max-w-xl overflow-hidden`}
+              className={`${surface} w-full max-w-5xl overflow-hidden`}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-white/[0.07] px-6 py-4">

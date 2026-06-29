@@ -3,28 +3,8 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { IconUsers } from "@tabler/icons-react";
-
-type JobType = "Full-time" | "Part-time" | "Contract" | "Internship";
-type JobStatus = "Active" | "Draft" | "Paused" | "Closed";
-
-export interface EmployerJob {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  type: JobType;
-  status: JobStatus;
-  salary?: string;
-  tags: string[];
-  postedAt: string;
-  description: string;
-  responsibilities: string[];
-  requirements: string[];
-  applications: number;
-  views: number;
-  matchScore: number;
-}
+import { IconUsers, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
+import { EmployerJob } from "@/types/employer/job";
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 const insetSurface = "rounded-2xl border border-white/[0.065] bg-[#141414] shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]";
@@ -87,6 +67,8 @@ export default function JobsTab({
   onRemove,
   onViewApplications,
 }: JobsTabProps) {
+  const [isFormPreviewOpen, setIsFormPreviewOpen] = useState(false);
+
   return (
     <ViewMotion className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
       <section className={`${surface} flex min-h-[38rem] flex-col overflow-hidden lg:col-span-5 lg:min-h-0`}>
@@ -231,6 +213,41 @@ export default function JobsTab({
                 ))}
               </div>
             </div>
+
+            {selectedJob.formConfig && (
+              <div className="mb-6 border-t border-white/[0.07] pt-6">
+                <button
+                  type="button"
+                  onClick={() => setIsFormPreviewOpen(!isFormPreviewOpen)}
+                  className="flex w-full items-center justify-between text-sm font-semibold text-white cursor-pointer select-none hover:text-orange-400 transition-colors"
+                >
+                  <span>Application Questionnaire ({selectedJob.formConfig.fields.length} questions)</span>
+                  {isFormPreviewOpen ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+                </button>
+
+                {isFormPreviewOpen && (
+                  <div className="mt-3 rounded-xl border border-white/[0.06] bg-[#121212] p-4 space-y-2.5">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[#FF914D] mb-1">
+                      {selectedJob.formConfig.name || "Custom Form"} Template
+                    </div>
+                    <div className="divide-y divide-white/[0.05]">
+                      {selectedJob.formConfig.fields.map((field) => (
+                        <div key={field.id} className="py-2 flex items-center justify-between text-xs">
+                          <div className="font-medium text-white/80">
+                            {field.label} {field.required && <span className="text-orange-400 font-bold">*</span>}
+                          </div>
+                          <div className="flex gap-2 text-white/30 text-[10px] uppercase font-bold shrink-0 pl-4">
+                            <span>{field.type}</span>
+                            <span>•</span>
+                            <span className="text-sky-400/80">{field.semanticType}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <DetailList title="Responsibilities" items={selectedJob.responsibilities} />
