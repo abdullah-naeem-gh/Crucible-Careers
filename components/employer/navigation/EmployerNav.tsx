@@ -20,7 +20,7 @@ const EmployerNav = ({ activeTab = 'overview', company = 'TechCorp' }: EmployerN
     >
       <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href="/employers" className="flex items-center gap-2 text-white">
+          <Link href="/employer" className="flex items-center gap-2 text-white">
             <div className="h-5 w-6 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-gradient-to-br from-[#FF6B00] to-[#FF914D] shadow-lg shadow-orange-500/20" />
             <span className="font-semibold">Crucible</span>
           </Link>

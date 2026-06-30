@@ -118,7 +118,7 @@ export default function EmployerSidebar({
       </div>
 
       <div className="mt-4 hidden items-center justify-between text-xs text-white/35 lg:flex">
-        <Link href="/employers" className="transition-colors hover:text-white/70">Employer page</Link>
+        <Link href="/employer" className="transition-colors hover:text-white/70">Employer page</Link>
         <Link href="/" onClick={() => localStorage.removeItem("recruiter_jobs")} className="transition-colors hover:text-red-300">
           Logout
         </Link>

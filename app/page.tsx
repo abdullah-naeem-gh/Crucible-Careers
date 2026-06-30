@@ -148,7 +148,7 @@ const HeroContent = () => {
             transition={{ duration: 0.3, ease: "easeOut" }}
           />
           <Link
-            href="/employers"
+            href="/employer"
             className="px-6 md:px-8 py-3 border border-white/30 text-white rounded-full font-semibold text-base md:text-lg whitespace-nowrap relative z-10 block"
             style={{ pointerEvents: 'auto' }}
           >

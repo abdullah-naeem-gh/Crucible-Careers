@@ -480,7 +480,7 @@ export default function ApplyFormPage() {
       <header className="border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
           <Link href="/" className="text-xl font-semibold tracking-tight">Crucible</Link>
-          <Link href="/employers" className="btn-secondary-link text-sm">For Employers</Link>
+          <Link href="/employer" className="btn-secondary-link text-sm">For Employers</Link>
         </div>
       </header>
 
