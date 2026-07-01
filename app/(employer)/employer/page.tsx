@@ -12,7 +12,7 @@ const AnimatedBackground = () => {
     <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
       {/* Video Background - base layer */}
       <video
-        src="https://framerusercontent.com/assets/G0UWG98BsiVXS2JVBb1831n0g.mp4"
+        src="/rotating_video_dark.mp4?v=employer-dark"
         autoPlay
         loop
         muted
