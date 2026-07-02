@@ -174,7 +174,7 @@ export default function SavedTab() {
               whileHover={{ scale: 1.005 }}
               className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer ${
                 selectedJob?.id === job.id
-                  ? 'border-orange-500/50 ring-2 ring-orange-500/10 bg-orange-500/[0.055] shadow-[0_0_0_2px_rgba(255,107,0,0.1),8px_8px_20px_rgba(255,107,0,0.08),0_4px_16px_rgba(0,0,0,0.08)]'
+                  ? 'border-orange-500/50 bg-orange-500/[0.055] shadow-[0_0_0_2px_rgba(255,107,0,0.1),8px_8px_18px_rgba(0,0,0,0.22)]'
                   : 'border-white/[0.065] bg-white/50 hover:shadow-sm hover:bg-white hover:border-gray-300'
               }`}
             >
