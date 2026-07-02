@@ -10,6 +10,7 @@ interface TalentSidebarProps {
   jobCount?: number
   applicationCount?: number
   savedCount?: number
+  profileNeedsSetup?: boolean
 }
 
 export default function TalentSidebar({
@@ -17,7 +18,8 @@ export default function TalentSidebar({
   onTabChange,
   jobCount = 4,
   applicationCount = 12,
-  savedCount = 5
+  savedCount = 5,
+  profileNeedsSetup = false
 }: TalentSidebarProps) {
   const pathname = usePathname()
 
@@ -31,7 +33,7 @@ export default function TalentSidebar({
     return pathname === `/talent/dashboard/${key}`
   }
 
-  const renderTab = (key: string, label: string, count?: number) => {
+  const renderTab = (key: string, label: string, count?: number, tag?: string) => {
     const active = isActive(key)
     return (
       <Link
@@ -49,11 +51,18 @@ export default function TalentSidebar({
         }`}
       >
         <span>{label}</span>
-        {count !== undefined && count !== null && (
-          <span className={`rounded-md px-2 py-0.5 text-xs ${active ? 'bg-orange-500/15 text-[#FF914D]' : 'text-gray-400 dark:text-white/30'}`}>
-            {count}
-          </span>
-        )}
+        <span className="flex items-center gap-2">
+          {tag && (
+            <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${active ? 'bg-orange-500/15 text-[#FF914D]' : 'bg-orange-50 text-[#FF6B00] dark:bg-orange-500/10 dark:text-[#FF914D]'}`}>
+              {tag}
+            </span>
+          )}
+          {count !== undefined && count !== null && (
+            <span className={`rounded-md px-2 py-0.5 text-xs ${active ? 'bg-orange-500/15 text-[#FF914D]' : 'text-gray-400 dark:text-white/30'}`}>
+              {count}
+            </span>
+          )}
+        </span>
       </Link>
     )
   }
@@ -83,7 +92,7 @@ export default function TalentSidebar({
         {renderTab('companies', 'Companies')}
         {renderTab('applications', 'Applications', applicationCount)}
         {renderTab('saved', 'Saved', savedCount)}
-        {renderTab('profile', 'Profile')}
+        {renderTab('profile', 'Profile', undefined, profileNeedsSetup ? 'Set-up Now' : undefined)}
         {renderTab('exams', 'Exams & Badges')}
         {renderTab('settings', 'Settings')}
       </nav>
@@ -123,7 +132,7 @@ export default function TalentSidebar({
           }}
           className="inline-block rounded-lg bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-3 py-2 text-xs font-medium text-white shadow-[0_8px_20px_rgba(255,107,0,0.2)]"
         >
-          Update Profile
+          {profileNeedsSetup ? 'Set Up Profile' : 'Update Profile'}
         </Link>
       </div>
 
@@ -136,6 +145,3 @@ export default function TalentSidebar({
     </motion.aside>
   )
 }
-
-
-

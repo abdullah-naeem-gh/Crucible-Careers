@@ -164,20 +164,24 @@ function ProfilePreview({ profile }: { profile: CompanyProfile }) {
         </div>
       </div>
 
-      {profile.overview && (
-        <PreviewSection title="About us">
+      <PreviewSection title="About us">
+        {profile.overview ? (
           <p className="text-sm leading-relaxed text-white/55">{profile.overview}</p>
-        </PreviewSection>
-      )}
+        ) : (
+          <p className="text-xs italic text-white/20">No company overview provided.</p>
+        )}
+      </PreviewSection>
 
-      {profile.culture && (
-        <PreviewSection title="Culture & values">
+      <PreviewSection title="Culture & values">
+        {profile.culture ? (
           <p className="text-sm leading-relaxed text-white/55">{profile.culture}</p>
-        </PreviewSection>
-      )}
+        ) : (
+          <p className="text-xs italic text-white/20">No culture & values details specified.</p>
+        )}
+      </PreviewSection>
 
-      {benefits.length > 0 && (
-        <PreviewSection title="Perks & benefits">
+      <PreviewSection title="Perks & benefits">
+        {benefits.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {benefits.map((b) => (
               <span
@@ -188,11 +192,13 @@ function ProfilePreview({ profile }: { profile: CompanyProfile }) {
               </span>
             ))}
           </div>
-        </PreviewSection>
-      )}
+        ) : (
+          <p className="text-xs italic text-white/20">No perks & benefits specified.</p>
+        )}
+      </PreviewSection>
 
-      {techTags.length > 0 && (
-        <PreviewSection title="Tech stack">
+      <PreviewSection title="Tech stack">
+        {techTags.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {techTags.map((tag) => (
               <span
@@ -203,8 +209,10 @@ function ProfilePreview({ profile }: { profile: CompanyProfile }) {
               </span>
             ))}
           </div>
-        </PreviewSection>
-      )}
+        ) : (
+          <p className="text-xs italic text-white/20">No technologies specified.</p>
+        )}
+      </PreviewSection>
 
       <div className="rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/[0.07] to-transparent p-4">
         <p className="text-xs font-medium text-[#FF914D]">Public profile</p>
@@ -253,9 +261,9 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
   const labelClass = "mb-1.5 block text-xs font-medium text-white/50";
 
   return (
-    <ViewMotion className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
+    <ViewMotion className="grid lg:h-full lg:min-h-0 grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
       {/* Editor */}
-      <section className={`${surface} flex flex-col overflow-hidden lg:col-span-5`}>
+      <section className={`${surface} flex flex-col overflow-hidden lg:col-span-5 lg:h-full lg:min-h-0`}>
         <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-5">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-[#FF914D]">Company Profile</p>
@@ -319,7 +327,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className={labelClass}>Company name</label>
+              <label className={labelClass}>Company name <span className="text-red-500">*</span></label>
               <input
                 value={formState.name}
                 onChange={(e) => set("name", e.target.value)}
@@ -339,7 +347,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
             </div>
 
             <div>
-              <label className={labelClass}>Industry</label>
+              <label className={labelClass}>Industry <span className="text-red-500">*</span></label>
               <select
                 value={formState.industry}
                 onChange={(e) => set("industry", e.target.value)}
@@ -352,7 +360,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
             </div>
 
             <div>
-              <label className={labelClass}>Company size</label>
+              <label className={labelClass}>Company size <span className="text-red-500">*</span></label>
               <select
                 value={formState.companySize}
                 onChange={(e) => set("companySize", e.target.value)}
@@ -375,7 +383,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
             </div>
 
             <div>
-              <label className={labelClass}>Headquarters</label>
+              <label className={labelClass}>Headquarters <span className="text-red-500">*</span></label>
               <input
                 value={formState.headquarters}
                 onChange={(e) => set("headquarters", e.target.value)}
@@ -385,7 +393,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
             </div>
 
             <div className="sm:col-span-2">
-              <label className={labelClass}>Website</label>
+              <label className={labelClass}>Website <span className="text-red-500">*</span></label>
               <input
                 value={formState.website}
                 onChange={(e) => set("website", e.target.value)}
@@ -395,7 +403,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
             </div>
 
             <div className="sm:col-span-2">
-              <label className={labelClass}>Company overview</label>
+              <label className={labelClass}>Company overview <span className="text-red-500">*</span></label>
               <textarea
                 value={formState.overview}
                 onChange={(e) => set("overview", e.target.value)}
@@ -428,7 +436,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
             </div>
 
             <div className="sm:col-span-2">
-              <label className={labelClass}>Tech stack (comma separated)</label>
+              <label className={labelClass}>Tech stack (comma separated) <span className="text-red-500">*</span></label>
               <input
                 value={formState.techStack}
                 onChange={(e) => set("techStack", e.target.value)}
@@ -464,7 +472,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
       </section>
 
       {/* Live preview */}
-      <section className={`${surface} overflow-auto custom-scrollbar p-5 lg:col-span-4`}>
+      <section className={`${surface} overflow-auto custom-scrollbar p-5 lg:col-span-4 lg:h-full lg:min-h-0`}>
         <p className="mb-4 text-xs uppercase tracking-[0.18em] text-white/30">Live preview</p>
         <ProfilePreview profile={profile} />
       </section>

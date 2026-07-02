@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import JobBrowser from '@/components/talent/jobs/JobBrowser'
 import { JOBS } from '@/lib/talent/data/jobs'
+import { TalentProfile } from '@/types/talent/profile'
+import { loadTalentProfiles, saveTalentProfiles } from '@/lib/talent/services/profile.service'
 
 // Import Modular Tab Components
 import CompaniesTab from '@/components/talent/dashboard/CompaniesTab'
@@ -49,6 +51,8 @@ function TalentDashboardContent() {
   const [jobs, setJobs] = useState<any[]>(JOBS)
   const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
   const [savedCount, setSavedCount] = useState(DEMO_SAVED_JOBS.length)
+  const [profiles, setProfiles] = useState<TalentProfile[]>([])
+  const [profileHydrated, setProfileHydrated] = useState(false)
 
   useEffect(() => {
     if (requestedTab) {
@@ -104,6 +108,10 @@ function TalentDashboardContent() {
       console.error('Failed to load talent applications count', e)
     }
 
+    // Load profiles
+    setProfiles(loadTalentProfiles())
+    setProfileHydrated(true)
+
     // Load saved count
     try {
       const savedBookmarked = localStorage.getItem('talent_saved_jobs')
@@ -113,6 +121,10 @@ function TalentDashboardContent() {
       console.error('Failed to load saved jobs count', e)
     }
   }, [])
+
+  useEffect(() => {
+    if (profileHydrated) saveTalentProfiles(profiles)
+  }, [profileHydrated, profiles])
 
   const changeTab = (tab: string) => {
     const validTab = tab as TalentTab
@@ -145,6 +157,7 @@ function TalentDashboardContent() {
               jobCount={jobs.length}
               applicationCount={appCount}
               savedCount={savedCount}
+              profileNeedsSetup={profileHydrated && profiles.length === 0}
             />
           </div>
           <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
@@ -171,7 +184,7 @@ function TalentDashboardContent() {
               )}
               {activeTab === 'profile' && (
                 <ViewMotion key="profile">
-                  <ProfileTab />
+                  <ProfileTab profiles={profiles} onProfilesChange={setProfiles} />
                 </ViewMotion>
               )}
               {activeTab === 'exams' && (
@@ -199,3 +212,4 @@ export default function TalentDashboard() {
     </Suspense>
   )
 }
+

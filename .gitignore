@@ -5,3 +5,4 @@ AGENTS.md
 .serena
 tsconfig.tsbuildinfo
 .agents
+.playwright-mcp

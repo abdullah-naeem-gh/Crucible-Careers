@@ -1,390 +1,925 @@
-"use client";
-import { useState } from 'react'
 
-interface Experience {
-  id: string
-  company: string
-  role: string
-  duration: string
-  description: string
+'use client'
+
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  IconBrandGithub,
+  IconBrandLinkedin,
+  IconBriefcase,
+  IconCheck,
+  IconChevronDown,
+  IconCamera,
+  IconDeviceFloppy,
+  IconExternalLink,
+  IconFileText,
+  IconMapPin,
+  IconPlus,
+  IconTrash,
+  IconVideo,
+  IconWorld,
+} from '@tabler/icons-react'
+import Stepper, { Step } from '@/components/talent/profile/Stepper'
+import { TalentEducation, TalentExperience, TalentProfile, TalentProject } from '@/types/talent/profile'
+import { createBlankTalentProfile, upsertTalentProfile } from '@/lib/talent/services/profile.service'
+
+interface ProfileTabProps {
+  profiles: TalentProfile[]
+  onProfilesChange: (profiles: TalentProfile[]) => void
 }
 
-interface Project {
-  id: string
-  title: string
-  description: string
-  link?: string
+const surface = 'rounded-[24px] border border-gray-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:border-white/[0.07] dark:bg-[#171717] dark:shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]'
+const insetSurface = 'rounded-2xl border border-gray-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.045)] dark:border-white/[0.065] dark:bg-[#141414] dark:shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]'
+const labelClass = 'mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-white/35'
+const fieldClass = 'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-white/[0.08] dark:bg-[#121212] dark:text-white dark:placeholder:text-white/20'
+const selectClass = fieldClass + ' cursor-pointer'
+const WORK_PREFERENCES = ['Remote', 'On-site', 'Hybrid']
+const AVAILABILITY_OPTIONS = ['Open to work', 'Available immediately', 'Available in 2 weeks', 'Available in 1 month', 'Not actively looking']
+
+const newExperience = (): TalentExperience => ({
+  id: `exp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  company: '',
+  role: '',
+  location: '',
+  startDate: '',
+  endDate: '',
+  current: false,
+  description: '',
+})
+
+const newEducation = (): TalentEducation => ({
+  id: `edu-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  school: '',
+  degree: '',
+  field: '',
+  startYear: '',
+  endYear: '',
+  description: '',
+})
+
+const newProject = (): TalentProject => ({
+  id: `project-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  title: '',
+  description: '',
+  link: '',
+  imageDataUrl: null,
+  videoUrl: '',
+})
+
+function splitList(value: string) {
+  return value.split(',').map((item) => item.trim()).filter(Boolean)
 }
 
-interface Profile {
-  name: string
-  title: string
-  email: string
-  location: string
-  bio: string
-  experience: number
-  skills: string[]
-  education: string
-  linkedin?: string
-  github?: string
-  portfolio?: string
-  matchScore: number
-  badges: { id: string, title: string, badge: string, score: string }[]
-  resumeFilename?: string
-  resumeText?: string
-  experienceList: Experience[]
-  projectsList: Project[]
+function joinList(value: string[]) {
+  return value.join(', ')
 }
 
-const DEMO_PROFILE: Profile = {
-  name: 'Alex Johnson',
-  title: 'Frontend Engineer',
-  email: 'alex.johnson@email.com',
-  location: 'San Francisco, CA',
-  bio: 'Passionate frontend engineer with 5+ years of experience building scalable web applications. Specialized in React, TypeScript, and modern frontend architectures. Love creating intuitive user experiences and mentoring junior developers.',
-  experience: 5,
-  skills: ['React', 'TypeScript', 'JavaScript', 'Node.js', 'Tailwind CSS', 'Next.js', 'GraphQL', 'PostgreSQL', 'AWS', 'Docker'],
-  education: 'B.S. Computer Science, Stanford University',
-  linkedin: 'linkedin.com/in/alexjohnson',
-  github: 'github.com/alexjohnson',
-  portfolio: 'alexjohnson.dev',
-  matchScore: 86,
-  badges: [
-    { id: '2', title: 'React Performance Master', score: '92%', badge: 'React Master' },
-    { id: '4', title: 'Fullstack Next.js Developer', score: '88%', badge: 'Next.js Dev' }
-  ],
-  resumeFilename: 'Alex_Johnson_Resume_2026.pdf',
-  experienceList: [
-    { id: 'e1', company: 'TechCorp', role: 'Frontend Engineer', duration: '2021 - Present', description: 'Led the frontend team in building a scalable React architecture. Improved rendering performance by 40%.' },
-    { id: 'e2', company: 'WebSolutions Inc.', role: 'Junior Developer', duration: '2019 - 2021', description: 'Developed responsive web applications using Vue.js and Tailwind CSS. Implemented CI/CD pipelines.' }
-  ],
-  projectsList: [
-    { id: 'p1', title: 'Open Source UI Library', description: 'A collection of accessible React components with Tailwind.', link: 'github.com/alexjohnson/ui-lib' },
-    { id: 'p2', title: 'Crypto Dashboard', description: 'Real-time cryptocurrency tracking app using WebSockets.', link: 'alexjohnson.dev/crypto' }
-  ]
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return 'TP'
+  return parts.slice(0, 2).map((part) => part[0]).join('').toUpperCase()
 }
 
-export default function ProfileTab() {
-  const [isEditing, setIsEditing] = useState(false)
-  const [profile, setProfile] = useState<Profile>(DEMO_PROFILE)
-  const [newSkill, setNewSkill] = useState('')
+function normalizeUrl(url: string) {
+  if (!url) return ''
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`
+}
 
-  const handleSave = () => {
-    setIsEditing(false)
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className={labelClass}>
+        {label}
+        {required && <span className="ml-1 text-red-500">*</span>}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+function CsvField({
+  value,
+  onChange,
+  placeholder,
+  rows,
+}: {
+  value: string[]
+  onChange: (value: string[]) => void
+  placeholder?: string
+  rows?: number
+}) {
+  const [text, setText] = useState(joinList(value))
+  const [focused, setFocused] = useState(false)
+
+  useEffect(() => {
+    if (!focused) setText(joinList(value))
+  }, [focused, value])
+
+  const update = (nextText: string) => {
+    setText(nextText)
+    onChange(splitList(nextText))
   }
 
-  const addSkill = () => {
-    if (newSkill.trim() && !profile.skills.includes(newSkill.trim())) {
-      setProfile(prev => ({
-        ...prev,
-        skills: [...prev.skills, newSkill.trim()]
+  const sharedProps = {
+    className: fieldClass,
+    value: text,
+    placeholder,
+    onFocus: () => setFocused(true),
+    onBlur: () => {
+      setFocused(false)
+      setText(joinList(splitList(text)))
+    },
+    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => update(event.target.value),
+  }
+
+  if (rows && rows > 1) return <textarea {...sharedProps} rows={rows} />
+  return <input {...sharedProps} />
+}
+
+function nextProfileName(count: number) {
+  return 'Profile ' + (count + 1)
+}
+
+function CustomSelect({
+  value,
+  options,
+  onChange,
+}: {
+  value: string
+  options: string[]
+  onChange: (value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-left text-sm font-medium text-gray-900 shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-orange-300 hover:bg-orange-50/40 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-white/[0.08] dark:bg-[#121212] dark:text-white dark:hover:bg-white/[0.04]"
+      >
+        <span>{value || options[0]}</span>
+        <IconChevronDown size={16} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 6, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className="absolute left-0 right-0 top-full z-30 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-black/[0.03] dark:border-white/10 dark:bg-[#161616] dark:ring-white/[0.04]"
+          >
+            {options.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  onChange(option)
+                  setOpen(false)
+                }}
+                className={`flex w-full cursor-pointer items-center justify-between px-3 py-2.5 text-left text-sm transition ${option === value ? 'bg-orange-100 text-[#C84F00] font-semibold dark:bg-orange-500/10 dark:text-[#FF914D]' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-950 dark:text-white/55 dark:hover:bg-white/[0.04] dark:hover:text-white/80'}`}
+              >
+                <span>{option}</span>
+                {option === value && <IconCheck size={15} />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function FormSection({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className={`${insetSurface} p-4`}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-white/35">{title}</h3>
+        {action}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function PreviewSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className={`${insetSurface} p-4`}>
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/35">{title}</h3>
+      {children}
+    </div>
+  )
+}
+
+function EmptyState({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className={`${surface} grid h-full min-h-[38rem] place-items-center p-6 text-center [&_button:not(:disabled)]:cursor-pointer`}>
+      <div className="max-w-md">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Talent Profile</p>
+        <h1 className="mt-2 text-3xl font-semibold text-gray-950 dark:text-white">Build your first profile</h1>
+        <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-white/45">
+          Create a focused profile employers can scan quickly: headline, skills, proof of work, experience, education, and intro media.
+        </p>
+        <button
+          type="button"
+          onClick={onCreate}
+          className="cursor-pointer mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(255,107,0,0.2)]"
+        >
+          <IconPlus size={17} />
+          Start setup
+        </button>
+      </div>
+    </div>
+  )
+}
+function ProfilePreview({ profile }: { profile: TalentProfile }) {
+  const visibleExperience = profile.experience.filter((item) => item.company || item.role || item.description)
+  const visibleEducation = profile.education.filter((item) => item.school || item.degree || item.field)
+  const visibleProjects = profile.projects.filter((item) => item.title || item.description || item.link)
+
+  return (
+    <motion.div
+      key={profile.id + profile.updatedAt + profile.name + profile.headline}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-4"
+    >
+      <div className={`${insetSurface} p-4`}>
+        <div className="flex items-start gap-4">
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-orange-100 to-white dark:border-white/[0.08] dark:from-[#FF6B00]/20 dark:to-[#FF914D]/10">
+            {profile.photoDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.photoDataUrl} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              <span className="absolute inset-0 grid place-items-center text-lg font-bold text-[#FF6B00]">{initials(profile.name)}</span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-xl font-semibold text-gray-950 dark:text-white">
+              {profile.name || <span className="text-gray-400 dark:text-white/25">Your name</span>}
+            </h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-white/45">
+              {profile.headline || <span className="italic text-gray-400 dark:text-white/20">Professional headline</span>}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-gray-500 dark:text-white/35">
+              {profile.location && <span className="inline-flex items-center gap-1"><IconMapPin size={13} />{profile.location}</span>}
+              {profile.availability && <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{profile.availability}</span>}
+              {profile.workPreference && <span className="rounded-md border border-gray-200 px-2 py-0.5 dark:border-white/10">{profile.workPreference}</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <PreviewSection title="Overview">
+        {profile.overview ? (
+          <p className="whitespace-pre-line text-sm leading-relaxed text-gray-600 dark:text-white/55">{profile.overview}</p>
+        ) : (
+          <p className="text-xs italic text-gray-400 dark:text-white/20">No professional overview summary provided yet.</p>
+        )}
+      </PreviewSection>
+
+      <PreviewSection title="Skills and focus">
+        <div className="space-y-3">
+          {profile.preferredRoles.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {profile.preferredRoles.map((role) => (
+                <span key={role} className="rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-[#FF914D]">{role}</span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs italic text-gray-400 dark:text-white/20">No preferred roles specified</p>
+          )}
+          {profile.skills.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {profile.skills.map((skill) => (
+                <span key={skill} className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700 dark:border-white/[0.07] dark:bg-white/[0.025] dark:text-white/50">{skill}</span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs italic text-gray-400 dark:text-white/20">No skills added yet</p>
+          )}
+        </div>
+      </PreviewSection>
+
+      <PreviewSection title="Work history">
+        {visibleExperience.length > 0 ? (
+          <div className="space-y-4">
+            {visibleExperience.map((item) => (
+              <div key={item.id} className="border-l-2 border-orange-200 pl-3 dark:border-orange-500/25">
+                <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{item.role || 'Role title'}</h4>
+                <div className="mt-1 flex flex-wrap justify-between gap-2 text-xs text-gray-500 dark:text-white/35">
+                  <span className="font-medium text-[#FF6B00]">{item.company || 'Company'}</span>
+                  <span>{item.startDate || 'Start'} - {item.current ? 'Present' : item.endDate || 'End'}</span>
+                </div>
+                {item.description && <p className="mt-2 text-xs leading-relaxed text-gray-600 dark:text-white/50">{item.description}</p>}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs italic text-gray-400 dark:text-white/20">No work experience entries added.</p>
+        )}
+      </PreviewSection>
+
+      <PreviewSection title="Project proofs">
+        {visibleProjects.length > 0 ? (
+          <div className="space-y-3">
+            {visibleProjects.map((item) => (
+              <div key={item.id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 dark:border-white/[0.06] dark:bg-white/[0.025]">
+                <div className="flex gap-3">
+                  {item.imageDataUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.imageDataUrl} alt="Project" className="h-14 w-16 shrink-0 rounded-lg object-cover" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{item.title || 'Project title'}</h4>
+                    {item.description && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-600 dark:text-white/45">{item.description}</p>}
+                    <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-medium text-[#FF6B00]">
+                      {item.link && <a href={normalizeUrl(item.link)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1">Link <IconExternalLink size={12} /></a>}
+                      {item.videoUrl && <span className="inline-flex items-center gap-1"><IconVideo size={12} /> Video</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs italic text-gray-400 dark:text-white/20">No project proofs added.</p>
+        )}
+      </PreviewSection>
+
+      <PreviewSection title="Education">
+        {visibleEducation.length > 0 ? (
+          <div className="space-y-3 text-sm text-gray-700 dark:text-white/55">
+            {visibleEducation.map((item) => (
+              <div key={item.id}>
+                <div className="font-semibold text-gray-950 dark:text-white">{item.school || 'School'}</div>
+                <div className="text-xs text-gray-500 dark:text-white/35">{[item.degree, item.field].filter(Boolean).join(', ') || 'Degree'} - {item.startYear || 'Start'} to {item.endYear || 'End'}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs italic text-gray-400 dark:text-white/20">No education entries added.</p>
+        )}
+      </PreviewSection>
+
+      {(profile.linkedin || profile.github || profile.portfolio || profile.introVideoUrl || profile.resumeFilename) && (
+        <PreviewSection title="Links and media">
+          <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+            {profile.linkedin && <a href={normalizeUrl(profile.linkedin)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 dark:text-sky-300"><IconBrandLinkedin size={15} /> LinkedIn</a>}
+            {profile.github && <a href={normalizeUrl(profile.github)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-gray-700 dark:text-white/60"><IconBrandGithub size={15} /> GitHub</a>}
+            {profile.portfolio && <a href={normalizeUrl(profile.portfolio)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#FF6B00]"><IconWorld size={15} /> Portfolio</a>}
+            {profile.introVideoUrl && <a href={normalizeUrl(profile.introVideoUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#FF6B00]"><IconVideo size={15} /> Intro video</a>}
+            {profile.resumeFilename && <span className="inline-flex items-center gap-2 text-gray-600 dark:text-white/45"><IconFileText size={15} /> {profile.resumeFilename}</span>}
+          </div>
+        </PreviewSection>
+      )}
+    </motion.div>
+  )
+}
+function OnboardingModal({
+  open,
+  onClose,
+  onCreate,
+  defaultProfileName,
+}: {
+  open: boolean
+  onClose: () => void
+  onCreate: (profile: TalentProfile) => void
+  defaultProfileName: string
+}) {
+  const [draft, setDraft] = useState<TalentProfile>(() => createBlankTalentProfile({
+    profileName: defaultProfileName,
+    availability: 'Open to work',
+    workPreference: 'Remote',
+    languages: ['English'],
+    education: [newEducation()],
+    experience: [newExperience()],
+    projects: [newProject()],
+  }))
+
+  useEffect(() => {
+    if (open) {
+      setDraft(createBlankTalentProfile({
+        profileName: defaultProfileName,
+        availability: 'Open to work',
+        workPreference: 'Remote',
+        languages: ['English'],
+        education: [newEducation()],
+        experience: [newExperience()],
+        projects: [newProject()],
       }))
-      setNewSkill('')
     }
+  }, [open])
+
+  const set = <K extends keyof TalentProfile>(key: K, value: TalentProfile[K]) => {
+    setDraft((prev) => ({ ...prev, [key]: value }))
   }
 
-  const removeSkill = (skillToRemove: string) => {
-    setProfile(prev => ({
-      ...prev,
-      skills: prev.skills.filter(skill => skill !== skillToRemove)
+  const createProfile = () => {
+    onCreate({
+      ...draft,
+      profileName: draft.profileName || draft.headline || defaultProfileName,
+      updatedAt: new Date().toISOString(),
+    })
+  }
+
+  const skipToManual = () => {
+    onCreate(createBlankTalentProfile({
+      profileName: defaultProfileName,
+      education: [newEducation()],
+      experience: [newExperience()],
+      projects: [newProject()],
     }))
   }
 
-  const labelClass = 'block text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-1.5'
-  const inputClass = 'w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 bg-white/50'
+  const exp = draft.experience[0] ?? newExperience()
+  const edu = draft.education[0] ?? newEducation()
+  const project = draft.projects[0] ?? newProject()
 
   return (
-    <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
-      {/* Left Column: Personal details & skills (col-span-5) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
-        <div className="border-b border-gray-200 px-5 py-5 flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">Profile</p>
-            <h1 className="mt-1 text-2xl font-semibold">Personal Details</h1>
-          </div>
-          <button
-            onClick={() => {
-              if (isEditing) handleSave()
-              else setIsEditing(true)
-            }}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D] hover:opacity-95 transition-opacity cursor-pointer"
+    <AnimatePresence initial={false}>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3 sm:p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 18, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.96 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)] dark:border-white/[0.07] dark:bg-[#171717] [&_button:not(:disabled)]:cursor-pointer"
+            onClick={(event) => event.stopPropagation()}
           >
-            {isEditing ? 'Save Changes' : 'Edit Profile'}
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-auto p-5 space-y-6">
-          {/* Bio Card in Left Column */}
-          <div className="text-center pb-6 border-b border-gray-200">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] mx-auto mb-3 flex items-center justify-center shadow-md">
-              <span className="text-xl font-bold text-white">{profile.name.split(' ').map(n => n[0]).join('')}</span>
-            </div>
-            {isEditing ? (
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={profile.name}
-                  onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
-                  className={`${inputClass} text-center font-bold text-sm`}
-                />
-                <input
-                  type="text"
-                  value={profile.title}
-                  onChange={(e) => setProfile(prev => ({ ...prev, title: e.target.value }))}
-                  className={`${inputClass} text-center`}
-                />
-              </div>
-            ) : (
-              <>
-                <h2 className="text-lg font-bold text-gray-900">{profile.name}</h2>
-                <p className="text-xs text-gray-500">{profile.title}</p>
-              </>
-            )}
-          </div>
-
-          {/* Form fields */}
-          <div className="space-y-4">
-            <div>
-              <label className={labelClass}>Email Address</label>
-              {isEditing ? (
-                <input
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
-                  className={inputClass}
-                />
-              ) : (
-                <p className="text-xs text-gray-800 font-medium">{profile.email}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-white/[0.07] sm:px-6">
               <div>
-                <label className={labelClass}>Location</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={profile.location}
-                    onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
-                    className={inputClass}
-                  />
-                ) : (
-                  <p className="text-xs text-gray-800 font-medium">{profile.location}</p>
-                )}
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Profile setup</p>
+                <h2 className="mt-1 text-xl font-semibold text-gray-950 dark:text-white">Set up your profile</h2>
               </div>
-              <div>
-                <label className={labelClass}>Experience (Years)</label>
-                {isEditing ? (
-                  <input
-                    type="number"
-                    value={profile.experience}
-                    onChange={(e) => setProfile(prev => ({ ...prev, experience: parseInt(e.target.value) || 0 }))}
-                    className={inputClass}
-                  />
-                ) : (
-                  <p className="text-xs text-gray-800 font-medium">{profile.experience} years</p>
-                )}
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={skipToManual} className="cursor-pointer hidden rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/[0.04] sm:block">
+                  Open full editor
+                </button>
+                <button type="button" onClick={onClose} className="cursor-pointer grid h-9 w-9 place-items-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/[0.04]">
+                  x
+                </button>
               </div>
             </div>
+            <div className="max-h-[78vh] overflow-auto p-5 custom-scrollbar sm:p-6">
+              <Stepper onFinalStepCompleted={createProfile} backButtonText="Previous" nextButtonText="Next">
+                <Step>
+                  <div className="grid min-h-[26rem] place-items-center text-center">
+                    <div className="max-w-xl">
+                      <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-orange-500/10 text-[#FF6B00]"><IconBriefcase size={30} /></div>
+                      <h3 className="text-3xl font-semibold text-gray-950 dark:text-white">Create your talent profile</h3>
+                      <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-white/45">
+                        Add the essentials employers expect to see: your headline, skills, work history, education, project proofs, and links.
+                      </p>
+                      <button type="button" onClick={skipToManual} className="cursor-pointer mt-6 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 dark:border-white/10 dark:text-white/55 sm:hidden">
+                        Open full editor
+                      </button>
+                    </div>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Start with the basics</h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <Field label="Profile tab name"><input className={fieldClass} value={draft.profileName} onChange={(e) => set('profileName', e.target.value)} placeholder="Frontend profile" /></Field>
+                      <Field label="Full name" required><input className={fieldClass} value={draft.name} onChange={(e) => set('name', e.target.value)} placeholder="Alex Johnson" /></Field>
+                      <Field label="Professional headline" required><input className={fieldClass} value={draft.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field>
+                      <Field label="Email" required><input type="email" className={fieldClass} value={draft.email} onChange={(e) => set('email', e.target.value)} placeholder="alex@email.com" /></Field>
+                      <Field label="Location"><input className={fieldClass} value={draft.location} onChange={(e) => set('location', e.target.value)} placeholder="Karachi, Pakistan" /></Field>
+                      <Field label="Languages"><CsvField value={draft.languages} onChange={(value) => set('languages', value)} placeholder="English, Urdu" /></Field>
+                    </div>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Define how you want to work</h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <Field label="Availability"><CustomSelect value={draft.availability} options={AVAILABILITY_OPTIONS} onChange={(value) => set('availability', value)} /></Field>
+                      <Field label="Work preference"><CustomSelect value={draft.workPreference} options={WORK_PREFERENCES} onChange={(value) => set('workPreference', value)} /></Field>
+                      <Field label="Preferred roles"><CsvField value={draft.preferredRoles} onChange={(value) => set('preferredRoles', value)} placeholder="Frontend Engineer, React Developer" /></Field>
+                      <Field label="Rate or salary preference"><input className={fieldClass} value={draft.hourlyRate} onChange={(e) => set('hourlyRate', e.target.value)} placeholder="USD 35/hr or PKR 250k/mo" /></Field>
+                    </div>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add searchable skills</h3>
+                    <Field label="Skills" required><CsvField rows={6} value={draft.skills} onChange={(value) => set('skills', value)} placeholder="React, TypeScript, Next.js, Tailwind CSS" /></Field>
+                    <p className="text-xs text-gray-500 dark:text-white/35">Use comma-separated skills. These become chips in the preview and help matching surfaces later.</p>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add work experience</h3>
+                      <button type="button" onClick={() => set('experience', [...draft.experience, newExperience()])} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10"><IconPlus size={14} /> Add</button>
+                    </div>
+                    <div className="space-y-4">
+                      {draft.experience.map((item, index) => (
+                        <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                          <div className="mb-3 flex items-center justify-between">
+                            <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Experience {index + 1}</span>
+                            {draft.experience.length > 1 && <button type="button" onClick={() => set('experience', draft.experience.filter((entry) => entry.id !== item.id))} className="cursor-pointer text-xs font-medium text-red-500">Remove</button>}
+                          </div>
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <Field label="Role"><input className={fieldClass} value={item.role} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, role: e.target.value } : entry))} placeholder="Frontend Engineer" /></Field>
+                            <Field label="Company"><input className={fieldClass} value={item.company} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, company: e.target.value } : entry))} placeholder="TechCorp" /></Field>
+                            <Field label="Start"><input className={fieldClass} value={item.startDate} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, startDate: e.target.value } : entry))} placeholder="2023" /></Field>
+                            <Field label="End"><input className={fieldClass} value={item.current ? 'Present' : item.endDate} disabled={item.current} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, endDate: e.target.value } : entry))} placeholder="Present" /></Field>
+                            <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-white/45 sm:col-span-2">
+                              <input type="checkbox" checked={item.current} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, current: e.target.checked, endDate: e.target.checked ? '' : entry.endDate } : entry))} className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#FF6B00] focus:ring-orange-500" />
+                              Currently working here / Present
+                            </label>
+                            <div className="sm:col-span-2"><Field label="Impact"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, description: e.target.value } : entry))} placeholder="Describe outcomes, ownership, and measurable impact." /></Field></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add education</h3>
+                      <button type="button" onClick={() => set('education', [...draft.education, newEducation()])} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10"><IconPlus size={14} /> Add</button>
+                    </div>
+                    <div className="space-y-4">
+                      {draft.education.map((item, index) => (
+                        <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                          <div className="mb-3 flex items-center justify-between">
+                            <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Education {index + 1}</span>
+                            {draft.education.length > 1 && <button type="button" onClick={() => set('education', draft.education.filter((entry) => entry.id !== item.id))} className="cursor-pointer text-xs font-medium text-red-500">Remove</button>}
+                          </div>
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <Field label="School"><input className={fieldClass} value={item.school} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, school: e.target.value } : entry))} placeholder="University name" /></Field>
+                            <Field label="Degree"><input className={fieldClass} value={item.degree} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, degree: e.target.value } : entry))} placeholder="BS Computer Science" /></Field>
+                            <Field label="Field"><input className={fieldClass} value={item.field} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, field: e.target.value } : entry))} placeholder="Software Engineering" /></Field>
+                            <Field label="Years"><input className={fieldClass} value={[item.startYear, item.endYear].filter(Boolean).join(' - ')} onChange={(e) => { const [startYear = '', endYear = ''] = e.target.value.split('-').map((v) => v.trim()); set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, startYear, endYear } : entry)) }} placeholder="2020 - 2024" /></Field>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add project proofs</h3>
+                      <button type="button" onClick={() => set('projects', [...draft.projects, newProject()])} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10"><IconPlus size={14} /> Add</button>
+                    </div>
+                    <div className="space-y-4">
+                      {draft.projects.map((item, index) => (
+                        <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                          <div className="mb-3 flex items-center justify-between">
+                            <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Project {index + 1}</span>
+                            {draft.projects.length > 1 && <button type="button" onClick={() => set('projects', draft.projects.filter((entry) => entry.id !== item.id))} className="cursor-pointer text-xs font-medium text-red-500">Remove</button>}
+                          </div>
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <Field label="Project title"><input className={fieldClass} value={item.title} onChange={(e) => set('projects', draft.projects.map((entry) => entry.id === item.id ? { ...entry, title: e.target.value } : entry))} placeholder="AI recruiting dashboard" /></Field>
+                            <Field label="Project link"><input type="url" className={fieldClass} value={item.link} onChange={(e) => set('projects', draft.projects.map((entry) => entry.id === item.id ? { ...entry, link: e.target.value } : entry))} placeholder="https://example.com" /></Field>
+                            <Field label="Optional video URL"><input type="url" className={fieldClass} value={item.videoUrl} onChange={(e) => set('projects', draft.projects.map((entry) => entry.id === item.id ? { ...entry, videoUrl: e.target.value } : entry))} placeholder="Loom or YouTube link" /></Field>
+                            <div className="sm:col-span-2"><Field label="Project summary"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => set('projects', draft.projects.map((entry) => entry.id === item.id ? { ...entry, description: e.target.value } : entry))} placeholder="Explain the problem, your role, and the result." /></Field></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Finish with intro and links</h3>
+                    <Field label="Overview" required><textarea className={fieldClass} rows={5} value={draft.overview} onChange={(e) => set('overview', e.target.value)} placeholder="Write a concise client-facing profile overview." /></Field>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <Field label="LinkedIn"><input type="url" className={fieldClass} value={draft.linkedin} onChange={(e) => set('linkedin', e.target.value)} placeholder="linkedin.com/in/..." /></Field>
+                      <Field label="GitHub"><input type="url" className={fieldClass} value={draft.github} onChange={(e) => set('github', e.target.value)} placeholder="github.com/..." /></Field>
+                      <Field label="Portfolio"><input type="url" className={fieldClass} value={draft.portfolio} onChange={(e) => set('portfolio', e.target.value)} placeholder="your-site.com" /></Field>
+                      <Field label="Intro video URL"><input type="url" className={fieldClass} value={draft.introVideoUrl} onChange={(e) => set('introVideoUrl', e.target.value)} placeholder="Loom or YouTube link" /></Field>
+                    </div>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="grid min-h-[26rem] gap-5 lg:grid-cols-2">
+                    <div>
+                      <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Review your profile</h3>
+                      <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-white/45">Create the profile now, then continue refining every field in the full manual editor.</p>
+                    </div>
+                    <ProfilePreview profile={draft} />
+                  </div>
+                </Step>
+              </Stepper>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabProps) {
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(profiles[0]?.id ?? null)
+  const [formState, setFormState] = useState<TalentProfile | null>(profiles[0] ?? null)
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const resumeInputRef = useRef<HTMLInputElement>(null)
 
+  const activeProfile = useMemo(
+    () => profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0] ?? null,
+    [activeProfileId, profiles],
+  )
+
+  useEffect(() => {
+    if (!profiles.length) {
+      setActiveProfileId(null)
+      setFormState(null)
+      return
+    }
+
+    const nextActive = activeProfile ?? profiles[0]
+    setActiveProfileId(nextActive.id)
+    setFormState(nextActive)
+  }, [activeProfile, profiles])
+
+  const set = <K extends keyof TalentProfile>(key: K, value: TalentProfile[K]) => {
+    setFormState((prev) => (prev ? { ...prev, [key]: value } : prev))
+  }
+
+  const saveProfile = (profile = formState) => {
+    if (!profile) return
+    const nextProfiles = upsertTalentProfile(profiles, profile)
+    onProfilesChange(nextProfiles)
+    setActiveProfileId(profile.id)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1800)
+  }
+
+  const createProfile = (profile: TalentProfile) => {
+    const nextProfile = { ...profile, isPrimary: profiles.length === 0 }
+    const next = upsertTalentProfile(profiles, nextProfile)
+    onProfilesChange(next)
+    setActiveProfileId(nextProfile.id)
+    setFormState(nextProfile)
+    setIsOnboardingOpen(false)
+  }
+
+  const removeProfile = (id: string) => {
+    const next = profiles.filter((profile) => profile.id !== id)
+    onProfilesChange(next)
+
+    if (id === activeProfileId) {
+      setActiveProfileId(next[0]?.id ?? null)
+      setFormState(next[0] ?? null)
+    }
+  }
+
+  const updateExperience = (id: string, updates: Partial<TalentExperience>) => {
+    if (!formState) return
+    set('experience', formState.experience.map((item) => (item.id === id ? { ...item, ...updates } : item)))
+  }
+
+  const updateEducation = (id: string, updates: Partial<TalentEducation>) => {
+    if (!formState) return
+    set('education', formState.education.map((item) => (item.id === id ? { ...item, ...updates } : item)))
+  }
+
+  const updateProject = (id: string, updates: Partial<TalentProject>) => {
+    if (!formState) return
+    set('projects', formState.projects.map((item) => (item.id === id ? { ...item, ...updates } : item)))
+  }
+
+  const addExperience = () => {
+    setFormState((prev) => (prev ? { ...prev, experience: [...prev.experience, newExperience()] } : prev))
+  }
+
+  const addEducation = () => {
+    setFormState((prev) => (prev ? { ...prev, education: [...prev.education, newEducation()] } : prev))
+  }
+
+  const addProject = () => {
+    setFormState((prev) => (prev ? { ...prev, projects: [...prev.projects, newProject()] } : prev))
+  }
+
+  const handleImageFile = (file: File | undefined, onLoad: (dataUrl: string) => void) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => onLoad(String(event.target?.result ?? ''))
+    reader.readAsDataURL(file)
+  }
+
+  if (!formState) {
+    return (
+      <>
+        <EmptyState onCreate={() => setIsOnboardingOpen(true)} />
+        <OnboardingModal open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} onCreate={createProfile} defaultProfileName={nextProfileName(profiles.length)} />
+      </>
+    )
+  }
+
+  return (
+    <div className="h-full min-h-0 [&_button:not(:disabled)]:cursor-pointer">
+      <div className="grid h-full min-h-0 grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
+        <section className={`${surface} flex min-h-[42rem] flex-col overflow-hidden lg:col-span-5 lg:min-h-0 lg:h-full`}>
+          <div className="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-5 dark:border-white/[0.07]">
             <div>
-              <label className={labelClass}>Education</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={profile.education}
-                  onChange={(e) => setProfile(prev => ({ ...prev, education: e.target.value }))}
-                  className={inputClass}
-                />
-              ) : (
-                <p className="text-xs text-gray-800 font-medium">{profile.education}</p>
-              )}
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Talent Profile</p>
+              <h1 className="mt-1 text-2xl font-semibold text-gray-950 dark:text-white">Build your profile</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => saveProfile()}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(255,107,0,0.18)]"
+              >
+                <IconDeviceFloppy size={16} />
+                {saved ? 'Saved' : 'Save'}
+              </button>
             </div>
           </div>
-
-          {/* Skills Section */}
-          <div className="border-t border-gray-200 pt-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Skills & Core Competencies</h3>
-              {isEditing && (
-                <div className="flex gap-1.5 max-w-[150px]">
-                  <input
-                    type="text"
-                    value={newSkill}
-                    onChange={(e) => setNewSkill(e.target.value)}
-                    placeholder="Add skill"
-                    className="px-2 py-1 text-[10px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-orange-200 bg-white"
-                    onKeyPress={(e) => e.key === 'Enter' && addSkill()}
-                  />
-                  <button
-                    onClick={addSkill}
-                    className="px-2.5 py-1 text-[10px] bg-[#FF6B00] text-white rounded font-medium hover:opacity-90 cursor-pointer"
+          <div className="border-b border-gray-200 px-5 py-3 dark:border-white/[0.07]">
+            <div className="flex flex-wrap items-center gap-2">
+              {profiles.map((profile) => {
+                const active = profile.id === activeProfileId
+                return (
+                  <div
+                    key={profile.id}
+                    className={active ? 'inline-flex items-center overflow-hidden rounded-lg border border-orange-500/30 bg-orange-50 text-[#C84F00]' : 'inline-flex items-center overflow-hidden rounded-lg border border-gray-200 bg-white text-gray-500 transition hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/45 dark:hover:bg-white/[0.055]'}
                   >
-                    Add
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {profile.skills.map(skill => (
-                <span key={skill} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 border border-gray-200 text-xs text-gray-800 font-medium dark:bg-white/[0.06] dark:text-gray-300 dark:border-white/[0.08]">
-                  {skill}
-                  {isEditing && (
                     <button
-                      onClick={() => removeSkill(skill)}
-                      className="text-gray-400 hover:text-red-500 font-semibold cursor-pointer"
+                      type="button"
+                      onClick={() => setActiveProfileId(profile.id)}
+                      className="px-3 py-1.5 text-xs font-semibold"
                     >
-                      ×
+                      {profile.profileName || profile.headline || 'Profile'}
                     </button>
-                  )}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Social Links */}
-          <div className="border-t border-gray-200 pt-5">
-            <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Social Links</h3>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {profile.linkedin && (
-                <a href={`https://${profile.linkedin}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:underline">
-                  🔗 LinkedIn
-                </a>
-              )}
-              {profile.github && (
-                <a href={`https://${profile.github}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-gray-700 hover:underline">
-                  💻 GitHub
-                </a>
-              )}
-              {profile.portfolio && (
-                <a href={`https://${profile.portfolio}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-orange-600 hover:underline col-span-2">
-                  🌐 Portfolio Website
-                </a>
-              )}
-            </div>
-          </div>
-
-          {/* Profile Completion */}
-          <div className="border-t border-gray-200 pt-5">
-            <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Profile Completion</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-600">
-                <span>Basic Information</span>
-                <span className="font-semibold text-green-700">100%</span>
-              </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 rounded-full" style={{ width: '100%' }}></div>
-              </div>
-              <div className="flex items-center justify-between text-xs text-gray-600">
-                <span>Skills & Experience</span>
-                <span className="font-semibold text-green-700">83%</span>
-              </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 rounded-full" style={{ width: '83%' }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Right Column: Experience, Bio, Projects, Badges (col-span-4) */}
-      <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
-        <div className="mb-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-gray-400">Professional</p>
-          <h2 className="mt-1 text-xl font-semibold">Experience & Projects</h2>
-        </div>
-
-        <div className="space-y-6">
-          {/* Bio */}
-          <div>
-            <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">About Me</h3>
-            {isEditing ? (
-              <textarea
-                value={profile.bio}
-                onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-                rows={4}
-                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none bg-white/50 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 text-gray-800"
-                placeholder="Tell us about yourself..."
-              />
-            ) : (
-              <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{profile.bio}</p>
-            )}
-          </div>
-
-          {/* Resume upload */}
-          <div className="border-t border-gray-200 pt-5">
-            <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Resume File</h3>
-            {isEditing ? (
-              <div className="rounded-xl border border-dashed border-gray-300 p-4 bg-gray-50/50 hover:bg-gray-50 flex flex-col items-center justify-center text-center cursor-pointer">
-                <svg className="w-6 h-6 text-gray-400 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                <p className="text-xs font-semibold text-gray-700">Upload new resume (.pdf)</p>
-              </div>
-            ) : (
-              profile.resumeFilename ? (
-                <div className="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-200">
-                  <span className="text-xs font-medium text-gray-700">{profile.resumeFilename}</span>
-                  <button className="text-[10px] font-bold text-[#FF6B00] bg-white border border-gray-200 px-2 py-1 rounded shadow-sm cursor-pointer">View</button>
-                </div>
-              ) : (
-                <p className="text-xs text-gray-500">No resume uploaded.</p>
-              )
-            )}
-          </div>
-
-          {/* Experience List */}
-          <div className="border-t border-gray-200 pt-5">
-            <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Work Experience</h3>
-            <div className="space-y-4">
-              {profile.experienceList.map(exp => (
-                <div key={exp.id} className="border-l-2 border-orange-200 pl-3">
-                  <h4 className="text-xs font-bold text-gray-900">{exp.role}</h4>
-                  <div className="flex justify-between items-center text-[10px] text-gray-500 mb-1">
-                    <span className="text-[#FF6B00] font-semibold">{exp.company}</span>
-                    <span>{exp.duration}</span>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        removeProfile(profile.id)
+                      }}
+                      className={active ? 'grid h-7 w-7 place-items-center border-l border-orange-500/20 text-[#C84F00] hover:bg-orange-100' : 'grid h-7 w-7 place-items-center border-l border-gray-200 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:border-white/10 dark:hover:bg-red-500/10 dark:hover:text-red-300'}
+                      aria-label={'Delete ' + (profile.profileName || profile.headline || 'profile')}
+                    >
+                      <IconTrash size={13} />
+                    </button>
                   </div>
-                  <p className="text-[11px] text-gray-600 leading-relaxed">{exp.description}</p>
-                </div>
-              ))}
+                )
+              })}
+              <button
+                type="button"
+                onClick={() => setIsOnboardingOpen(true)}
+                className="grid h-8 w-8 place-items-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:border-orange-200 hover:bg-orange-50 hover:text-[#C84F00] dark:border-white/10 dark:bg-white/[0.035] dark:text-white/55"
+                aria-label="Create another profile"
+              >
+                <IconPlus size={15} />
+              </button>
             </div>
           </div>
 
-          {/* Projects List */}
-          <div className="border-t border-gray-200 pt-5">
-            <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Recent Projects</h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              {profile.projectsList.map(proj => (
-                <div key={proj.id} className="bg-gray-50/50 border border-gray-200 rounded-xl p-3">
-                  <h4 className="text-xs font-bold text-gray-900">{proj.title}</h4>
-                  <p className="text-[11px] text-gray-600 mt-1 mb-2 line-clamp-2">{proj.description}</p>
-                  {proj.link && (
-                    <a href={`https://${proj.link}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-[#FF6B00] hover:underline flex items-center gap-1">
-                      View Project ↗
-                    </a>
+          <div className="min-h-0 flex-1 space-y-4 overflow-auto p-5 custom-scrollbar">
+            <FormSection title="Identity">
+              <div className="mb-5 flex items-center gap-4">
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-orange-50 dark:border-white/10 dark:bg-white/[0.03]">
+                  {formState.photoDataUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={formState.photoDataUrl} alt="Profile" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="absolute inset-0 grid place-items-center text-lg font-bold text-[#FF6B00]">{initials(formState.name)}</span>
                   )}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Earned Badges */}
-          <div className="border-t border-gray-200 pt-5">
-            <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Earned Badges</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {profile.badges.map(badge => (
-                <div key={badge.id} className="relative bg-gradient-to-br from-white to-orange-50/50 border border-orange-100 rounded-xl p-2.5 flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-tr from-[#FF6B00] to-[#FF914D] rounded-full flex items-center justify-center shrink-0 shadow-sm">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="font-bold text-gray-900 text-[10px] truncate leading-tight">{badge.badge}</h4>
-                    <p className="text-[9px] text-gray-400 truncate">{badge.title}</p>
-                  </div>
+                <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => handleImageFile(event.target.files?.[0], (dataUrl) => set('photoDataUrl', dataUrl))} />
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => photoInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/55">
+                    <IconCamera size={15} /> {formState.photoDataUrl ? 'Change photo' : 'Upload photo'}
+                  </button>
+                  {formState.photoDataUrl && <button type="button" onClick={() => set('photoDataUrl', null)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 dark:border-red-500/15 dark:bg-red-500/[0.07] dark:text-red-300">Remove</button>}
                 </div>
-              ))}
-            </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Profile tab name"><input className={fieldClass} value={formState.profileName} onChange={(e) => set('profileName', e.target.value)} /></Field>
+                <Field label="Full name" required><input className={fieldClass} value={formState.name} onChange={(e) => set('name', e.target.value)} /></Field>
+                <div className="sm:col-span-2"><Field label="Headline" required><input className={fieldClass} value={formState.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field></div>
+                <Field label="Email" required><input type="email" className={fieldClass} value={formState.email} onChange={(e) => set('email', e.target.value)} /></Field>
+                <Field label="Location"><input className={fieldClass} value={formState.location} onChange={(e) => set('location', e.target.value)} /></Field>
+              </div>
+            </FormSection>
+            <FormSection title="Positioning">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Availability"><CustomSelect value={formState.availability} options={AVAILABILITY_OPTIONS} onChange={(value) => set('availability', value)} /></Field>
+                <Field label="Work preference"><CustomSelect value={formState.workPreference} options={WORK_PREFERENCES} onChange={(value) => set('workPreference', value)} /></Field>
+                <Field label="Preferred roles"><CsvField value={formState.preferredRoles} onChange={(value) => set('preferredRoles', value)} /></Field>
+                <Field label="Rate or salary preference"><input className={fieldClass} value={formState.hourlyRate} onChange={(e) => set('hourlyRate', e.target.value)} /></Field>
+                <div className="sm:col-span-2"><Field label="Overview" required><textarea className={fieldClass} rows={5} value={formState.overview} onChange={(e) => set('overview', e.target.value)} /></Field></div>
+              </div>
+            </FormSection>
+
+            <FormSection title="Skills and languages">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Skills" required><CsvField rows={4} value={formState.skills} onChange={(value) => set('skills', value)} /></Field>
+                <Field label="Languages"><CsvField rows={4} value={formState.languages} onChange={(value) => set('languages', value)} /></Field>
+              </div>
+            </FormSection>
+
+            <FormSection title="Experience" action={<button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+              <div className="space-y-4">
+                {formState.experience.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Work entry</span>
+                      <button type="button" onClick={() => set('experience', formState.experience.filter((exp) => exp.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Field label="Role"><input className={fieldClass} value={item.role} onChange={(e) => updateExperience(item.id, { role: e.target.value })} /></Field>
+                      <Field label="Company"><input className={fieldClass} value={item.company} onChange={(e) => updateExperience(item.id, { company: e.target.value })} /></Field>
+                      <Field label="Location"><input className={fieldClass} value={item.location} onChange={(e) => updateExperience(item.id, { location: e.target.value })} /></Field>
+                      <Field label="Start"><input className={fieldClass} value={item.startDate} onChange={(e) => updateExperience(item.id, { startDate: e.target.value })} /></Field>
+                      <Field label="End"><input className={fieldClass} value={item.current ? 'Present' : item.endDate} disabled={item.current} onChange={(e) => updateExperience(item.id, { endDate: e.target.value })} /></Field>
+                      <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-white/45 sm:col-span-2">
+                        <input type="checkbox" checked={item.current} onChange={(e) => updateExperience(item.id, { current: e.target.checked, endDate: e.target.checked ? '' : item.endDate })} className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#FF6B00] focus:ring-orange-500" />
+                        Currently working here / Present
+                      </label>
+                      <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateExperience(item.id, { description: e.target.value })} /></Field></div>
+                    </div>
+                  </div>
+                ))}
+                <button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another experience</button>
+              </div>
+            </FormSection>
+
+            <FormSection title="Education" action={<button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+              <div className="space-y-4">
+                {formState.education.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Education entry</span>
+                      <button type="button" onClick={() => set('education', formState.education.filter((edu) => edu.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Field label="School"><input className={fieldClass} value={item.school} onChange={(e) => updateEducation(item.id, { school: e.target.value })} /></Field>
+                      <Field label="Degree"><input className={fieldClass} value={item.degree} onChange={(e) => updateEducation(item.id, { degree: e.target.value })} /></Field>
+                      <Field label="Field"><input className={fieldClass} value={item.field} onChange={(e) => updateEducation(item.id, { field: e.target.value })} /></Field>
+                      <Field label="Years"><input className={fieldClass} value={`${item.startYear}${item.endYear ? ` - ${item.endYear}` : ''}`} onChange={(e) => { const [startYear = '', endYear = ''] = e.target.value.split('-').map((v) => v.trim()); updateEducation(item.id, { startYear, endYear }) }} /></Field>
+                    </div>
+                  </div>
+                ))}
+                <button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another education</button>
+              </div>
+            </FormSection>
+
+            <FormSection title="Project proofs" action={<button type="button" onClick={addProject} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+              <div className="space-y-4">
+                {formState.projects.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Project entry</span>
+                      <button type="button" onClick={() => set('projects', formState.projects.filter((project) => project.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Field label="Title"><input className={fieldClass} value={item.title} onChange={(e) => updateProject(item.id, { title: e.target.value })} /></Field>
+                      <Field label="Link"><input type="url" className={fieldClass} value={item.link} onChange={(e) => updateProject(item.id, { link: e.target.value })} /></Field>
+                      <Field label="Video URL"><input type="url" className={fieldClass} value={item.videoUrl} onChange={(e) => updateProject(item.id, { videoUrl: e.target.value })} /></Field>
+                      <Field label="Image"><input type="file" accept="image/*" className="block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#FF6B00] dark:text-white/35 dark:file:bg-orange-500/10" onChange={(event) => handleImageFile(event.target.files?.[0], (dataUrl) => updateProject(item.id, { imageDataUrl: dataUrl }))} /></Field>
+                      <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateProject(item.id, { description: e.target.value })} /></Field></div>
+                    </div>
+                  </div>
+                ))}
+                <button type="button" onClick={addProject} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another project</button>
+              </div>
+            </FormSection>
+
+            <FormSection title="Links and media">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="LinkedIn"><input type="url" className={fieldClass} value={formState.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
+                <Field label="GitHub"><input type="url" className={fieldClass} value={formState.github} onChange={(e) => set('github', e.target.value)} /></Field>
+                <Field label="Portfolio"><input type="url" className={fieldClass} value={formState.portfolio} onChange={(e) => set('portfolio', e.target.value)} /></Field>
+                <Field label="Intro video URL"><input type="url" className={fieldClass} value={formState.introVideoUrl} onChange={(e) => set('introVideoUrl', e.target.value)} /></Field>
+                <Field label="Resume">
+                  <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(event) => set('resumeFilename', event.target.files?.[0]?.name ?? '')} />
+                  <button type="button" onClick={() => resumeInputRef.current?.click()} className="inline-flex w-full items-center justify-between rounded-xl border border-dashed border-gray-300 bg-white/60 px-3 py-2.5 text-sm text-gray-600 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/45">
+                    <span>{formState.resumeFilename || 'Upload resume metadata'}</span>
+                    <IconFileText size={16} />
+                  </button>
+                </Field>
+              </div>
+            </FormSection>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <section className={`${surface} min-h-[42rem] overflow-auto p-5 custom-scrollbar lg:col-span-4 lg:min-h-0 lg:h-full`}>
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-white/30">Live preview</p>
+          <ProfilePreview profile={activeProfile ?? formState} />
+        </section>
+      </div>
+
+      <OnboardingModal open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} onCreate={createProfile} defaultProfileName={nextProfileName(profiles.length)} />
     </div>
   )
 }
