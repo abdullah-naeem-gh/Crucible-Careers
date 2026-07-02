@@ -136,13 +136,13 @@ function TalentDashboardContent() {
   }
 
   return (
-    <main className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-gray-50 text-gray-900">
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-gray-50" />
+    <main className="relative min-h-screen overflow-hidden bg-[#101010] text-white">
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(255,107,0,0.095),transparent_30%),radial-gradient(circle_at_85%_90%,rgba(255,145,77,0.06),transparent_28%)]" />
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
-            backgroundImage: 'linear-gradient(to right, #111 1px, transparent 1px), linear-gradient(to bottom, #111 1px, transparent 1px)',
+            backgroundImage: 'linear-gradient(to right, #6b7280 1px, transparent 1px), linear-gradient(to bottom, #6b7280 1px, transparent 1px)',
             backgroundSize: '40px 40px',
           }}
           />

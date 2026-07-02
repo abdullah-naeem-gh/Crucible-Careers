@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 interface SavedJob {
@@ -74,21 +74,52 @@ export const DEMO_SAVED_JOBS: SavedJob[] = [
 export default function SavedTab() {
   const [selectedCompany, setSelectedCompany] = useState<string>('All')
   const [selectedType, setSelectedType] = useState<string>('All')
-  const [selectedJobId, setSelectedJobId] = useState<string>(DEMO_SAVED_JOBS[0].id)
+  const [savedJobs, setSavedJobs] = useState<SavedJob[]>([])
+  const [selectedJobId, setSelectedJobId] = useState<string>('')
 
-  const companies = ['All', ...Array.from(new Set(DEMO_SAVED_JOBS.map(j => j.company)))]
+  useEffect(() => {
+    const loadJobs = () => {
+      try {
+        const stored = localStorage.getItem('talent_saved_jobs')
+        const parsed = stored ? JSON.parse(stored) : []
+        const combined = [...DEMO_SAVED_JOBS, ...parsed]
+        setSavedJobs(combined)
+        if (combined.length > 0 && !selectedJobId) {
+          setSelectedJobId(combined[0].id)
+        }
+      } catch (e) {
+        setSavedJobs(DEMO_SAVED_JOBS)
+        if (DEMO_SAVED_JOBS.length > 0 && !selectedJobId) {
+          setSelectedJobId(DEMO_SAVED_JOBS[0].id)
+        }
+      }
+    }
+    loadJobs()
+    window.addEventListener('talent_saved_jobs_changed', loadJobs)
+    return () => window.removeEventListener('talent_saved_jobs_changed', loadJobs)
+  }, [selectedJobId])
+
+  const companies = ['All', ...Array.from(new Set(savedJobs.map(j => j.company)))]
   const types = ['All', 'Full-time', 'Part-time', 'Contract', 'Internship']
 
-  const filteredJobs = DEMO_SAVED_JOBS.filter(job => {
+  const filteredJobs = savedJobs.filter(job => {
     const matchesCompany = selectedCompany === 'All' || job.company === selectedCompany
     const matchesType = selectedType === 'All' || job.type === selectedType
     return matchesCompany && matchesType
   })
 
-  const selectedJob = DEMO_SAVED_JOBS.find(j => j.id === selectedJobId) ?? filteredJobs[0] ?? null
+  const selectedJob = savedJobs.find(j => j.id === selectedJobId) ?? filteredJobs[0] ?? null
 
   const handleRemove = (id: string) => {
-    alert('Removed job from bookmarks')
+    try {
+      const stored = localStorage.getItem('talent_saved_jobs')
+      const parsed = stored ? JSON.parse(stored) : []
+      const updated = parsed.filter((j: any) => j.id !== id)
+      localStorage.setItem('talent_saved_jobs', JSON.stringify(updated))
+      window.dispatchEvent(new Event('talent_saved_jobs_changed'))
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (
@@ -141,10 +172,10 @@ export default function SavedTab() {
               key={job.id}
               onClick={() => setSelectedJobId(job.id)}
               whileHover={{ scale: 1.005 }}
-              className={`w-full text-left p-4 rounded-xl border transition-all ${
+              className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer ${
                 selectedJob?.id === job.id
-                  ? 'border-[#FF6B00]/60 ring-2 ring-[#FF6B00]/20 bg-white shadow-md'
-                  : 'border-gray-200 bg-white/50 hover:shadow-sm hover:bg-white hover:border-gray-300'
+                  ? 'border-orange-500/50 ring-2 ring-orange-500/10 bg-orange-500/[0.055] shadow-[0_0_0_2px_rgba(255,107,0,0.1),8px_8px_20px_rgba(255,107,0,0.08),0_4px_16px_rgba(0,0,0,0.08)]'
+                  : 'border-white/[0.065] bg-white/50 hover:shadow-sm hover:bg-white hover:border-gray-300'
               }`}
             >
               <div className="flex items-start justify-between gap-3">

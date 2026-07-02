@@ -3,6 +3,25 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { DashboardThemeSwitcher } from '@/components/shared/theme/DashboardThemeProvider'
+import {
+  IconBriefcase,
+  IconBuilding,
+  IconFileDescription,
+  IconBookmark,
+  IconUser,
+  IconAward,
+  IconSettings
+} from '@tabler/icons-react'
+
+const TAB_ICONS: Record<string, React.ComponentType<any>> = {
+  jobs: IconBriefcase,
+  companies: IconBuilding,
+  applications: IconFileDescription,
+  saved: IconBookmark,
+  profile: IconUser,
+  exams: IconAward,
+  settings: IconSettings,
+}
 
 interface TalentSidebarProps {
   activeTab?: string
@@ -35,6 +54,7 @@ export default function TalentSidebar({
 
   const renderTab = (key: string, label: string, count?: number, tag?: string) => {
     const active = isActive(key)
+    const IconComponent = TAB_ICONS[key]
     return (
       <Link
         href={onTabChange ? '#' : key === 'jobs' ? '/talent/dashboard' : `/talent/dashboard/${key}`}
@@ -50,10 +70,19 @@ export default function TalentSidebar({
             : 'border-transparent text-gray-700 hover:border-gray-200 hover:bg-gray-50 dark:text-white/60 dark:hover:border-white/[0.05] dark:hover:bg-white/[0.035] dark:hover:text-white'
         }`}
       >
-        <span>{label}</span>
+        <div className="flex items-center gap-2.5">
+          {IconComponent && <IconComponent className="h-4.5 w-4.5 shrink-0 stroke-[1.6]" />}
+          <span>{label}</span>
+        </div>
         <span className="flex items-center gap-2">
           {tag && (
-            <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${active ? 'bg-orange-500/15 text-[#FF914D]' : 'bg-orange-50 text-[#FF6B00] dark:bg-orange-500/10 dark:text-[#FF914D]'}`}>
+            <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold border ${
+              tag === 'Set-up Now'
+                ? 'border-orange-500/35 text-[#FF6B00] bg-transparent dark:border-orange-500/40 dark:text-[#FF914D]'
+                : active
+                  ? 'border-transparent bg-orange-500/15 text-[#FF914D]'
+                  : 'border-transparent bg-orange-50 text-[#FF6B00] dark:bg-orange-500/10 dark:text-[#FF914D]'
+            }`}>
               {tag}
             </span>
           )}

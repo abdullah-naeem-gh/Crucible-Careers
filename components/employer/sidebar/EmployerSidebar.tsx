@@ -4,6 +4,13 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { DashboardThemeSwitcher } from "@/components/shared/theme/DashboardThemeProvider";
 
+import {
+  IconLayoutDashboard,
+  IconBriefcase,
+  IconChartBar,
+  IconBuilding,
+} from "@tabler/icons-react";
+
 type EmployerTab = "overview" | "jobs" | "analytics" | "profile";
 
 interface EmployerSidebarProps {
@@ -21,6 +28,13 @@ const tabs: Array<{ key: EmployerTab; label: string }> = [
   { key: "analytics", label: "Analytics" },
   { key: "profile", label: "Company Profile" },
 ];
+
+const TAB_ICONS: Record<EmployerTab, React.ComponentType<any>> = {
+  overview: IconLayoutDashboard,
+  jobs: IconBriefcase,
+  analytics: IconChartBar,
+  profile: IconBuilding,
+};
 
 export default function EmployerSidebar({
   activeTab,
@@ -62,19 +76,23 @@ export default function EmployerSidebar({
         {tabs.map((tab) => {
           const active = activeTab === tab.key;
           const count = tab.key === "jobs" ? jobCount : tab.key === "overview" ? applicationCount : null;
+          const IconComponent = TAB_ICONS[tab.key];
 
           return (
             <button
               key={tab.key}
               type="button"
               onClick={() => onTabChange(tab.key)}
-              className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-left transition-all ${
+              className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-left transition-all cursor-pointer ${
                 active
                   ? "border-orange-500/20 bg-orange-500/10 text-[#FF914D] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
                   : "border-transparent text-white/60 hover:border-white/[0.05] hover:bg-white/[0.035] hover:text-white"
               }`}
             >
-              <span>{tab.label}</span>
+              <div className="flex items-center gap-2.5">
+                {IconComponent && <IconComponent className="h-4.5 w-4.5 shrink-0 stroke-[1.6]" />}
+                <span>{tab.label}</span>
+              </div>
               {count !== null && (
                 <span className={`rounded-md px-2 py-0.5 text-xs ${active ? "bg-orange-500/15 text-[#FF914D]" : "text-white/30"}`}>
                   {count}

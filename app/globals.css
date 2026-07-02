@@ -191,7 +191,19 @@ html, body {
   min-height: 100vh;
 }
 
-.dashboard-theme-root * {
+.dashboard-theme-root,
+.dashboard-theme-root main,
+.dashboard-theme-root aside,
+.dashboard-theme-root section,
+.dashboard-theme-root button,
+.dashboard-theme-root input,
+.dashboard-theme-root select,
+.dashboard-theme-root textarea,
+.dashboard-theme-root a,
+.dashboard-theme-root li > div,
+.dashboard-theme-root [class*="rounded-xl"],
+.dashboard-theme-root [class*="rounded-2xl"],
+.dashboard-theme-root [class*="rounded-[24px]"] {
   transition-property: background-color, border-color, color, box-shadow;
   transition-duration: 180ms;
   transition-timing-function: ease;
@@ -220,8 +232,10 @@ html, body {
     #101010 !important;
 }
 
-.dashboard-theme-dark [class*="bg-white"] {
+.dashboard-theme-dark [class*="bg-white"],
+.dashboard-theme-dark [class*="bg-[#141414]"] {
   background-color: #171717 !important;
+  background: #171717 !important;
   color-scheme: dark;
 }
 
@@ -311,11 +325,16 @@ html, body {
 
 .dashboard-theme-light [class*="bg-[#101010]"],
 .dashboard-theme-light [class*="bg-[#171717]"],
-.dashboard-theme-light [class*="bg-[#141414]"],
 .dashboard-theme-light [class*="bg-[#121212]"] {
   background: rgba(255, 255, 255, 0.78) !important;
   background-color: rgba(255, 255, 255, 0.78) !important;
   backdrop-filter: blur(18px);
+  color-scheme: light;
+}
+
+.dashboard-theme-light [class*="bg-[#141414]"] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
   color-scheme: light;
 }
 
