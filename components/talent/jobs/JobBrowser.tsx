@@ -280,7 +280,7 @@ export default function JobBrowser({ jobs }: Props) {
                               )}
                             </div>
                           </div>
-                          <div className="shrink-0 flex flex-col justify-between items-end">
+                          <div className="shrink-0 flex flex-col justify-between items-end gap-4">
                             <div className="text-right flex flex-col items-end gap-1.5">
                               {relativeDate(job.posted_at) && (
                                 <span className="text-xs text-gray-400">{relativeDate(job.posted_at)}</span>

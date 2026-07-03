@@ -301,7 +301,18 @@ function EmployerDashboardContent() {
           <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
             <AnimatePresence initial={false} mode="wait">
               {activeTab === "overview" && (
-                <OverviewTab key="overview" jobs={jobs} analytics={analytics} onOpenJobs={() => changeTab("jobs")} />
+                <OverviewTab
+                  key="overview"
+                  jobs={jobs}
+                  analytics={analytics}
+                  onOpenJobs={() => changeTab("jobs")}
+                  onViewJobApplicants={(jobId) => {
+                    setViewingJobApplicantsId(jobId);
+                    changeTab("jobs");
+                  }}
+                  onTabChange={changeTab}
+                  onNewJob={() => setIsFormOpen(true)}
+                />
               )}
               {activeTab === "jobs" && (
                 viewingJobApplicantsId ? (
