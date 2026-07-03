@@ -84,7 +84,36 @@ export default function OverviewTab({
     { label: "Conversion", value: "12.5%", note: "Views to Apps", trend: "Good", badgeBg: "bg-violet-500/10", badgeColor: "text-violet-400", color: "text-violet-400" },
   ];
 
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const actionItems = React.useMemo(() => {
+    if (!mounted) {
+      return [
+        {
+          id: "loading-1",
+          type: "loading",
+          title: "Loading Workspace...",
+          description: "Syncing workspace checklist details...",
+          actionLabel: "Syncing",
+          onClick: () => {},
+          iconBg: "bg-white/[0.03] text-white/20"
+        },
+        {
+          id: "loading-2",
+          type: "loading",
+          title: "Preparing Tasks...",
+          description: "Structuring pending items...",
+          actionLabel: "Syncing",
+          onClick: () => {},
+          iconBg: "bg-white/[0.03] text-white/20"
+        }
+      ];
+    }
+
     const items: any[] = [];
 
     // 1. Check if profile needs setup (missing overview description)
@@ -158,7 +187,7 @@ export default function OverviewTab({
     }
 
     return items.slice(0, 2); // Show top 2 most critical items
-  }, [jobs, onTabChange, onViewJobApplicants, onNewJob]);
+  }, [mounted, jobs, onTabChange, onViewJobApplicants, onNewJob]);
 
   const notifications = React.useMemo(() => {
     return [
@@ -258,6 +287,7 @@ export default function OverviewTab({
                             {item.type === "screen" && <IconUsers size={16} />}
                             {item.type === "draft" && <IconBriefcase size={16} />}
                             {item.type === "success" && <IconCheck size={16} />}
+                            {item.type === "loading" && <IconActivity size={16} className="animate-pulse" />}
                           </div>
                           <div className="min-w-0">
                             <h3 className="text-xs font-bold text-white leading-tight group-hover:text-[#FF914D] transition-colors truncate">{item.title}</h3>
