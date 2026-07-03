@@ -7,7 +7,6 @@ import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { JOBS } from '@/lib/talent/data/jobs'
 import { DEMO_APPLICATIONS } from '@/components/talent/dashboard/ApplicationsTab'
-import { DEMO_SAVED_JOBS } from '@/components/talent/dashboard/SavedTab'
 
 const DEMO_APP_DETAIL = {
   id: '1',
@@ -48,7 +47,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [loading, setLoading] = useState(true)
   const [jobCount, setJobCount] = useState(JOBS.length)
   const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
-  const [savedCount, setSavedCount] = useState(DEMO_SAVED_JOBS.length)
+  const [savedCount, setSavedCount] = useState(0)
 
   useEffect(() => {
     try {
@@ -163,7 +162,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
     try {
       const savedBookmarked = localStorage.getItem('talent_saved_jobs')
       const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
-      setSavedCount(DEMO_SAVED_JOBS.length + bookmarked.length)
+      setSavedCount(bookmarked.length)
     } catch (e) {
       console.error(e)
     }

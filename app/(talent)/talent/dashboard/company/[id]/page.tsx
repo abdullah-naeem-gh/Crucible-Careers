@@ -6,7 +6,6 @@ import Link from 'next/link'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import { JOBS } from '@/lib/talent/data/jobs'
 import { DEMO_APPLICATIONS } from '@/components/talent/dashboard/ApplicationsTab'
-import { DEMO_SAVED_JOBS } from '@/components/talent/dashboard/SavedTab'
 
 const DEMO_COMPANIES_DETAILS: Record<string, { id: string; name: string; about: string; culture: string; location: string; website: string; logo: string; color: string; openRoles: { id: string; title: string; type: string; location: string; salary: string }[] }> = {
   'salik-labs': {
@@ -100,7 +99,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true)
   const [jobCount, setJobCount] = useState(JOBS.length)
   const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
-  const [savedCount, setSavedCount] = useState(DEMO_SAVED_JOBS.length)
+  const [savedCount, setSavedCount] = useState(0)
 
   useEffect(() => {
     try {
@@ -191,7 +190,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
     try {
       const savedBookmarked = localStorage.getItem('talent_saved_jobs')
       const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
-      setSavedCount(DEMO_SAVED_JOBS.length + bookmarked.length)
+      setSavedCount(bookmarked.length)
     } catch (e) {
       console.error(e)
     }

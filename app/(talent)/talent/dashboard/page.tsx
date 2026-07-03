@@ -12,7 +12,7 @@ import { loadTalentProfiles, saveTalentProfiles } from '@/lib/talent/services/pr
 // Import Modular Tab Components
 import CompaniesTab from '@/components/talent/dashboard/CompaniesTab'
 import ApplicationsTab, { DEMO_APPLICATIONS } from '@/components/talent/dashboard/ApplicationsTab'
-import SavedTab, { DEMO_SAVED_JOBS } from '@/components/talent/dashboard/SavedTab'
+import SavedTab from '@/components/talent/dashboard/SavedTab'
 import ProfileTab from '@/components/talent/dashboard/ProfileTab'
 import ExamsTab from '@/components/talent/dashboard/ExamsTab'
 import SettingsTab from '@/components/talent/dashboard/SettingsTab'
@@ -50,7 +50,7 @@ function TalentDashboardContent() {
   const [activeTab, setActiveTab] = useState<TalentTab>(initialTab)
   const [jobs, setJobs] = useState<any[]>(JOBS)
   const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
-  const [savedCount, setSavedCount] = useState(DEMO_SAVED_JOBS.length)
+  const [savedCount, setSavedCount] = useState(0)
   const [profiles, setProfiles] = useState<TalentProfile[]>([])
   const [profileHydrated, setProfileHydrated] = useState(false)
 
@@ -112,14 +112,21 @@ function TalentDashboardContent() {
     setProfiles(loadTalentProfiles())
     setProfileHydrated(true)
 
-    // Load saved count
-    try {
-      const savedBookmarked = localStorage.getItem('talent_saved_jobs')
-      const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
-      setSavedCount(DEMO_SAVED_JOBS.length + bookmarked.length)
-    } catch (e) {
-      console.error('Failed to load saved jobs count', e)
+  }, [])
+
+  useEffect(() => {
+    const updateSavedCount = () => {
+      try {
+        const savedBookmarked = localStorage.getItem('talent_saved_jobs')
+        const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
+        setSavedCount(bookmarked.length)
+      } catch (e) {
+        console.error('Failed to load saved jobs count', e)
+      }
     }
+    updateSavedCount()
+    window.addEventListener('talent_saved_jobs_changed', updateSavedCount)
+    return () => window.removeEventListener('talent_saved_jobs_changed', updateSavedCount)
   }, [])
 
   useEffect(() => {

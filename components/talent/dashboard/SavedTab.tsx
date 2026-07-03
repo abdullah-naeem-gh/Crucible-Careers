@@ -16,60 +16,7 @@ interface SavedJob {
   savedAt: string
 }
 
-export const DEMO_SAVED_JOBS: SavedJob[] = [
-  {
-    id: '1',
-    title: 'Senior Frontend Engineer',
-    company: 'Salik Labs',
-    location: 'Remote',
-    type: 'Full-time',
-    salary: '$130k - $160k',
-    tags: ['React', 'TypeScript', 'Tailwind', 'Vite'],
-    postedAt: '2 days ago',
-    description: 'Build delightful, high-performance web experiences used by thousands of professionals every day. Collaborate with designers and product managers to define and ship features.',
-    matchScore: 86,
-    savedAt: '2024-01-15'
-  },
-  {
-    id: '2',
-    title: 'Machine Learning Engineer',
-    company: 'Vyro',
-    location: 'Hybrid — Dubai',
-    type: 'Full-time',
-    salary: '$100k - $140k',
-    tags: ['Python', 'PyTorch', 'LLMs', 'Ops'],
-    postedAt: '5 days ago',
-    description: 'Productionize ML systems powering next-gen creator tools. Optimize model inference speeds and work closely with AI researchers to deploy state of the art visual models.',
-    matchScore: 73,
-    savedAt: '2024-01-12'
-  },
-  {
-    id: '3',
-    title: 'Product Designer',
-    company: 'Salik Labs',
-    location: 'Remote',
-    type: 'Contract',
-    salary: '$70 - $110/hr',
-    tags: ['Product Design', 'Figma', 'Design Systems'],
-    postedAt: '8 days ago',
-    description: 'Craft elegant experiences across the product surface area. Own end-to-end design from user research, journey mapping, wireframing, to high-fidelity prototyping and design system maintenance.',
-    matchScore: 79,
-    savedAt: '2024-01-10'
-  },
-  {
-    id: '4',
-    title: 'DevOps Engineer',
-    company: 'TechCorp',
-    location: 'Onsite — San Francisco',
-    type: 'Full-time',
-    salary: '$120k - $150k',
-    tags: ['AWS', 'Docker', 'Kubernetes', 'Terraform'],
-    postedAt: '1 week ago',
-    description: 'Build and maintain scalable infrastructure for our growing platform. Automate CI/CD pipelines, monitor systems availability, and improve cloud security postures.',
-    matchScore: 68,
-    savedAt: '2024-01-08'
-  }
-]
+
 
 export default function SavedTab() {
   const [selectedCompany, setSelectedCompany] = useState<string>('All')
@@ -82,16 +29,12 @@ export default function SavedTab() {
       try {
         const stored = localStorage.getItem('talent_saved_jobs')
         const parsed = stored ? JSON.parse(stored) : []
-        const combined = [...DEMO_SAVED_JOBS, ...parsed]
-        setSavedJobs(combined)
-        if (combined.length > 0 && !selectedJobId) {
-          setSelectedJobId(combined[0].id)
+        setSavedJobs(parsed)
+        if (parsed.length > 0 && !selectedJobId) {
+          setSelectedJobId(parsed[0].id)
         }
       } catch (e) {
-        setSavedJobs(DEMO_SAVED_JOBS)
-        if (DEMO_SAVED_JOBS.length > 0 && !selectedJobId) {
-          setSelectedJobId(DEMO_SAVED_JOBS[0].id)
-        }
+        setSavedJobs([])
       }
     }
     loadJobs()
@@ -132,7 +75,7 @@ export default function SavedTab() {
             <h1 className="mt-1 text-2xl font-semibold">Saved Jobs</h1>
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold text-gray-900">{DEMO_SAVED_JOBS.length}</div>
+            <div className="text-xl font-bold text-gray-900">{savedJobs.length}</div>
             <div className="text-[10px] uppercase tracking-wider text-gray-400">Saved</div>
           </div>
         </div>
