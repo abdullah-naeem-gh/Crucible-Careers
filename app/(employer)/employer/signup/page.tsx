@@ -176,6 +176,12 @@ export default function EmployerSignUp() {
                 <p className="text-gray-300 text-sm">Join hundreds of companies hiring elite talent</p>
               </div>
 
+              {error && (
+                <div className="mb-4 p-3 bg-red-900/50 border border-red-500/50 text-red-200 rounded-lg text-sm text-center">
+                  {error}
+                </div>
+              )}
+
               <SignUpForm
                 userType="employer"
                 onSubmit={handleSubmit}

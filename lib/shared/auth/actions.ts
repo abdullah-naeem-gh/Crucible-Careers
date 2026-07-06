@@ -28,6 +28,11 @@ export async function signUp(data: {
     },
   })
   if (error) throw error
+  
+  if (authData.user && authData.user.identities && authData.user.identities.length === 0) {
+    throw new Error('An account with this email already exists.')
+  }
+
   return authData
 }
 

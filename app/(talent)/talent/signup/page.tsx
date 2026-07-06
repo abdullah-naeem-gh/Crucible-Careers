@@ -175,6 +175,12 @@ export default function TalentSignUp() {
                 <p className="text-gray-600 text-sm">Join thousands of certified professionals</p>
               </div>
 
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm text-center">
+                  {error}
+                </div>
+              )}
+
               <SignUpForm
                 userType="talent"
                 onSubmit={handleSubmit}
