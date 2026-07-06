@@ -90,7 +90,7 @@ export default function ForgotPasswordPage({ userType }: ForgotPasswordPageProps
     const previewEmail = previewParams.get('email') || 'alex@example.com'
     setEmail(previewEmail)
     setSentEmail(previewEmail)
-    setSecondsRemaining(30)
+    setSecondsRemaining(60)
   }, [])
 
   useEffect(() => {
@@ -126,7 +126,7 @@ export default function ForgotPasswordPage({ userType }: ForgotPasswordPageProps
       }
 
       setSentEmail(email)
-      setSecondsRemaining(30)
+      setSecondsRemaining(60)
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to send password reset email')
     } finally {

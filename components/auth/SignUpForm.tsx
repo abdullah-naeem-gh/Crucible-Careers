@@ -49,9 +49,55 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false }: Si
 
   const isDarkTheme = userType === 'employer'
   
+  const validateForm = (): boolean => {
+    const newErrors: Partial<SignUpFormData> = {}
+    let isValid = true
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required'
+      isValid = false
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required'
+      isValid = false
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required'
+      isValid = false
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address'
+      isValid = false
+    }
+
+    if (userType === 'employer' && !formData.company?.trim()) {
+      newErrors.company = 'Company name is required'
+      isValid = false
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required'
+      isValid = false
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters'
+      isValid = false
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match'
+      isValid = false
+    }
+
+    setErrors(newErrors)
+    return isValid
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    if (validateForm()) {
+      onSubmit(formData)
+    }
   }
 
   return (

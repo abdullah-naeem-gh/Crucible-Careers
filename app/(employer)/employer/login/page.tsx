@@ -5,21 +5,22 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import LoginForm, { type LoginFormData } from '@/components/auth/LoginForm'
+import { login } from '@/lib/shared/auth/actions'
 
 export default function EmployerLogin() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  const [error, setError] = useState('')
+
   const handleSubmit = async (formData: LoginFormData) => {
     setIsLoading(true)
-    
-    // Simulate API call
+    setError('')
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      console.log('Employer login data:', formData)
+      await login(formData.email, formData.password)
       router.push('/employer/dashboard')
-    } catch (error) {
-      console.error('Login error:', error)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please check your credentials.')
     } finally {
       setIsLoading(false)
     }
@@ -173,6 +174,16 @@ export default function EmployerLogin() {
                   onSubmit={handleSubmit}
                   isLoading={isLoading}
                 />
+
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-3 text-sm text-red-400 text-center"
+                  >
+                    {error}
+                  </motion.p>
+                )}
 
                 <div className="mt-6 text-center">
                   <p className="text-gray-300 text-sm">
