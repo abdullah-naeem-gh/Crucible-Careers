@@ -554,4 +554,24 @@ input[type="submit"]:not(:disabled) {
   --tw-shadow-color: rgba(15, 23, 42, 0.08) !important;
 }
 
+/* Ensure the profile setup modal / popup is solid white (solid dark in dark mode) and not frosted */
+.solid-popup-modal {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+}
 
+.dashboard-theme-light .solid-popup-modal,
+.dashboard-theme-light .solid-popup-modal [class*="bg-white/"],
+.dashboard-theme-light .solid-popup-modal [class*="bg-[#171717]"],
+.dashboard-theme-light .solid-popup-modal [class*="bg-[#141414]"],
+.dashboard-theme-light .solid-popup-modal [class*="bg-[#121212]"] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+}
+.dashboard-theme-dark .solid-popup-modal {
+  background: #171717 !important;
+  background-color: #171717 !important;
+  backdrop-filter: none !important;
+}

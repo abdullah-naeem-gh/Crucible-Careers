@@ -55,12 +55,35 @@ export function saveTalentProfiles(profiles: TalentProfile[]) {
 }
 
 export function upsertTalentProfile(profiles: TalentProfile[], profile: TalentProfile) {
-  const updatedProfile = { ...profile, updatedAt: now() }
-  const exists = profiles.some((item) => item.id === profile.id)
-  const next = exists
-    ? profiles.map((item) => (item.id === profile.id ? updatedProfile : item))
-    : [updatedProfile, ...profiles]
-
-  if (next.length === 1) return [{ ...next[0], isPrimary: true }]
-  return next
+  const updatedProfile = { ...profile, isPrimary: true, updatedAt: now() }
+  return [updatedProfile]
 }
+
+export function calculateCompletionPercentage(profile: TalentProfile | null): number {
+  if (!profile) return 0
+  let score = 0
+  if (profile.name && profile.name.trim() !== '') score += 10
+  if (profile.headline && profile.headline.trim() !== '') score += 10
+  if (profile.email && profile.email.trim() !== '') score += 10
+  if (profile.location && profile.location.trim() !== '') score += 5
+  if (profile.photoDataUrl) score += 10
+  if (profile.overview && profile.overview.trim() !== '') score += 15
+  if (profile.availability && profile.availability.trim() !== '') score += 5
+  if (profile.workPreference && profile.workPreference.trim() !== '') score += 5
+  if (Array.isArray(profile.skills) && profile.skills.length > 0) score += 10
+  
+  // check experience
+  const hasValidExp = Array.isArray(profile.experience) && 
+    profile.experience.length > 0 && 
+    profile.experience.some(exp => (exp.company && exp.company.trim() !== '') || (exp.role && exp.role.trim() !== ''))
+  if (hasValidExp) score += 10
+  
+  // check education
+  const hasValidEdu = Array.isArray(profile.education) && 
+    profile.education.length > 0 && 
+    profile.education.some(edu => (edu.school && edu.school.trim() !== '') || (edu.degree && edu.degree.trim() !== ''))
+  if (hasValidEdu) score += 10
+
+  return Math.min(score, 100)
+}
+

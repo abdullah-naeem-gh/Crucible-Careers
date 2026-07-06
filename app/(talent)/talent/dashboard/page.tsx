@@ -1,13 +1,13 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import JobBrowser from '@/components/talent/jobs/JobBrowser'
 import { JOBS } from '@/lib/talent/data/jobs'
 import { TalentProfile } from '@/types/talent/profile'
-import { loadTalentProfiles, saveTalentProfiles } from '@/lib/talent/services/profile.service'
+import { loadTalentProfiles, saveTalentProfiles, calculateCompletionPercentage } from '@/lib/talent/services/profile.service'
 
 // Import Modular Tab Components
 import CompaniesTab from '@/components/talent/dashboard/CompaniesTab'
@@ -39,13 +39,13 @@ function TalentDashboardContent() {
   const requestedTab = searchParams.get('tab')
   
   const initialTab: TalentTab = (
+    requestedTab === 'jobs' ||
     requestedTab === 'companies' ||
     requestedTab === 'applications' ||
     requestedTab === 'saved' ||
-    requestedTab === 'profile' ||
     requestedTab === 'exams' ||
     requestedTab === 'settings'
-  ) ? (requestedTab as TalentTab) : 'jobs'
+  ) ? (requestedTab as TalentTab) : 'profile'
 
   const [activeTab, setActiveTab] = useState<TalentTab>(initialTab)
   const [jobs, setJobs] = useState<any[]>(JOBS)
@@ -53,6 +53,10 @@ function TalentDashboardContent() {
   const [savedCount, setSavedCount] = useState(0)
   const [profiles, setProfiles] = useState<TalentProfile[]>([])
   const [profileHydrated, setProfileHydrated] = useState(false)
+
+  const profileCompletion = useMemo(() => {
+    return profiles[0] ? calculateCompletionPercentage(profiles[0]) : 0
+  }, [profiles])
 
   useEffect(() => {
     if (requestedTab) {
@@ -68,7 +72,7 @@ function TalentDashboardContent() {
         setActiveTab(requestedTab as TalentTab)
       }
     } else {
-      setActiveTab('jobs')
+      setActiveTab('profile')
     }
   }, [requestedTab])
 
@@ -165,6 +169,7 @@ function TalentDashboardContent() {
               applicationCount={appCount}
               savedCount={savedCount}
               profileNeedsSetup={profileHydrated && profiles.length === 0}
+              profileCompletion={profileCompletion}
             />
           </div>
           <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">

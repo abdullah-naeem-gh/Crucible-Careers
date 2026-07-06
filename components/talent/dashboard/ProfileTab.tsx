@@ -21,7 +21,7 @@ import {
 } from '@tabler/icons-react'
 import Stepper, { Step } from '@/components/talent/profile/Stepper'
 import { TalentEducation, TalentExperience, TalentProfile, TalentProject } from '@/types/talent/profile'
-import { createBlankTalentProfile, upsertTalentProfile } from '@/lib/talent/services/profile.service'
+import { createBlankTalentProfile, upsertTalentProfile, calculateCompletionPercentage } from '@/lib/talent/services/profile.service'
 
 interface ProfileTabProps {
   profiles: TalentProfile[]
@@ -383,14 +383,16 @@ function OnboardingModal({
   onClose,
   onCreate,
   defaultProfileName,
+  existingProfile,
 }: {
   open: boolean
   onClose: () => void
   onCreate: (profile: TalentProfile) => void
   defaultProfileName: string
+  existingProfile?: TalentProfile | null
 }) {
-  const [draft, setDraft] = useState<TalentProfile>(() => createBlankTalentProfile({
-    profileName: defaultProfileName,
+  const [draft, setDraft] = useState<TalentProfile>(() => existingProfile || createBlankTalentProfile({
+    profileName: 'My Profile',
     availability: 'Open to work',
     workPreference: 'Remote',
     languages: ['English'],
@@ -401,8 +403,8 @@ function OnboardingModal({
 
   useEffect(() => {
     if (open) {
-      setDraft(createBlankTalentProfile({
-        profileName: defaultProfileName,
+      setDraft(existingProfile ? { ...existingProfile } : createBlankTalentProfile({
+        profileName: 'My Profile',
         availability: 'Open to work',
         workPreference: 'Remote',
         languages: ['English'],
@@ -411,7 +413,7 @@ function OnboardingModal({
         projects: [newProject()],
       }))
     }
-  }, [open])
+  }, [open, existingProfile])
 
   const set = <K extends keyof TalentProfile>(key: K, value: TalentProfile[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }))
@@ -420,23 +422,19 @@ function OnboardingModal({
   const createProfile = () => {
     onCreate({
       ...draft,
-      profileName: draft.profileName || draft.headline || defaultProfileName,
+      profileName: 'My Profile',
       updatedAt: new Date().toISOString(),
     })
   }
 
   const skipToManual = () => {
     onCreate(createBlankTalentProfile({
-      profileName: defaultProfileName,
+      profileName: 'My Profile',
       education: [newEducation()],
       experience: [newExperience()],
       projects: [newProject()],
     }))
   }
-
-  const exp = draft.experience[0] ?? newExperience()
-  const edu = draft.education[0] ?? newEducation()
-  const project = draft.projects[0] ?? newProject()
 
   return (
     <AnimatePresence initial={false}>
@@ -445,15 +443,16 @@ function OnboardingModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3 sm:p-4"
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-3 sm:p-4"
           onClick={onClose}
         >
           <motion.div
-            initial={{ opacity: 0, y: 18, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.96 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)] dark:border-white/[0.07] dark:bg-[#171717] [&_button:not(:disabled)]:cursor-pointer"
+            initial={{ opacity: 0, y: 14, filter: 'blur(2px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: 8, filter: 'blur(2px)' }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="solid-popup-modal max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)] dark:border-white/[0.07] dark:bg-[#171717] [&_button:not(:disabled)]:cursor-pointer"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-white/[0.07] sm:px-6">
@@ -490,7 +489,6 @@ function OnboardingModal({
                   <div className="space-y-4">
                     <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Start with the basics</h3>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <Field label="Profile tab name"><input className={fieldClass} value={draft.profileName} onChange={(e) => set('profileName', e.target.value)} placeholder="Frontend profile" /></Field>
                       <Field label="Full name" required><input className={fieldClass} value={draft.name} onChange={(e) => set('name', e.target.value)} placeholder="Alex Johnson" /></Field>
                       <Field label="Professional headline" required><input className={fieldClass} value={draft.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field>
                       <Field label="Email" required><input type="email" className={fieldClass} value={draft.email} onChange={(e) => set('email', e.target.value)} placeholder="alex@email.com" /></Field>
@@ -523,7 +521,7 @@ function OnboardingModal({
                       <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add work experience</h3>
                       <button type="button" onClick={() => set('experience', [...draft.experience, newExperience()])} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10"><IconPlus size={14} /> Add</button>
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[48vh] overflow-y-auto pr-1 custom-scrollbar">
                       {draft.experience.map((item, index) => (
                         <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
                           <div className="mb-3 flex items-center justify-between">
@@ -552,7 +550,7 @@ function OnboardingModal({
                       <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add education</h3>
                       <button type="button" onClick={() => set('education', [...draft.education, newEducation()])} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10"><IconPlus size={14} /> Add</button>
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[48vh] overflow-y-auto pr-1 custom-scrollbar">
                       {draft.education.map((item, index) => (
                         <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
                           <div className="mb-3 flex items-center justify-between">
@@ -576,7 +574,7 @@ function OnboardingModal({
                       <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add project proofs</h3>
                       <button type="button" onClick={() => set('projects', [...draft.projects, newProject()])} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10"><IconPlus size={14} /> Add</button>
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[48vh] overflow-y-auto pr-1 custom-scrollbar">
                       {draft.projects.map((item, index) => (
                         <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
                           <div className="mb-3 flex items-center justify-between">
@@ -714,11 +712,15 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
     reader.readAsDataURL(file)
   }
 
+  const completionPercentage = useMemo(() => {
+    return calculateCompletionPercentage(formState)
+  }, [formState])
+
   if (!formState) {
     return (
       <>
         <EmptyState onCreate={() => setIsOnboardingOpen(true)} />
-        <OnboardingModal open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} onCreate={createProfile} defaultProfileName={nextProfileName(profiles.length)} />
+        <OnboardingModal open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} onCreate={createProfile} defaultProfileName="My Profile" existingProfile={profiles[0] || null} />
       </>
     )
   }
@@ -730,9 +732,21 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
           <div className="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-5 dark:border-white/[0.07]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Talent Profile</p>
-              <h1 className="mt-1 text-2xl font-semibold text-gray-950 dark:text-white">Build your profile</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="mt-1 text-2xl font-semibold text-gray-950 dark:text-white">Build your profile</h1>
+                <span className="mt-1 inline-flex items-center rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-semibold text-[#FF6B00] dark:bg-orange-500/10 dark:text-[#FF914D]">
+                  {completionPercentage}% Complete
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsOnboardingOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05]"
+              >
+                Restart setup
+              </button>
               <button
                 type="button"
                 onClick={() => saveProfile()}
@@ -740,46 +754,6 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
               >
                 <IconDeviceFloppy size={16} />
                 {saved ? 'Saved' : 'Save'}
-              </button>
-            </div>
-          </div>
-          <div className="border-b border-gray-200 px-5 py-3 dark:border-white/[0.07]">
-            <div className="flex flex-wrap items-center gap-2">
-              {profiles.map((profile) => {
-                const active = profile.id === activeProfileId
-                return (
-                  <div
-                    key={profile.id}
-                    className={active ? 'inline-flex items-center overflow-hidden rounded-lg border border-orange-500/30 bg-orange-50 text-[#C84F00]' : 'inline-flex items-center overflow-hidden rounded-lg border border-gray-200 bg-white text-gray-500 transition hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/45 dark:hover:bg-white/[0.055]'}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setActiveProfileId(profile.id)}
-                      className="px-3 py-1.5 text-xs font-semibold"
-                    >
-                      {profile.profileName || profile.headline || 'Profile'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        removeProfile(profile.id)
-                      }}
-                      className={active ? 'grid h-7 w-7 place-items-center border-l border-orange-500/20 text-[#C84F00] hover:bg-orange-100' : 'grid h-7 w-7 place-items-center border-l border-gray-200 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:border-white/10 dark:hover:bg-red-500/10 dark:hover:text-red-300'}
-                      aria-label={'Delete ' + (profile.profileName || profile.headline || 'profile')}
-                    >
-                      <IconTrash size={13} />
-                    </button>
-                  </div>
-                )
-              })}
-              <button
-                type="button"
-                onClick={() => setIsOnboardingOpen(true)}
-                className="grid h-8 w-8 place-items-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:border-orange-200 hover:bg-orange-50 hover:text-[#C84F00] dark:border-white/10 dark:bg-white/[0.035] dark:text-white/55"
-                aria-label="Create another profile"
-              >
-                <IconPlus size={15} />
               </button>
             </div>
           </div>
@@ -804,10 +778,9 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Profile tab name"><input className={fieldClass} value={formState.profileName} onChange={(e) => set('profileName', e.target.value)} /></Field>
                 <Field label="Full name" required><input className={fieldClass} value={formState.name} onChange={(e) => set('name', e.target.value)} /></Field>
-                <div className="sm:col-span-2"><Field label="Headline" required><input className={fieldClass} value={formState.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field></div>
                 <Field label="Email" required><input type="email" className={fieldClass} value={formState.email} onChange={(e) => set('email', e.target.value)} /></Field>
+                <div className="sm:col-span-2"><Field label="Headline" required><input className={fieldClass} value={formState.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field></div>
                 <Field label="Location"><input className={fieldClass} value={formState.location} onChange={(e) => set('location', e.target.value)} /></Field>
               </div>
             </FormSection>
@@ -919,7 +892,7 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
         </section>
       </div>
 
-      <OnboardingModal open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} onCreate={createProfile} defaultProfileName={nextProfileName(profiles.length)} />
+      <OnboardingModal open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} onCreate={createProfile} defaultProfileName="My Profile" existingProfile={formState} />
     </div>
   )
 }

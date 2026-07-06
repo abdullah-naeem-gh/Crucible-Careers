@@ -4,8 +4,24 @@ import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import {
+  IconArrowLeft,
+  IconBriefcase,
+  IconCalendar,
+  IconChevronRight,
+  IconFileText,
+  IconMapPin,
+  IconPlus,
+  IconExternalLink,
+  IconVideo,
+} from '@tabler/icons-react'
 import { FormConfig, FormField, EmployerJob } from '@/types/employer/job'
 import { FORM_TEMPLATES } from '@/lib/shared/formTemplates'
+
+const STANDARD_SEMANTIC_TYPES = [
+  'name', 'email', 'phone', 'location', 'experience_years', 'skills', 
+  'linkedin', 'github', 'portfolio', 'cover_letter', 'file'
+]
 
 export default function ApplyFormPage() {
   const params = useParams()
@@ -17,6 +33,23 @@ export default function ApplyFormPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+
+  // Crucible Careers Profile State
+  const [profiles, setProfiles] = useState<any[]>([])
+
+  // Load Crucible Profile
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('talent_profiles')
+      const parsed = saved ? JSON.parse(saved) : []
+      setProfiles(Array.isArray(parsed) ? parsed : [])
+    } catch (e) {
+      console.error('Failed to load profiles', e)
+    }
+  }, [])
+
+  const hasProfile = profiles.length > 0
+  const activeProfile = profiles[0] || null
 
   // Load Job details from localStorage
   useEffect(() => {
@@ -92,6 +125,11 @@ export default function ApplyFormPage() {
     let isValid = true
 
     formConfig.fields.forEach(field => {
+      // If they have a profile, we ignore standard fields for validation
+      if (STANDARD_SEMANTIC_TYPES.includes(field.semanticType || '')) {
+        return
+      }
+
       const val = fieldsData[field.id]
 
       // Check required
@@ -106,28 +144,11 @@ export default function ApplyFormPage() {
             errors[field.id] = `You must agree to the ${field.label}.`
             isValid = false
           }
-        } else if (field.type === 'file') {
-          if (!resumeFile) {
-            errors[field.id] = `Resume file is required.`
-            isValid = false
-          }
         } else {
           if (val === undefined || val === null || String(val).trim() === '') {
             errors[field.id] = `${field.label} is required.`
             isValid = false
           }
-        }
-      }
-
-      // Check specific formats if present
-      if (val && String(val).trim() !== '') {
-        if (field.semanticType === 'email' && !/.+@.+\..+/.test(String(val))) {
-          errors[field.id] = 'Please enter a valid email address.'
-          isValid = false
-        }
-        if (field.semanticType === 'linkedin' && !String(val).includes('linkedin.com')) {
-          errors[field.id] = 'LinkedIn URL must contain linkedin.com'
-          isValid = false
         }
       }
     })
@@ -144,12 +165,7 @@ export default function ApplyFormPage() {
       .replace(/[_-]+/g, ' ')
       .trim()
 
-    const tokens = nameGuess.split(' ').filter(Boolean)
-    const firstName = tokens[0] || ''
-    const lastName = tokens[1] || ''
     const fullName = nameGuess
-
-    // Fill standard name fields
     const nameField = formConfig.fields.find(f => f.semanticType === 'name')
     if (nameField) {
       handleChange(nameField.id, fullName)
@@ -159,6 +175,7 @@ export default function ApplyFormPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm()) return
+    if (!hasProfile) return
 
     setSubmitting(true)
 
@@ -166,54 +183,50 @@ export default function ApplyFormPage() {
     await new Promise(r => setTimeout(r, 1200))
 
     try {
-      // 1. Gather all dynamic field responses
-      const customAnswers = formConfig.fields.map(field => {
-        let value = fieldsData[field.id]
-        if (field.type === 'file') {
-          value = resumeFile ? resumeFile.name : ''
-        }
-        return {
-          fieldId: field.id,
-          label: field.label,
-          value,
-          semanticType: field.semanticType
-        }
-      })
+      const profileToUse = activeProfile
 
-      // 2. Extract standard candidate fields from semantic types
-      let name = 'Applicant'
-      let email = 'applicant@example.com'
-      let phone = '—'
-      let location = 'Remote'
-      let experienceYears = 0
-      let skills: string[] = []
-      let linkedin = ''
-      let github = ''
-      let portfolio = ''
-      let coverLetter = ''
-
-      formConfig.fields.forEach(field => {
-        const val = fieldsData[field.id]
-        if (field.semanticType === 'name' && val) name = String(val)
-        if (field.semanticType === 'email' && val) email = String(val)
-        if (field.semanticType === 'phone' && val) phone = String(val)
-        if (field.semanticType === 'location' && val) location = String(val)
-        if (field.semanticType === 'experience_years' && val) experienceYears = Number(val)
-        if (field.semanticType === 'linkedin' && val) linkedin = String(val)
-        if (field.semanticType === 'github' && val) github = String(val)
-        if (field.semanticType === 'portfolio' && val) portfolio = String(val)
-        if (field.semanticType === 'cover_letter' && val) coverLetter = String(val)
-
-        if (field.semanticType === 'skills' && val) {
-          if (Array.isArray(val)) {
-            skills = [...skills, ...val]
-          } else {
-            skills = [...skills, ...String(val).split(',').map(s => s.trim()).filter(Boolean)]
+      // 2. Gather all dynamic field responses (filtering custom ones)
+      const customAnswers = formConfig.fields
+        .filter(field => !STANDARD_SEMANTIC_TYPES.includes(field.semanticType || ''))
+        .map(field => {
+          let value = fieldsData[field.id]
+          return {
+            fieldId: field.id,
+            label: field.label,
+            value,
+            semanticType: field.semanticType || ''
           }
-        }
-      })
+        })
 
-      // 3. Dynamic match score calculation based on tags & template weights
+      // 3. Extract standard candidate fields from Crucible Profile
+      let name = profileToUse ? profileToUse.name : 'Applicant'
+      let email = profileToUse ? profileToUse.email : 'applicant@example.com'
+      let phone = '—'
+      let location = profileToUse ? profileToUse.location : 'Remote'
+      let experienceYears = 0
+      let skills: string[] = profileToUse ? (profileToUse.skills || []) : []
+      let linkedin = profileToUse ? profileToUse.linkedin : ''
+      let github = profileToUse ? profileToUse.github : ''
+      let portfolio = profileToUse ? profileToUse.portfolio : ''
+      let coverLetter = profileToUse ? profileToUse.overview : ''
+
+      if (profileToUse && profileToUse.experience && profileToUse.experience.length > 0) {
+        experienceYears = profileToUse.experience.reduce((sum: number, exp: any) => {
+          const start = parseInt(exp.startDate) || 0
+          const end = exp.current ? new Date().getFullYear() : (parseInt(exp.endDate) || 0)
+          if (start && end && end >= start) {
+            return sum + (end - start)
+          }
+          return sum + 1
+        }, 0)
+        if (experienceYears === 0) experienceYears = 1
+      }
+      
+      const educationStr = profileToUse && profileToUse.education && profileToUse.education.length > 0
+        ? `${profileToUse.education[0].degree} in ${profileToUse.education[0].field} from ${profileToUse.education[0].school}`
+        : 'Bachelor in Computer Science'
+
+      // 4. Dynamic match score calculation based on tags & template weights
       let matchScore = 70 // Baseline
       const jobTags = job?.tags || []
       
@@ -225,21 +238,10 @@ export default function ApplyFormPage() {
         matchScore = Math.round((matchScore + skillsMatchPct) / 2)
       }
 
-      // Experience evaluation
-      const expField = formConfig.fields.find(f => f.semanticType === 'experience_years')
-      if (expField && expField.expectedAnswer) {
-        const expected = Number(expField.expectedAnswer)
-        if (experienceYears >= expected) {
-          matchScore = Math.min(matchScore + 15, 100)
-        } else {
-          matchScore = Math.max(matchScore - 20, 35)
-        }
-      }
-
       // Cap score bounds
       matchScore = Math.max(10, Math.min(100, matchScore))
 
-      // 4. Construct Candidate Profile object
+      // 5. Construct Candidate Profile object with full credentials lists
       const newCandidate = {
         id: `applicant_${Date.now()}`,
         name,
@@ -251,15 +253,19 @@ export default function ApplyFormPage() {
         bio: coverLetter || `Productive software enthusiast with ${experienceYears} years of experience.`,
         experienceYears,
         skills: skills.length > 0 ? skills : (job?.tags ? job.tags.slice(0, 3) : ['Development']),
-        education: 'Bachelor in Computer Science',
+        education: educationStr,
         linkedin: linkedin || undefined,
         github: github || undefined,
         portfolio: portfolio || undefined,
         screeningStatus: 'unscreened',
-        customAnswers
+        customAnswers,
+        // Detailed credentials attached
+        experience: profileToUse ? (profileToUse.experience || []) : [],
+        educationList: profileToUse ? (profileToUse.education || []) : [],
+        projects: profileToUse ? (profileToUse.projects || []) : []
       }
 
-      // 5. Prepend applicant details in localStorage
+      // 6. Prepend applicant details in localStorage
       const storageKey = `recruiter_job_${slug}_applicants`
       const rawApplicants = localStorage.getItem(storageKey)
       let currentApplicants = []
@@ -269,7 +275,7 @@ export default function ApplyFormPage() {
       const updatedApplicants = [newCandidate, ...currentApplicants]
       localStorage.setItem(storageKey, JSON.stringify(updatedApplicants))
 
-      // 5b. Save application details to talent side
+      // 7. Save application details to talent side
       const talentApp = {
         id: newCandidate.id,
         jobId: slug,
@@ -307,7 +313,7 @@ export default function ApplyFormPage() {
         console.error('Failed to save to talent applications', e)
       }
 
-      // 6. Update the job's application count in `recruiter_jobs`
+      // 8. Update the job's application count in `recruiter_jobs`
       const rawJobs = localStorage.getItem('recruiter_jobs')
       if (rawJobs) {
         const parsedJobs = JSON.parse(rawJobs) as EmployerJob[]
@@ -516,33 +522,95 @@ export default function ApplyFormPage() {
               className="grid grid-cols-1 lg:grid-cols-3 gap-8"
             >
               <section className="lg:col-span-2 space-y-6">
-                <div className="space-y-4 bg-gray-50/20 rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm">
-                  <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2.5">Candidate Intake Form</h2>
-                  <div className="space-y-4">
-                    {formConfig.fields.map(field => {
-                      const error = validationErrors[field.id]
-                      // Checkbox renders inside its wrapper, others have standard label
-                      if (field.type === 'checkbox') {
-                        return (
-                          <div key={field.id} className="pt-2">
-                            {renderFieldInput(field)}
-                            {error && <span className="text-[10px] text-red-500 font-semibold block mt-1">{error}</span>}
+                {/* 1. Has Profile: Show summary preview */}
+                {hasProfile && (
+                  <div className="space-y-4 rounded-2xl border border-orange-500/10 bg-orange-50/15 p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-lg font-bold text-[#FF6B00]">
+                        {activeProfile.name ? activeProfile.name[0] : 'U'}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900">{activeProfile.name}</h3>
+                        <p className="text-xs text-gray-500">{activeProfile.headline}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="border-t border-gray-100/50 pt-3 text-xs space-y-2 text-gray-600">
+                      <div><span className="font-semibold">Email:</span> {activeProfile.email}</div>
+                      {activeProfile.location && <div><span className="font-semibold">Location:</span> {activeProfile.location}</div>}
+                      {activeProfile.skills && activeProfile.skills.length > 0 && (
+                        <div>
+                          <span className="font-semibold block mb-1">Skills:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {activeProfile.skills.map((s: string) => (
+                              <span key={s} className="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">
+                                {s}
+                              </span>
+                            ))}
                           </div>
-                        )
-                      }
-                      return (
-                        <div key={field.id} className="space-y-1">
-                          <label className="block text-xs font-semibold text-gray-700">
-                            {field.label}
-                            {field.required && <span className="text-orange-500 ml-0.5">*</span>}
-                          </label>
-                          {renderFieldInput(field)}
-                          {error && <span className="text-[10px] text-red-500 font-semibold block mt-1">{error}</span>}
                         </div>
-                      )
-                    })}
+                      )}
+                    </div>
+                    <div className="text-[11px] text-[#FF6B00] font-medium bg-orange-500/5 p-2.5 rounded-lg border border-orange-500/10">
+                      ✓ Crucible Profile attached. We will submit your complete credentials automatically.
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* 2. No Profile: Show Crucible Profile Required Warning */}
+                {!hasProfile && (
+                  <div className="space-y-5 rounded-2xl border border-red-200 bg-red-500/[0.03] p-8 text-center shadow-sm">
+                    <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-red-500/10 text-red-500">
+                      <IconFileText size={28} />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-white">Crucible Profile Required</h3>
+                      <p className="text-xs text-gray-500 dark:text-white/45 max-w-md mx-auto leading-relaxed">
+                        To apply for this role, you must first set up your Crucible Careers profile. A Crucible Profile is required to submit application credentials.
+                      </p>
+                    </div>
+                    <div className="pt-3">
+                      <Link 
+                        href="/talent/dashboard?tab=profile"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
+                      >
+                        Build your Crucible Profile
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Screening Questions: Show custom/non-standard questions */}
+                {hasProfile && formConfig.fields.some(field => !STANDARD_SEMANTIC_TYPES.includes(field.semanticType || '')) && (
+                  <div className="space-y-4 bg-gray-50/20 rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm">
+                    <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2.5">Screening Questions</h2>
+                    <div className="space-y-4">
+                      {formConfig.fields
+                        .filter(field => !STANDARD_SEMANTIC_TYPES.includes(field.semanticType || ''))
+                        .map(field => {
+                          const error = validationErrors[field.id]
+                          if (field.type === 'checkbox') {
+                            return (
+                              <div key={field.id} className="pt-2">
+                                {renderFieldInput(field)}
+                                {error && <span className="text-[10px] text-red-500 font-semibold block mt-1">{error}</span>}
+                              </div>
+                            )
+                          }
+                          return (
+                            <div key={field.id} className="space-y-1">
+                              <label className="block text-xs font-semibold text-gray-700">
+                                {field.label}
+                                {field.required && <span className="text-orange-500 ml-0.5">*</span>}
+                              </label>
+                              {renderFieldInput(field)}
+                              {error && <span className="text-[10px] text-red-500 font-semibold block mt-1">{error}</span>}
+                            </div>
+                          )
+                        })}
+                    </div>
+                  </div>
+                )}
               </section>
 
               <aside className="lg:col-span-1 space-y-6">
@@ -552,11 +620,11 @@ export default function ApplyFormPage() {
                   
                   <motion.button
                     type="submit"
-                    className="w-full rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-3 text-sm font-semibold text-white cursor-pointer shadow-[0_8px_20px_rgba(255,107,0,0.15)] hover:opacity-90 transition-opacity"
+                    className="w-full rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-3 text-sm font-semibold text-white cursor-pointer shadow-[0_8px_20px_rgba(255,107,0,0.15)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     whileTap={{ scale: 0.98 }}
-                    disabled={submitting}
+                    disabled={submitting || !hasProfile}
                   >
-                    {submitting ? 'Submitting…' : 'Apply now'}
+                    {submitting ? 'Submitting…' : !hasProfile ? 'Profile Required' : 'Apply now'}
                   </motion.button>
                   <p className="text-[10px] text-gray-400 text-center mt-3">By applying you agree to our Terms and Privacy Policy.</p>
                 </div>
