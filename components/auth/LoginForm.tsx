@@ -1,6 +1,7 @@
 "use client";
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 
 interface LoginFormProps {
   userType: 'talent' | 'employer'
@@ -111,9 +112,9 @@ export default function LoginForm({ userType, onSubmit, isLoading = false }: Log
         </div>
 
         <div className="text-right">
-          <a href="#" className={`text-sm hover:underline ${isDarkTheme ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+          <Link href={`/${userType}/forgot-password`} className={`text-sm hover:underline ${isDarkTheme ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`}>
             Forgot your password?
-          </a>
+          </Link>
         </div>
 
         <motion.button
@@ -147,3 +148,4 @@ export default function LoginForm({ userType, onSubmit, isLoading = false }: Log
     </motion.div>
   )
 }
+
