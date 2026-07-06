@@ -5,19 +5,28 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import SignUpForm, { type SignUpFormData } from '@/components/auth/SignUpForm'
+import { signUp } from '@/lib/shared/auth/actions'
 
 export default function TalentSignUp() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  const [error, setError] = useState('')
+
   const handleSubmit = async (formData: SignUpFormData) => {
     setIsLoading(true)
+    setError('')
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      console.log('Talent sign-up data:', formData)
-      router.push('/talent/dashboard')
-    } catch (error) {
-      console.error('Sign-up error:', error)
+      await signUp({
+        email: formData.email,
+        password: formData.password,
+        role: 'talent',
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+      })
+      router.push(`/talent/check-email?email=${encodeURIComponent(formData.email)}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign up failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
