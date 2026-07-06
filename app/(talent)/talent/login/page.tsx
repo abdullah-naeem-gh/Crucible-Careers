@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import LoginForm, { type LoginFormData } from '@/components/auth/LoginForm'
-import { login } from '@/lib/shared/auth/actions'
+import { login, getCurrentUser, logout } from '@/lib/shared/auth/actions'
 
 export default function TalentLogin() {
   const [isLoading, setIsLoading] = useState(false)
@@ -18,6 +18,16 @@ export default function TalentLogin() {
     setError('')
     try {
       await login(formData.email, formData.password)
+      
+      const userWithProfile = await getCurrentUser()
+      const role = userWithProfile?.profile?.role || userWithProfile?.user_metadata?.role
+      
+      if (role === 'employer') {
+        await logout()
+        setError('This account is registered as an Employer. Please use the Employer login.')
+        return
+      }
+
       router.push('/talent/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please check your credentials.')
