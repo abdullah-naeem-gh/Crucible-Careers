@@ -13,8 +13,9 @@ export default function VerifiedPage() {
     const redirectUser = async () => {
       try {
         const userWithProfile = await getCurrentUser()
-        if (userWithProfile?.profile?.role) {
-          const role = userWithProfile.profile.role
+        const role = userWithProfile?.profile?.role || userWithProfile?.user_metadata?.role
+        
+        if (role) {
           setTimeout(() => {
             if (role === 'employer') {
               router.push('/employer/dashboard')
