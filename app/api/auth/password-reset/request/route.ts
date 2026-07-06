@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 type UserType = 'talent' | 'employer'
 
 const resendAttempts = new Map<string, number>()
-const RESEND_DELAY_SECONDS = 30
+const RESEND_DELAY_SECONDS = 60
 
 function isValidUserType(userType: unknown): userType is UserType {
   return userType === 'talent' || userType === 'employer'

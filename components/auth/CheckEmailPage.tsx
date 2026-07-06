@@ -116,7 +116,7 @@ export default function CheckEmailPage({ userType }: CheckEmailPageProps) {
         email,
       })
       if (resendError) throw resendError
-      setSecondsRemaining(30)
+      setSecondsRemaining(60)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to resend email.')
     } finally {
