@@ -1,10 +1,23 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
-import { useDashboardTheme } from "@/components/shared/theme/DashboardThemeProvider"
+
+/** Safe theme hook — works inside OR outside DashboardThemeProvider */
+function useMapTheme(): "light" | "dark" {
+  const [theme, setTheme] = useState<"light" | "dark">("light")
+  useEffect(() => {
+    const read = () =>
+      setTheme(document.documentElement.classList.contains("dark") ? "dark" : "light")
+    read()
+    const observer = new MutationObserver(read)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+    return () => observer.disconnect()
+  }, [])
+  return theme
+}
 
 interface Company {
   id: string
@@ -98,7 +111,7 @@ export default function LocationMap({
   onLocationSelect,
   companies,
 }: LocationMapProps) {
-  const { theme } = useDashboardTheme()
+  const theme = useMapTheme()
 
   // Dynamically use premium dark-mode or light-mode map tiles from CartoDB
   const tileUrl =
@@ -111,6 +124,9 @@ export default function LocationMap({
       {/* Dynamic Scoped Leaflet Theme Styles */}
       <style jsx global>{`
         /* Light mode overrides for clean Leaflet controls */
+        .leaflet-container {
+          background-color: #f9fafb !important;
+        }
         .leaflet-bar {
           border: 1px solid rgba(0, 0, 0, 0.15) !important;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;

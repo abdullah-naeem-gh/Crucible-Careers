@@ -15,7 +15,7 @@ export default function TalentSignUp() {
     try {
       await new Promise(resolve => setTimeout(resolve, 1500))
       console.log('Talent sign-up data:', formData)
-      router.push('/talent/dashboard')
+      router.push(`/talent/onboarding?name=${encodeURIComponent(formData.firstName)}`)
     } catch (error) {
       console.error('Sign-up error:', error)
     } finally {

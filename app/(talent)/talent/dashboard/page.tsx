@@ -37,6 +37,8 @@ function TalentDashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const requestedTab = searchParams.get('tab')
+  const isOnboarded = searchParams.get('onboarded') === '1'
+  const onboardedName = searchParams.get('name') ?? ''
   
   const initialTab: TalentTab = (
     requestedTab === 'jobs' ||
@@ -53,6 +55,7 @@ function TalentDashboardContent() {
   const [savedCount, setSavedCount] = useState(0)
   const [profiles, setProfiles] = useState<TalentProfile[]>([])
   const [profileHydrated, setProfileHydrated] = useState(false)
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(isOnboarded)
 
   const profileCompletion = useMemo(() => {
     return profiles[0] ? calculateCompletionPercentage(profiles[0]) : 0
@@ -146,6 +149,13 @@ function TalentDashboardContent() {
     )
   }
 
+  // Auto-dismiss the welcome banner after 5 seconds
+  useEffect(() => {
+    if (!showWelcomeBanner) return
+    const t = setTimeout(() => setShowWelcomeBanner(false), 5000)
+    return () => clearTimeout(t)
+  }, [showWelcomeBanner])
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#101010] text-white">
       <div className="pointer-events-none absolute inset-0 z-0">
@@ -158,6 +168,40 @@ function TalentDashboardContent() {
           }}
           />
       </div>
+
+      {/* Welcome banner — shown once after onboarding */}
+      <AnimatePresence>
+        {showWelcomeBanner && (
+          <motion.div
+            key="welcome-banner"
+            initial={{ opacity: 0, y: -48 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -48 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4"
+          >
+            <div className="flex items-center gap-3 rounded-2xl border border-orange-500/30 bg-[#1a1a1a]/95 backdrop-blur px-4 py-3 shadow-xl shadow-black/40">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] flex items-center justify-center text-base">
+                🎉
+              </div>
+              <p className="flex-1 text-sm text-white/90 leading-snug">
+                {onboardedName ? (
+                  <><span className="font-semibold text-white">Welcome, {onboardedName}!</span> Here are jobs picked for you based on your profile.</>  
+                ) : (
+                  <><span className="font-semibold text-white">Welcome to Crucible!</span> Here are jobs curated based on your profile.</>
+                )}
+              </p>
+              <button
+                onClick={() => setShowWelcomeBanner(false)}
+                className="flex-shrink-0 text-white/40 hover:text-white/80 transition-colors text-lg leading-none"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <section className="relative z-10 min-h-screen px-2 py-5 sm:px-4 lg:px-4 lg:h-screen lg:py-0">
         <div className="mx-auto grid min-h-full max-w-[1720px] grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-7">

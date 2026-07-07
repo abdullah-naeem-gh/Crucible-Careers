@@ -2,6 +2,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   IconBrandGithub,
@@ -673,7 +674,7 @@ function getMissingProfileSections(profile: TalentProfile | null): string[] {
 export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabProps) {
   const [activeProfileId, setActiveProfileId] = useState<string | null>(profiles[0]?.id ?? null)
   const [formState, setFormState] = useState<TalentProfile | null>(profiles[0] ?? null)
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
+  const router = useRouter()
   const [saved, setSaved] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const resumeInputRef = useRef<HTMLInputElement>(null)
@@ -716,7 +717,6 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
     onProfilesChange(next)
     setActiveProfileId(nextProfile.id)
     setFormState(nextProfile)
-    setIsOnboardingOpen(false)
   }
 
   const removeProfile = (id: string) => {
@@ -771,13 +771,9 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
     return getMissingProfileSections(formState)
   }, [formState])
 
+
   if (!formState) {
-    return (
-      <>
-        <EmptyState onCreate={() => setIsOnboardingOpen(true)} />
-        <OnboardingModal open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} onCreate={createProfile} defaultProfileName="My Profile" existingProfile={profiles[0] || null} />
-      </>
-    )
+    return <EmptyState onCreate={() => router.push('/talent/onboarding')} />
   }
 
   return (
@@ -797,8 +793,8 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setIsOnboardingOpen(true)}
-                title="Restart onboarding setup"
+                onClick={() => router.push('/talent/onboarding')}
+                title="Restart profile setup via onboarding"
                 aria-label="Restart setup"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05] dark:hover:text-white"
               >
@@ -956,7 +952,7 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
         </section>
       </div>
 
-      <OnboardingModal open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} onCreate={createProfile} defaultProfileName="My Profile" existingProfile={formState} />
+
       <ImageCropModal
         imageSrc={pendingProfilePhoto}
         onCancel={() => setPendingProfilePhoto(null)}

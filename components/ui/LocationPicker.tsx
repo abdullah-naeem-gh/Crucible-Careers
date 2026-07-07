@@ -229,6 +229,16 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
           </AnimatePresence>
         </div>
 
+        {/* Locate Me Button */}
+        <button
+          type="button"
+          onClick={handleLocateMe}
+          title="Locate me using GPS"
+          className="inline-flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-xl border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition shadow-sm dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05]"
+        >
+          <IconCurrentLocation size={16} />
+        </button>
+
         {/* Map Toggle Slide Button */}
         <button
           type="button"
@@ -243,7 +253,7 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
           className={`inline-flex h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3.5 text-xs font-semibold shadow-sm transition ${
             isMapOpen
               ? "bg-[#FF6B00] border-[#FF6B00] text-white hover:bg-[#E05E00]"
-              : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05]"
+              : "border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:border-gray-400 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05]"
           }`}
         >
           <IconMap size={16} />
