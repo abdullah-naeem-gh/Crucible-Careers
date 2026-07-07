@@ -5,23 +5,29 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import SignUpForm, { type SignUpFormData } from '@/components/auth/SignUpForm'
+import { signUp } from '@/lib/shared/auth/actions'
 
 export default function EmployerSignUp() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  const [error, setError] = useState('')
+
   const handleSubmit = async (formData: SignUpFormData) => {
     setIsLoading(true)
-    
-    // Simulate API call
+    setError('')
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      console.log('Employer sign-up data:', formData)
-      // Here you would typically make an API call to create the account
-      // For now, we'll just log the data
-      router.push('/employer/dashboard') // Redirect to employer dashboard
-    } catch (error) {
-      console.error('Sign-up error:', error)
+      await signUp({
+        email: formData.email,
+        password: formData.password,
+        role: 'employer',
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        company: formData.company,
+      })
+      router.push(`/employer/check-email?email=${encodeURIComponent(formData.email)}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign up failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -169,6 +175,12 @@ export default function EmployerSignUp() {
                 <h2 className="text-xl font-bold text-white mb-1">Create Your Account</h2>
                 <p className="text-gray-300 text-sm">Join hundreds of companies hiring elite talent</p>
               </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-900/50 border border-red-500/50 text-red-200 rounded-lg text-sm text-center">
+                  {error}
+                </div>
+              )}
 
               <SignUpForm
                 userType="employer"

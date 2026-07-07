@@ -5,19 +5,28 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import SignUpForm, { type SignUpFormData } from '@/components/auth/SignUpForm'
+import { signUp } from '@/lib/shared/auth/actions'
 
 export default function TalentSignUp() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  const [error, setError] = useState('')
+
   const handleSubmit = async (formData: SignUpFormData) => {
     setIsLoading(true)
+    setError('')
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      console.log('Talent sign-up data:', formData)
-      router.push(`/talent/onboarding?name=${encodeURIComponent(formData.firstName)}`)
-    } catch (error) {
-      console.error('Sign-up error:', error)
+      await signUp({
+        email: formData.email,
+        password: formData.password,
+        role: 'talent',
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+      })
+      router.push(`/talent/check-email?email=${encodeURIComponent(formData.email)}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign up failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -165,6 +174,12 @@ export default function TalentSignUp() {
                 <h2 className="text-xl font-bold text-gray-900 mb-1">Create Your Account</h2>
                 <p className="text-gray-600 text-sm">Join thousands of certified professionals</p>
               </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm text-center">
+                  {error}
+                </div>
+              )}
 
               <SignUpForm
                 userType="talent"
