@@ -7,6 +7,8 @@ export interface TalentExperience {
   endDate: string
   current: boolean
   description: string
+  previousSalary?: string
+  payslipVerified?: boolean
 }
 
 export interface TalentEducation {

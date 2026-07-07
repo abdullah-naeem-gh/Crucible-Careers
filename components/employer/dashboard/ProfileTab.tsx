@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconMapPin, IconWorld, IconBrandLinkedin, IconBrandX } from "@tabler/icons-react";
+import ImageCropModal from "@/components/ui/ImageCropModal";
 
 export interface CompanyProfile {
   name: string;
@@ -234,6 +235,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formState, setFormState] = useState<CompanyProfile>(profile);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [pendingLogoImage, setPendingLogoImage] = useState<string | null>(null);
 
   useEffect(() => {
     setFormState(profile);
@@ -246,7 +248,11 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => set("logoDataUrl", ev.target?.result as string);
+    reader.onload = (ev) => {
+      setPendingLogoImage(ev.target?.result as string);
+      // Reset input value so same file can be selected again
+      e.target.value = "";
+    };
     reader.readAsDataURL(file);
   };
 
@@ -510,6 +516,14 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
           </motion.div>
         )}
       </AnimatePresence>
+      <ImageCropModal
+        imageSrc={pendingLogoImage}
+        onCancel={() => setPendingLogoImage(null)}
+        onApply={(dataUrl) => {
+          set("logoDataUrl", dataUrl);
+          setPendingLogoImage(null);
+        }}
+      />
     </ViewMotion>
   );
 }
