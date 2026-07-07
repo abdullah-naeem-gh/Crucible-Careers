@@ -57,6 +57,7 @@ const LocationMap = dynamic(() => import("./LocationMap"), {
 
 export default function LocationPicker({ value, onChange }: LocationPickerProps) {
   const [selectedCity, setSelectedCity] = useState<City>(PAKISTAN_CITIES[0])
+  const [searchQuery, setSearchQuery] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isMapOpen, setIsMapOpen] = useState(false)
   const [companies, setCompanies] = useState<Company[]>([])
@@ -80,7 +81,10 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
 
   // Parse location value on load or external change
   useEffect(() => {
-    if (!value) return
+    if (!value) {
+      setSearchQuery("")
+      return
+    }
 
     // Check if it's a map coordinate value like "Lahore (Lat: 31.5204, Lng: 74.3587)"
     const match = value.match(/(.+)\s\(Lat:\s([-\d.]+),\sLng:\s([-\d.]+)\)/)
@@ -96,6 +100,7 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
       }
       setTempUserLocation([lat, lng])
       setMapCenter([lat, lng])
+      setSearchQuery(cityName)
     } else {
       // Just a plain city name
       const cityObj = PAKISTAN_CITIES.find(c => c.name.toLowerCase() === value.toLowerCase())
@@ -103,6 +108,9 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
         setSelectedCity(cityObj)
         setMapCenter([cityObj.lat, cityObj.lng])
         setTempUserLocation([cityObj.lat, cityObj.lng])
+        setSearchQuery(cityObj.name)
+      } else {
+        setSearchQuery(value)
       }
     }
   }, [value])
@@ -122,6 +130,7 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
     setSelectedCity(city)
     setMapCenter([city.lat, city.lng])
     setTempUserLocation([city.lat, city.lng])
+    setSearchQuery(city.name)
     
     // Selecting a city in dropdown selects that city on the map immediately
     const val = `${city.name} (Lat: ${city.lat.toFixed(4)}, Lng: ${city.lng.toFixed(4)})`
@@ -182,25 +191,37 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
     )
   }
 
+  // Filter cities by search term
+  const filteredCities = PAKISTAN_CITIES.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   return (
     <div className="w-full space-y-3">
-      {/* Top Row: Dropdown, Locate Me, View Map */}
+      {/* Top Row: Searchable Input, View Map */}
       <div className="flex gap-2 items-center">
-        {/* City selection dropdown */}
+        {/* Searchable dropdown trigger input */}
         <div ref={dropdownRef} className="relative flex-1 min-w-[150px]">
-          <button
-            type="button"
-            onClick={() => setIsDropdownOpen((prev) => !prev)}
-            className="flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium profile-select-trigger shadow-sm transition focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10"
-          >
-            <span>{value ? value.split(" (")[0] : selectedCity.name}</span>
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onFocus={() => setIsDropdownOpen(true)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setIsDropdownOpen(true)
+                onChange(e.target.value)
+              }}
+              placeholder="Type city name..."
+              className="w-full rounded-xl px-3.5 py-2.5 pr-9 text-sm font-medium profile-select-trigger shadow-sm transition focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 outline-none"
+            />
             <IconChevronDown
               size={16}
-              className={`text-gray-400 dark:text-white/40 transition-transform ${
+              className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 pointer-events-none transition-transform ${
                 isDropdownOpen ? "rotate-180" : ""
               }`}
             />
-          </button>
+          </div>
 
           <AnimatePresence>
             {isDropdownOpen && (
@@ -209,35 +230,31 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
                 animate={{ opacity: 1, y: 6, scale: 1 }}
                 exit={{ opacity: 0, y: -4, scale: 0.98 }}
                 transition={{ duration: 0.16, ease: "easeOut" }}
-                className="absolute left-0 right-0 top-full z-40 max-h-60 overflow-y-auto rounded-xl profile-select-menu shadow-[0_12px_30px_rgba(0,0,0,0.08)] ring-1 ring-black/[0.03] [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-white/15 hover:[&::-webkit-scrollbar-thumb]:bg-gray-400 dark:hover:[&::-webkit-scrollbar-thumb]:bg-white/25 [&::-webkit-scrollbar-track]:bg-transparent"
+                className="absolute left-0 right-0 top-full z-50 max-h-60 overflow-y-auto rounded-xl profile-select-menu shadow-[0_12px_30px_rgba(0,0,0,0.08)] ring-1 ring-black/[0.03] [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-white/15 hover:[&::-webkit-scrollbar-thumb]:bg-gray-400 dark:hover:[&::-webkit-scrollbar-thumb]:bg-white/25 [&::-webkit-scrollbar-track]:bg-transparent"
               >
-                {PAKISTAN_CITIES.map((city) => (
-                  <button
-                    key={city.name}
-                    type="button"
-                    onClick={() => handleCitySelect(city)}
-                    className={`flex w-full cursor-pointer items-center justify-between px-3 py-2.5 text-left text-sm profile-select-option ${
-                      selectedCity.name === city.name ? "profile-select-option-active font-semibold" : ""
-                    }`}
-                  >
-                    <span>{city.name}</span>
-                    {selectedCity.name === city.name && <IconCheck size={15} />}
-                  </button>
-                ))}
+                {filteredCities.length > 0 ? (
+                  filteredCities.map((city) => (
+                    <button
+                      key={city.name}
+                      type="button"
+                      onClick={() => handleCitySelect(city)}
+                      className={`flex w-full cursor-pointer items-center justify-between px-3 py-2.5 text-left text-sm profile-select-option ${
+                        selectedCity.name === city.name ? "profile-select-option-active font-semibold" : ""
+                      }`}
+                    >
+                      <span>{city.name}</span>
+                      {selectedCity.name === city.name && <IconCheck size={15} />}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-2.5 text-xs text-gray-400 dark:text-white/30 text-center">
+                    Press Enter to use &ldquo;{searchQuery}&rdquo;
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Locate Me Button */}
-        <button
-          type="button"
-          onClick={handleLocateMe}
-          title="Locate me using GPS"
-          className="inline-flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-xl border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition shadow-sm dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05]"
-        >
-          <IconCurrentLocation size={16} />
-        </button>
 
         {/* Map Toggle Slide Button */}
         <button
@@ -250,11 +267,7 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
               setMapCenter([selectedCity.lat, selectedCity.lng])
             }
           }}
-          className={`inline-flex h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3.5 text-xs font-semibold shadow-sm transition ${
-            isMapOpen
-              ? "bg-[#FF6B00] border-[#FF6B00] text-white hover:bg-[#E05E00]"
-              : "border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:border-gray-400 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05]"
-          }`}
+          className="inline-flex h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#FF6B00] bg-[#FF6B00] text-white hover:bg-[#E05E00] transition shadow-sm font-semibold px-3.5 text-xs"
         >
           <IconMap size={16} />
           <span>{isMapOpen ? "Hide Map" : "View Map"}</span>
@@ -279,6 +292,7 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
                   userLocation={tempUserLocation}
                   onLocationSelect={handleMapClickSelect}
                   companies={companies}
+                  onLocateMe={handleLocateMe}
                 />
               </div>
 

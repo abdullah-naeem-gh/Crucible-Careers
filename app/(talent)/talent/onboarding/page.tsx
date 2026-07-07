@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -80,6 +80,21 @@ function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const firstName = searchParams.get('name') ?? ''
+
+  useEffect(() => {
+    const html = document.documentElement
+    const hadDark = html.classList.contains('dark')
+    const hadThemeDark = html.classList.contains('dashboard-theme-dark')
+
+    html.classList.remove('dark', 'dashboard-theme-dark')
+    html.classList.add('light', 'dashboard-theme-light')
+
+    return () => {
+      html.classList.remove('light', 'dashboard-theme-light')
+      if (hadDark) html.classList.add('dark')
+      if (hadThemeDark) html.classList.add('dashboard-theme-dark')
+    }
+  }, [])
 
   const [step, setStep] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)

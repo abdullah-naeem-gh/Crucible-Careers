@@ -19,6 +19,8 @@ function useMapTheme(): "light" | "dark" {
   return theme
 }
 
+import { IconCurrentLocation } from "@tabler/icons-react"
+
 interface Company {
   id: string
   name: string
@@ -33,6 +35,7 @@ interface LocationMapProps {
   userLocation: [number, number] | null
   onLocationSelect: (lat: number, lng: number) => void
   companies: Company[]
+  onLocateMe?: () => void
 }
 
 // Custom Leaflet Icons styled with Tailwind CSS
@@ -110,6 +113,7 @@ export default function LocationMap({
   userLocation,
   onLocationSelect,
   companies,
+  onLocateMe,
 }: LocationMapProps) {
   const theme = useMapTheme()
 
@@ -121,6 +125,16 @@ export default function LocationMap({
 
   return (
     <div className="h-full w-full overflow-hidden rounded-xl relative border border-gray-200 dark:border-white/10">
+      {onLocateMe && (
+        <button
+          type="button"
+          onClick={onLocateMe}
+          title="Locate me using GPS"
+          className="absolute top-3 right-3 z-[1000] flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-md transition-all dark:border-white/10 dark:bg-[#1c1c1c] dark:text-white/80 dark:hover:bg-white/[0.05]"
+        >
+          <IconCurrentLocation size={18} />
+        </button>
+      )}
       {/* Dynamic Scoped Leaflet Theme Styles */}
       <style jsx global>{`
         /* Light mode overrides for clean Leaflet controls */
