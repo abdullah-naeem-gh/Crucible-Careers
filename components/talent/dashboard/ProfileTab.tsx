@@ -15,6 +15,7 @@ import {
   IconFileText,
   IconMapPin,
   IconPlus,
+  IconRotate2,
   IconTrash,
   IconVideo,
   IconWorld,
@@ -22,6 +23,8 @@ import {
 import Stepper, { Step } from '@/components/talent/profile/Stepper'
 import { TalentEducation, TalentExperience, TalentProfile, TalentProject } from '@/types/talent/profile'
 import { createBlankTalentProfile, upsertTalentProfile, calculateCompletionPercentage } from '@/lib/talent/services/profile.service'
+import ImageCropModal from '@/components/ui/ImageCropModal'
+import LocationPicker from '@/components/ui/LocationPicker'
 
 interface ProfileTabProps {
   profiles: TalentProfile[]
@@ -150,13 +153,25 @@ function CustomSelect({
   onChange: (value: string) => void
 }) {
   const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [open])
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-left text-sm font-medium text-gray-900 shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-orange-300 hover:bg-orange-50/40 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-white/[0.08] dark:bg-[#121212] dark:text-white dark:hover:bg-white/[0.04]"
+        className="flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium profile-select-trigger shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10"
       >
         <span>{value || options[0]}</span>
         <IconChevronDown size={16} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -168,7 +183,7 @@ function CustomSelect({
             animate={{ opacity: 1, y: 6, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="absolute left-0 right-0 top-full z-30 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-black/[0.03] dark:border-white/10 dark:bg-[#161616] dark:ring-white/[0.04]"
+            className="absolute left-0 right-0 top-full z-30 max-h-60 overflow-y-auto rounded-xl profile-select-menu shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-black/[0.03] [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-white/15 hover:[&::-webkit-scrollbar-thumb]:bg-gray-400 dark:hover:[&::-webkit-scrollbar-thumb]:bg-white/25 [&::-webkit-scrollbar-track]:bg-transparent"
           >
             {options.map((option) => (
               <button
@@ -178,7 +193,7 @@ function CustomSelect({
                   onChange(option)
                   setOpen(false)
                 }}
-                className={`flex w-full cursor-pointer items-center justify-between px-3 py-2.5 text-left text-sm transition ${option === value ? 'bg-orange-100 text-[#C84F00] font-semibold dark:bg-orange-500/10 dark:text-[#FF914D]' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-950 dark:text-white/55 dark:hover:bg-white/[0.04] dark:hover:text-white/80'}`}
+                className={`flex w-full cursor-pointer items-center justify-between px-3 py-2.5 text-left text-sm profile-select-option ${option === value ? 'profile-select-option-active font-semibold' : ''}`}
               >
                 <span>{option}</span>
                 {option === value && <IconCheck size={15} />}
@@ -191,11 +206,11 @@ function CustomSelect({
   )
 }
 
-function FormSection({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+function FormSection({ title, action, children, highlight = false }: { title: string; action?: React.ReactNode; children: React.ReactNode; highlight?: boolean }) {
   return (
-    <section className={`${insetSurface} p-4`}>
+    <section className={`${insetSurface} p-4 transition-all duration-300 ${highlight ? 'ring-1 ring-orange-400/50 bg-orange-50/10 shadow-[0_0_15px_rgba(255,107,0,0.08)] dark:ring-orange-500/30 dark:bg-orange-500/[0.02] dark:shadow-[0_0_20px_rgba(255,107,0,0.05)]' : ''}`}>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-white/35">{title}</h3>
+        <h3 className={`text-xs font-semibold uppercase tracking-[0.16em] transition-colors ${highlight ? 'text-orange-500 dark:text-orange-400 font-bold' : 'text-gray-500 dark:text-white/35'}`}>{title}</h3>
         {action}
       </div>
       {children}
@@ -492,7 +507,11 @@ function OnboardingModal({
                       <Field label="Full name" required><input className={fieldClass} value={draft.name} onChange={(e) => set('name', e.target.value)} placeholder="Alex Johnson" /></Field>
                       <Field label="Professional headline" required><input className={fieldClass} value={draft.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field>
                       <Field label="Email" required><input type="email" className={fieldClass} value={draft.email} onChange={(e) => set('email', e.target.value)} placeholder="alex@email.com" /></Field>
-                      <Field label="Location"><input className={fieldClass} value={draft.location} onChange={(e) => set('location', e.target.value)} placeholder="Karachi, Pakistan" /></Field>
+                      <div className="sm:col-span-2">
+                        <Field label="Location">
+                          <LocationPicker value={draft.location} onChange={(value) => set('location', value)} />
+                        </Field>
+                      </div>
                       <Field label="Languages"><CsvField value={draft.languages} onChange={(value) => set('languages', value)} placeholder="English, Urdu" /></Field>
                     </div>
                   </div>
@@ -561,7 +580,10 @@ function OnboardingModal({
                             <Field label="School"><input className={fieldClass} value={item.school} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, school: e.target.value } : entry))} placeholder="University name" /></Field>
                             <Field label="Degree"><input className={fieldClass} value={item.degree} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, degree: e.target.value } : entry))} placeholder="BS Computer Science" /></Field>
                             <Field label="Field"><input className={fieldClass} value={item.field} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, field: e.target.value } : entry))} placeholder="Software Engineering" /></Field>
-                            <Field label="Years"><input className={fieldClass} value={[item.startYear, item.endYear].filter(Boolean).join(' - ')} onChange={(e) => { const [startYear = '', endYear = ''] = e.target.value.split('-').map((v) => v.trim()); set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, startYear, endYear } : entry)) }} placeholder="2020 - 2024" /></Field>
+                            <div className="grid grid-cols-2 gap-3">
+                               <Field label="From"><input className={fieldClass} value={item.startYear} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, startYear: e.target.value } : entry))} placeholder="2020" /></Field>
+                               <Field label="To"><input className={fieldClass} value={item.endYear} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, endYear: e.target.value } : entry))} placeholder="2024" /></Field>
+                             </div>
                           </div>
                         </div>
                       ))}
@@ -621,6 +643,33 @@ function OnboardingModal({
     </AnimatePresence>
   )
 }
+function getMissingProfileSections(profile: TalentProfile | null): string[] {
+  if (!profile) return []
+  const missing: string[] = []
+  if (!profile.name?.trim() || !profile.email?.trim() || !profile.headline?.trim() || !profile.location?.trim() || !profile.photoDataUrl) {
+    missing.push('Identity')
+  }
+  if (!profile.overview?.trim() || !profile.availability?.trim() || !profile.workPreference?.trim()) {
+    missing.push('Positioning')
+  }
+  if (!profile.skills || profile.skills.length === 0) {
+    missing.push('Skills and languages')
+  }
+  const hasValidExp = Array.isArray(profile.experience) && 
+    profile.experience.length > 0 && 
+    profile.experience.some(exp => exp.company?.trim() || exp.role?.trim())
+  if (!hasValidExp) {
+    missing.push('Experience')
+  }
+  const hasValidEdu = Array.isArray(profile.education) && 
+    profile.education.length > 0 && 
+    profile.education.some(edu => edu.school?.trim() || edu.degree?.trim())
+  if (!hasValidEdu) {
+    missing.push('Education')
+  }
+  return missing
+}
+
 export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabProps) {
   const [activeProfileId, setActiveProfileId] = useState<string | null>(profiles[0]?.id ?? null)
   const [formState, setFormState] = useState<TalentProfile | null>(profiles[0] ?? null)
@@ -628,6 +677,8 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
   const [saved, setSaved] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const resumeInputRef = useRef<HTMLInputElement>(null)
+  const [pendingProfilePhoto, setPendingProfilePhoto] = useState<string | null>(null)
+  const [pendingProjectImage, setPendingProjectImage] = useState<{ projectId: string; imageSrc: string } | null>(null)
 
   const activeProfile = useMemo(
     () => profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0] ?? null,
@@ -716,6 +767,10 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
     return calculateCompletionPercentage(formState)
   }, [formState])
 
+  const missingProfileSections = useMemo(() => {
+    return getMissingProfileSections(formState)
+  }, [formState])
+
   if (!formState) {
     return (
       <>
@@ -743,9 +798,11 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
               <button
                 type="button"
                 onClick={() => setIsOnboardingOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05]"
+                title="Restart onboarding setup"
+                aria-label="Restart setup"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05] dark:hover:text-white"
               >
-                Restart setup
+                <IconRotate2 size={18} />
               </button>
               <button
                 type="button"
@@ -759,7 +816,7 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
           </div>
 
           <div className="min-h-0 flex-1 space-y-4 overflow-auto p-5 custom-scrollbar">
-            <FormSection title="Identity">
+            <FormSection title="Identity" highlight={missingProfileSections.includes('Identity')}>
               <div className="mb-5 flex items-center gap-4">
                 <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-orange-50 dark:border-white/10 dark:bg-white/[0.03]">
                   {formState.photoDataUrl ? (
@@ -769,22 +826,26 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
                     <span className="absolute inset-0 grid place-items-center text-lg font-bold text-[#FF6B00]">{initials(formState.name)}</span>
                   )}
                 </div>
-                <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => handleImageFile(event.target.files?.[0], (dataUrl) => set('photoDataUrl', dataUrl))} />
+                <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => { handleImageFile(event.target.files?.[0], setPendingProfilePhoto); event.target.value = ''; }} />
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => photoInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/55">
+                  <button type="button" onClick={() => photoInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/55 dark:hover:bg-white/[0.06] dark:hover:text-white">
                     <IconCamera size={15} /> {formState.photoDataUrl ? 'Change photo' : 'Upload photo'}
                   </button>
-                  {formState.photoDataUrl && <button type="button" onClick={() => set('photoDataUrl', null)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 dark:border-red-500/15 dark:bg-red-500/[0.07] dark:text-red-300">Remove</button>}
+                  {formState.photoDataUrl && <button type="button" onClick={() => set('photoDataUrl', null)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:border-red-500/15 dark:bg-red-500/[0.07] dark:text-red-300 dark:hover:bg-red-500/20">Remove</button>}
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Full name" required><input className={fieldClass} value={formState.name} onChange={(e) => set('name', e.target.value)} /></Field>
                 <Field label="Email" required><input type="email" className={fieldClass} value={formState.email} onChange={(e) => set('email', e.target.value)} /></Field>
                 <div className="sm:col-span-2"><Field label="Headline" required><input className={fieldClass} value={formState.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field></div>
-                <Field label="Location"><input className={fieldClass} value={formState.location} onChange={(e) => set('location', e.target.value)} /></Field>
+                <div className="sm:col-span-2">
+                  <Field label="Location">
+                    <LocationPicker value={formState.location} onChange={(value) => set('location', value)} />
+                  </Field>
+                </div>
               </div>
             </FormSection>
-            <FormSection title="Positioning">
+            <FormSection title="Positioning" highlight={missingProfileSections.includes('Positioning')}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Availability"><CustomSelect value={formState.availability} options={AVAILABILITY_OPTIONS} onChange={(value) => set('availability', value)} /></Field>
                 <Field label="Work preference"><CustomSelect value={formState.workPreference} options={WORK_PREFERENCES} onChange={(value) => set('workPreference', value)} /></Field>
@@ -794,14 +855,14 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
               </div>
             </FormSection>
 
-            <FormSection title="Skills and languages">
+            <FormSection title="Skills and languages" highlight={missingProfileSections.includes('Skills and languages')}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Skills" required><CsvField rows={4} value={formState.skills} onChange={(value) => set('skills', value)} /></Field>
                 <Field label="Languages"><CsvField rows={4} value={formState.languages} onChange={(value) => set('languages', value)} /></Field>
               </div>
             </FormSection>
 
-            <FormSection title="Experience" action={<button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+            <FormSection title="Experience" highlight={missingProfileSections.includes('Experience')} action={<button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
               <div className="space-y-4">
                 {formState.experience.map((item) => (
                   <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
@@ -827,7 +888,7 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
               </div>
             </FormSection>
 
-            <FormSection title="Education" action={<button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+            <FormSection title="Education" highlight={missingProfileSections.includes('Education')} action={<button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
               <div className="space-y-4">
                 {formState.education.map((item) => (
                   <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
@@ -839,7 +900,10 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
                       <Field label="School"><input className={fieldClass} value={item.school} onChange={(e) => updateEducation(item.id, { school: e.target.value })} /></Field>
                       <Field label="Degree"><input className={fieldClass} value={item.degree} onChange={(e) => updateEducation(item.id, { degree: e.target.value })} /></Field>
                       <Field label="Field"><input className={fieldClass} value={item.field} onChange={(e) => updateEducation(item.id, { field: e.target.value })} /></Field>
-                      <Field label="Years"><input className={fieldClass} value={`${item.startYear}${item.endYear ? ` - ${item.endYear}` : ''}`} onChange={(e) => { const [startYear = '', endYear = ''] = e.target.value.split('-').map((v) => v.trim()); updateEducation(item.id, { startYear, endYear }) }} /></Field>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="From"><input className={fieldClass} value={item.startYear} onChange={(e) => updateEducation(item.id, { startYear: e.target.value })} placeholder="2020" /></Field>
+                        <Field label="To"><input className={fieldClass} value={item.endYear} onChange={(e) => updateEducation(item.id, { endYear: e.target.value })} placeholder="2024" /></Field>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -876,7 +940,7 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
                 <Field label="Intro video URL"><input type="url" className={fieldClass} value={formState.introVideoUrl} onChange={(e) => set('introVideoUrl', e.target.value)} /></Field>
                 <Field label="Resume">
                   <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(event) => set('resumeFilename', event.target.files?.[0]?.name ?? '')} />
-                  <button type="button" onClick={() => resumeInputRef.current?.click()} className="inline-flex w-full items-center justify-between rounded-xl border border-dashed border-gray-300 bg-white/60 px-3 py-2.5 text-sm text-gray-600 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/45">
+                  <button type="button" onClick={() => resumeInputRef.current?.click()} className="inline-flex w-full items-center justify-between rounded-xl border border-dashed border-gray-300 bg-white/60 px-3 py-2.5 text-sm text-gray-600 cursor-pointer hover:bg-gray-100 hover:border-gray-400 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:border-white/20 hover:text-gray-900 dark:hover:text-white transition-all">
                     <span>{formState.resumeFilename || 'Upload resume metadata'}</span>
                     <IconFileText size={16} />
                   </button>
@@ -893,6 +957,25 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
       </div>
 
       <OnboardingModal open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} onCreate={createProfile} defaultProfileName="My Profile" existingProfile={formState} />
+      <ImageCropModal
+        imageSrc={pendingProfilePhoto}
+        onCancel={() => setPendingProfilePhoto(null)}
+        onApply={(dataUrl) => {
+          set('photoDataUrl', dataUrl)
+          setPendingProfilePhoto(null)
+        }}
+      />
+      <ImageCropModal
+        imageSrc={pendingProjectImage?.imageSrc ?? null}
+        onCancel={() => setPendingProjectImage(null)}
+        onApply={(dataUrl) => {
+          if (pendingProjectImage) {
+            updateProject(pendingProjectImage.projectId, { imageDataUrl: dataUrl })
+          }
+          setPendingProjectImage(null)
+        }}
+        aspectRatio={16 / 9}
+      />
     </div>
   )
 }
