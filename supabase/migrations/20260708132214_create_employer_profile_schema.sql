@@ -48,8 +48,9 @@ CREATE TRIGGER update_employer_profiles_updated_at
   EXECUTE FUNCTION public.handle_updated_at();
 
 -- 2. Create the employer-assets bucket
-INSERT INTO storage.buckets (id, name, public) VALUES ('employer-assets', 'employer-assets', true);
-
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('employer-assets', 'employer-assets', true)
+ON CONFLICT (id) DO NOTHING;
 -- 3. Set up RLS for the bucket
 -- Allow public viewing of files in the bucket
 CREATE POLICY "Anyone can view employer assets" ON storage.objects FOR SELECT USING (bucket_id = 'employer-assets');
