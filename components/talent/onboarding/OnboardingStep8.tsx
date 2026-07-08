@@ -17,10 +17,11 @@ interface Props {
   matchCount: number
   topMatches: MatchedJob[]
   onExplore: () => void
+  isSaving?: boolean
 }
 
 export default function OnboardingStep8({
-  firstName, skills, preferredRoles, matchCount, topMatches, onExplore,
+  firstName, skills, preferredRoles, matchCount, topMatches, onExplore, isSaving = false
 }: Props) {
   const [count, setCount] = useState(0)
   const [burst, setBurst] = useState(false)
@@ -118,12 +119,17 @@ export default function OnboardingStep8({
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="w-full max-w-sm pt-1">
         <motion.button
           onClick={onExplore}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white rounded-full font-semibold text-base shadow-lg shadow-orange-200/60 hover:shadow-orange-300/70 transition-shadow"
+          disabled={isSaving}
+          whileHover={isSaving ? {} : { scale: 1.03 }}
+          whileTap={isSaving ? {} : { scale: 0.97 }}
+          className={`w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-full font-semibold text-base transition-shadow ${
+            isSaving
+              ? 'bg-orange-300 text-white cursor-not-allowed shadow-none'
+              : 'bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white shadow-lg shadow-orange-200/60 hover:shadow-orange-300/70'
+          }`}
         >
-          Explore your matched jobs
-          <IconArrowRight size={18} />
+          {isSaving ? 'Saving profile...' : 'Explore your matched jobs'}
+          {!isSaving && <IconArrowRight size={18} />}
         </motion.button>
         <p className="text-[11px] text-gray-400 mt-2.5">
           Your full profile is saved. Continue editing anytime in the dashboard.

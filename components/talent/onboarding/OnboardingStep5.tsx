@@ -10,7 +10,7 @@ const F = 'w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-3 text
 
 export function newExperience(): TalentExperience {
   return {
-    id: `exp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    id: crypto.randomUUID(),
     company: '',
     role: '',
     location: '',
@@ -56,7 +56,7 @@ export default function OnboardingStep5({ experience, onChange }: Props) {
           </div>
           <button
             type="button"
-            onClick={() => onChange([...experience, { ...newExperience(), id: `exp-${Date.now()}-${Math.random().toString(16).slice(2)}` }])}
+            onClick={() => onChange([...experience, { ...newExperience(), id: crypto.randomUUID() }])}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-orange-200 bg-orange-50 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 transition-all flex-shrink-0"
           >
             <IconPlus size={13} /> Add

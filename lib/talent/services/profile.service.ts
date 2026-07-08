@@ -9,13 +9,12 @@ export function createBlankTalentProfile(overrides: Partial<TalentProfileDraft> 
 
   return {
     id: `profile-${Date.now()}`,
-    profileName: 'Profile 1',
-    isPrimary: false,
-    name: '',
+    firstName: '',
+    lastName: '',
     headline: '',
     email: '',
     location: '',
-    photoDataUrl: null,
+    photoUrl: null,
     overview: '',
     availability: 'Open to work',
     workPreference: 'Remote or hybrid',
@@ -28,6 +27,7 @@ export function createBlankTalentProfile(overrides: Partial<TalentProfileDraft> 
     portfolio: '',
     introVideoUrl: '',
     resumeFilename: '',
+    resumeUrl: '',
     experience: [],
     education: [],
     projects: [],
@@ -37,36 +37,41 @@ export function createBlankTalentProfile(overrides: Partial<TalentProfileDraft> 
   }
 }
 
-export function loadTalentProfiles(): TalentProfile[] {
-  if (typeof window === 'undefined') return []
-
+export async function loadTalentProfile(): Promise<TalentProfile | null> {
   try {
-    const saved = window.localStorage.getItem(TALENT_PROFILE_STORAGE_KEY)
-    const parsed = saved ? JSON.parse(saved) : []
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
+    const res = await fetch('/api/talent/profile')
+    if (!res.ok) throw new Error('Failed to fetch profile')
+    const { profile } = await res.json()
+    return profile || null
+  } catch (err) {
+    console.error('loadTalentProfile error:', err)
+    return null
   }
 }
 
-export function saveTalentProfiles(profiles: TalentProfile[]) {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(TALENT_PROFILE_STORAGE_KEY, JSON.stringify(profiles))
-}
-
-export function upsertTalentProfile(profiles: TalentProfile[], profile: TalentProfile) {
-  const updatedProfile = { ...profile, isPrimary: true, updatedAt: now() }
-  return [updatedProfile]
+export async function saveTalentProfile(profile: TalentProfile): Promise<void> {
+  if (!profile) return
+  try {
+    const res = await fetch('/api/talent/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    })
+    if (!res.ok) throw new Error('Failed to save profile')
+  } catch (err) {
+    console.error('saveTalentProfile error:', err)
+  }
 }
 
 export function calculateCompletionPercentage(profile: TalentProfile | null): number {
   if (!profile) return 0
   let score = 0
-  if (profile.name && profile.name.trim() !== '') score += 10
+  if (profile.firstName && profile.firstName.trim() !== '') score += 5
+  if (profile.lastName && profile.lastName.trim() !== '') score += 5
   if (profile.headline && profile.headline.trim() !== '') score += 10
   if (profile.email && profile.email.trim() !== '') score += 10
   if (profile.location && profile.location.trim() !== '') score += 5
-  if (profile.photoDataUrl) score += 10
+  if (profile.photoUrl) score += 10
   if (profile.overview && profile.overview.trim() !== '') score += 15
   if (profile.availability && profile.availability.trim() !== '') score += 5
   if (profile.workPreference && profile.workPreference.trim() !== '') score += 5

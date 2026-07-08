@@ -9,8 +9,8 @@ const F = 'w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-3 text
 
 export function newProject(): TalentProject {
   return {
-    id: `project-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title: '', description: '', link: '', imageDataUrl: null, videoUrl: '',
+    id: crypto.randomUUID(),
+    title: '', description: '', link: '', imageUrl: null, videoUrl: '',
   }
 }
 

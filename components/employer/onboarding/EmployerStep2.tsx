@@ -198,18 +198,7 @@ export default function EmployerStep2({ data, onChange }: Props) {
       </div>
 
       <div className="space-y-3.5">
-        {/* Company name */}
-        <div>
-          <label className={L}>
-            Company name <span className="text-[#FF6B00]">*</span>
-          </label>
-          <input
-            value={data.name}
-            onChange={(e) => set('name', e.target.value)}
-            className={F}
-            placeholder="e.g., TechCorp"
-          />
-        </div>
+
 
         {/* Tagline */}
         <div>

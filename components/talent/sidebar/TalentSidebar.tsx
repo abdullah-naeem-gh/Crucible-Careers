@@ -1,8 +1,9 @@
 "use client";
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { DashboardThemeSwitcher } from '@/components/shared/theme/DashboardThemeProvider'
+import { logout } from '@/lib/shared/auth/actions'
 import {
   IconBriefcase,
   IconBuilding,
@@ -31,6 +32,9 @@ interface TalentSidebarProps {
   savedCount?: number
   profileNeedsSetup?: boolean
   profileCompletion?: number
+  profileFirstName?: string
+  profileLastName?: string
+  profileEmail?: string
 }
 
 export default function TalentSidebar({
@@ -40,9 +44,24 @@ export default function TalentSidebar({
   applicationCount = 12,
   savedCount = 5,
   profileNeedsSetup = false,
-  profileCompletion = 0
+  profileCompletion = 0,
+  profileFirstName,
+  profileLastName,
+  profileEmail
 }: TalentSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    localStorage.removeItem('crucible-talent-dashboard-theme')
+    try {
+      await logout()
+    } catch (err) {
+      console.error('Logout error:', err)
+    }
+    router.push('/')
+  }
 
   const isActive = (key: string) => {
     if (activeTab) {
@@ -111,10 +130,12 @@ export default function TalentSidebar({
         Back
       </Link>
       <div className="mb-7 flex items-center gap-3">
-        <div className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]">AJ</div>
-        <div>
-          <div className="font-semibold text-gray-900 dark:text-white">Alex Johnson</div>
-          <div className="text-xs text-gray-500 dark:text-white/40">Talent account</div>
+        <div className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]">
+          {profileFirstName || profileLastName ? `${profileFirstName?.charAt(0) || ''}${profileLastName?.charAt(0) || ''}`.toUpperCase() : 'AJ'}
+        </div>
+        <div className="min-w-0">
+          <div className="font-semibold text-gray-900 dark:text-white truncate pr-2">{profileFirstName || profileLastName ? `${profileFirstName || ''} ${profileLastName || ''}`.trim() : 'Alex Johnson'}</div>
+          <div className="text-xs text-gray-500 dark:text-white/40 truncate pr-2">{profileEmail || 'Talent account'}</div>
         </div>
       </div>
 
@@ -141,13 +162,13 @@ export default function TalentSidebar({
         >
           Profile
         </Link>
-        <Link
-          href="/"
-          onClick={() => localStorage.removeItem('crucible-talent-dashboard-theme')}
+        <a
+          href="#"
+          onClick={handleLogout}
           className="rounded-xl border border-gray-200 bg-white/60 px-4 py-2.5 text-center text-sm text-gray-600 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/60"
         >
           Logout
-        </Link>
+        </a>
       </div>
 
       <div className="mt-auto hidden rounded-2xl border border-orange-200 bg-gradient-to-br from-[#FF6B00]/10 to-[#FF914D]/10 p-4 dark:border-orange-500/20 dark:from-orange-500/10 dark:to-orange-400/[0.035] lg:block">
@@ -172,9 +193,9 @@ export default function TalentSidebar({
 
       <div className="mt-4 hidden items-center justify-between text-xs text-gray-400 dark:text-white/35 lg:flex">
         <Link href="/gateway" className="transition-colors hover:text-gray-700 dark:hover:text-white/70">Gateway</Link>
-        <Link href="/" onClick={() => localStorage.removeItem('crucible-talent-dashboard-theme')} className="transition-colors hover:text-red-800 dark:hover:text-red-300">
+        <a href="#" onClick={handleLogout} className="transition-colors hover:text-red-800 dark:hover:text-red-300">
           Logout
-        </Link>
+        </a>
       </div>
     </motion.aside>
   )

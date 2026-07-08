@@ -10,8 +10,10 @@ import JobApplicationsView from "@/components/employer/jobs/JobApplicationsView"
 import OverviewTab, { EmployerJob, Analytics } from "@/components/employer/dashboard/OverviewTab";
 import JobsTab from "@/components/employer/dashboard/JobsTab";
 import AnalyticsTab from "@/components/employer/dashboard/AnalyticsTab";
-import ProfileTab, { CompanyProfile } from "@/components/employer/dashboard/ProfileTab";
+import ProfileTab from "@/components/employer/dashboard/ProfileTab";
 import JobForm from "@/components/employer/dashboard/JobForm";
+import { getEmployerProfile, saveEmployerProfile } from "@/lib/employer/services/profile.service";
+import { CompanyProfile } from "@/types/employer/profile";
 
 type EmployerTab = "overview" | "jobs" | "analytics" | "profile";
 
@@ -149,7 +151,7 @@ const DEFAULT_PROFILE: CompanyProfile = {
   techStack: "React, TypeScript, Node.js, PostgreSQL, AWS, Docker, Kubernetes",
   linkedin: "https://linkedin.com/company/techcorp",
   twitter: "https://twitter.com/techcorp",
-  logoDataUrl: null,
+  logoUrl: null,
 };
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
@@ -186,20 +188,23 @@ function EmployerDashboardContent() {
       setSelectedJobId(DEMO_JOBS[0].id);
     }
 
-    try {
-      const savedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
-      if (savedProfile) {
-        setProfile(JSON.parse(savedProfile));
-      } else if (!onboarded) {
-        // First visit with no profile → redirect to onboarding
-        router.replace("/employer/onboarding");
-        return;
+    // Fetch profile from API
+    const loadProfile = async () => {
+      try {
+        const dbProfile = await getEmployerProfile();
+        if (dbProfile) {
+          setProfile(dbProfile);
+        } else if (!onboarded) {
+          // First visit with no profile → redirect to onboarding
+          router.replace("/employer/onboarding");
+        }
+      } catch (err) {
+        console.error("Failed to fetch employer profile", err);
+      } finally {
+        setHydrated(true);
       }
-    } catch {
-      /* use default */
-    } finally {
-      setHydrated(true);
-    }
+    };
+    loadProfile();
 
     if (onboarded) {
       setShowWelcomeBanner(true);
@@ -212,9 +217,15 @@ function EmployerDashboardContent() {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
   }, [hydrated, jobs]);
 
-  useEffect(() => {
-    if (hydrated) localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
-  }, [hydrated, profile]);
+  // Handle profile updates from ProfileTab
+  const handleProfileChange = async (updated: CompanyProfile) => {
+    setProfile(updated);
+    try {
+      await saveEmployerProfile(updated);
+    } catch (err) {
+      console.error("Failed to save employer profile", err);
+    }
+  };
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
@@ -367,7 +378,7 @@ function EmployerDashboardContent() {
                 <AnalyticsTab key="analytics" jobs={jobs} analytics={analytics} />
               )}
               {activeTab === "profile" && (
-                <ProfileTab key="profile" profile={profile} onChange={setProfile} />
+                <ProfileTab key="profile" profile={profile} onChange={handleProfileChange} />
               )}
             </AnimatePresence>
           </div>

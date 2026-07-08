@@ -7,9 +7,7 @@ const L = 'mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-
 const F = 'w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 transition-all'
 
 export interface Step2Data {
-  name: string
   headline: string
-  email: string
   location: string
   languagesStr: string
 }
@@ -43,32 +41,6 @@ export default function OnboardingStep2({ data, onChange }: Props) {
         </motion.p>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="grid grid-cols-2 gap-3"
-      >
-        <div>
-          <label className={L}>Full name <span className="text-red-400">*</span></label>
-          <input
-            className={F}
-            value={data.name}
-            onChange={(e) => set('name', e.target.value)}
-            placeholder="Alex Johnson"
-          />
-        </div>
-        <div>
-          <label className={L}>Email <span className="text-red-400">*</span></label>
-          <input
-            type="email"
-            className={F}
-            value={data.email}
-            onChange={(e) => set('email', e.target.value)}
-            placeholder="alex@email.com"
-          />
-        </div>
-      </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}

@@ -7,7 +7,7 @@ import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import JobBrowser from '@/components/talent/jobs/JobBrowser'
 import { JOBS } from '@/lib/talent/data/jobs'
 import { TalentProfile } from '@/types/talent/profile'
-import { loadTalentProfiles, saveTalentProfiles, calculateCompletionPercentage } from '@/lib/talent/services/profile.service'
+import { loadTalentProfile, saveTalentProfile, calculateCompletionPercentage } from '@/lib/talent/services/profile.service'
 
 // Import Modular Tab Components
 import CompaniesTab from '@/components/talent/dashboard/CompaniesTab'
@@ -38,8 +38,9 @@ function TalentDashboardContent() {
   const searchParams = useSearchParams()
   const requestedTab = searchParams.get('tab')
   const isOnboarded = searchParams.get('onboarded') === '1'
-  const onboardedName = searchParams.get('name') ?? ''
   
+
+
   const initialTab: TalentTab = (
     requestedTab === 'jobs' ||
     requestedTab === 'companies' ||
@@ -53,13 +54,15 @@ function TalentDashboardContent() {
   const [jobs, setJobs] = useState<any[]>(JOBS)
   const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
   const [savedCount, setSavedCount] = useState(0)
-  const [profiles, setProfiles] = useState<TalentProfile[]>([])
+  const [profile, setProfile] = useState<TalentProfile | null>(null)
   const [profileHydrated, setProfileHydrated] = useState(false)
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(isOnboarded)
 
+  const onboardedName = searchParams.get('name') || profile?.firstName || ''
+
   const profileCompletion = useMemo(() => {
-    return profiles[0] ? calculateCompletionPercentage(profiles[0]) : 0
-  }, [profiles])
+    return profile ? calculateCompletionPercentage(profile) : 0
+  }, [profile])
 
   useEffect(() => {
     if (requestedTab) {
@@ -115,9 +118,14 @@ function TalentDashboardContent() {
       console.error('Failed to load talent applications count', e)
     }
 
-    // Load profiles
-    setProfiles(loadTalentProfiles())
-    setProfileHydrated(true)
+    // Load profile
+    loadTalentProfile().then(loadedProfile => {
+      setProfile(loadedProfile)
+      setProfileHydrated(true)
+    }).catch(err => {
+      console.error('Failed to load profile:', err)
+      setProfileHydrated(true)
+    })
 
   }, [])
 
@@ -137,8 +145,8 @@ function TalentDashboardContent() {
   }, [])
 
   useEffect(() => {
-    if (profileHydrated) saveTalentProfiles(profiles)
-  }, [profileHydrated, profiles])
+    if (profileHydrated && profile) saveTalentProfile(profile)
+  }, [profileHydrated, profile])
 
   const changeTab = (tab: string) => {
     const validTab = tab as TalentTab
@@ -212,8 +220,11 @@ function TalentDashboardContent() {
               jobCount={jobs.length}
               applicationCount={appCount}
               savedCount={savedCount}
-              profileNeedsSetup={profileHydrated && profiles.length === 0}
+              profileNeedsSetup={profileHydrated && !profile}
               profileCompletion={profileCompletion}
+              profileFirstName={profile?.firstName}
+              profileLastName={profile?.lastName}
+              profileEmail={profile?.email}
             />
           </div>
           <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
@@ -240,7 +251,7 @@ function TalentDashboardContent() {
               )}
               {activeTab === 'profile' && (
                 <ViewMotion key="profile">
-                  <ProfileTab profiles={profiles} onProfilesChange={setProfiles} />
+                  <ProfileTab profile={profile} onProfileChange={setProfile} />
                 </ViewMotion>
               )}
               {activeTab === 'exams' && (

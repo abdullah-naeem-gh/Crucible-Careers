@@ -13,6 +13,7 @@ import EmployerStep4, { type Step4Data } from '@/components/employer/onboarding/
 import EmployerStep5, { type Step5Data } from '@/components/employer/onboarding/EmployerStep5'
 import EmployerStep6, { type Step6Data } from '@/components/employer/onboarding/EmployerStep6'
 import EmployerStep7 from '@/components/employer/onboarding/EmployerStep7'
+import { saveEmployerProfile } from '@/lib/employer/services/profile.service'
 
 // ─── Slide variants ──────────────────────────────────────────────────────────
 
@@ -22,8 +23,8 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir > 0 ? -56 : 56, opacity: 0 }),
 }
 
-// Steps 3, 4, 5 are skippable (0-indexed)
-const SKIPPABLE_STEPS = new Set([3, 4, 5])
+// Steps 3, 4 are skippable (0-indexed)
+const SKIPPABLE_STEPS = new Set([3, 4])
 
 const PROFILE_STORAGE_KEY = 'recruiter_profile'
 
@@ -54,6 +55,7 @@ function EmployerOnboardingContent() {
 
   const [step, setStep] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)
+  const [isSaving, setIsSaving] = useState(false)
 
   // ── Step 2: Company identity ──
   const [s2, setS2] = useState<Step2Data>({
@@ -85,7 +87,7 @@ function EmployerOnboardingContent() {
   })
 
   // ── Step 6: Logo ──
-  const [s6, setS6] = useState<Step6Data>({ logoDataUrl: null })
+  const [s6, setS6] = useState<Step6Data>({ logoUrl: null })
 
   // ── Navigation ──
   const goNext = () => { setDir(1); setStep((s) => Math.min(s + 1, 6)) }
@@ -94,13 +96,14 @@ function EmployerOnboardingContent() {
 
   // ── Gate per step ──
   const canContinue = (() => {
-    if (step === 1) return s2.name.trim() !== '' && s2.industry !== '' && s2.companySize !== '' && s2.headquarters.trim() !== ''
+    if (step === 1) return s2.industry !== '' && s2.companySize !== '' && s2.headquarters.trim() !== ''
     if (step === 2) return s3.website.trim() !== ''
     return true
   })()
 
   // ── Save & redirect ──
-  const saveAndGo = () => {
+  const saveProfile = async () => {
+    setIsSaving(true)
     const profile = {
       name: s2.name,
       tagline: s2.tagline,
@@ -115,12 +118,29 @@ function EmployerOnboardingContent() {
       techStack: s5.techStack.join(', '),
       linkedin: s3.linkedin,
       twitter: s3.twitter,
-      logoDataUrl: s6.logoDataUrl,
+      logoUrl: s6.logoUrl,
     }
+    
     try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
-    } catch { /* ignore */ }
-    router.push(`/employer/dashboard?onboarded=1&name=${encodeURIComponent(s2.name || companyName)}`)
+      await saveEmployerProfile(profile)
+    } catch (err) {
+      console.error('Failed to save profile during onboarding:', err)
+      // fallback just in case
+      try {
+        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
+      } catch { /* ignore */ }
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleNext = async () => {
+    if (step === 5) {
+      await saveProfile()
+      goNext()
+    } else {
+      goNext()
+    }
   }
 
   const isCelebrationStep = step === 6
@@ -216,7 +236,7 @@ function EmployerOnboardingContent() {
                         companyName={s2.name || companyName}
                         industry={s2.industry}
                         companySize={s2.companySize}
-                        onExplore={saveAndGo}
+                        onExplore={() => router.push(`/employer/dashboard?onboarded=1&name=${encodeURIComponent(s2.name || companyName)}`)}
                       />
                     )}
                   </motion.div>
@@ -249,17 +269,17 @@ function EmployerOnboardingContent() {
 
                   {/* Continue */}
                   <motion.button
-                    onClick={step === 5 ? goNext : goNext}
-                    whileHover={canContinue ? { scale: 1.02 } : {}}
-                    whileTap={canContinue ? { scale: 0.97 } : {}}
-                    disabled={!canContinue}
+                    onClick={handleNext}
+                    whileHover={canContinue && !isSaving ? { scale: 1.02 } : {}}
+                    whileTap={canContinue && !isSaving ? { scale: 0.97 } : {}}
+                    disabled={!canContinue || isSaving}
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-all ${
-                      canContinue
+                      canContinue && !isSaving
                         ? 'bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white shadow-md shadow-orange-900/40 hover:shadow-orange-800/50'
                         : 'bg-white/[0.06] text-white/25 cursor-not-allowed'
                     }`}
                   >
-                    {isWelcomeStep ? 'Get started →' : step === 5 ? 'Finish setup →' : 'Continue →'}
+                    {isSaving ? 'Saving...' : isWelcomeStep ? 'Get started →' : step === 5 ? 'Finish setup →' : 'Continue →'}
                   </motion.button>
                 </div>
               </div>

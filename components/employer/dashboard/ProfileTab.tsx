@@ -5,22 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { IconMapPin, IconWorld, IconBrandLinkedin, IconBrandX } from "@tabler/icons-react";
 import ImageCropModal from "@/components/ui/ImageCropModal";
 
-export interface CompanyProfile {
-  name: string;
-  tagline: string;
-  industry: string;
-  companySize: string;
-  founded: string;
-  website: string;
-  headquarters: string;
-  overview: string;
-  culture: string;
-  benefits: string;
-  techStack: string;
-  linkedin: string;
-  twitter: string;
-  logoDataUrl: string | null;
-}
+import { createBrowserSupabaseClient } from "@/lib/shared/supabase/client";
+import { CompanyProfile } from "@/types/employer/profile";
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 const insetSurface = "rounded-2xl border border-white/[0.065] bg-[#141414] shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]";
@@ -114,9 +100,9 @@ function ProfilePreview({ profile }: { profile: CompanyProfile }) {
       <div className={`${insetSurface} p-4`}>
         <div className="flex items-start gap-4">
           <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/[0.08] bg-gradient-to-br from-[#FF6B00]/20 to-[#FF914D]/10">
-            {profile.logoDataUrl ? (
+            {profile.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.logoDataUrl} alt="logo" className="h-full w-full object-cover" />
+              <img src={profile.logoUrl} alt="logo" className="h-full w-full object-cover" />
             ) : (
               <span className="absolute inset-0 grid place-items-center text-xl font-bold text-[#FF914D]">
                 {profile.name.charAt(0).toUpperCase()}
@@ -236,6 +222,34 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
   const [formState, setFormState] = useState<CompanyProfile>(profile);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [pendingLogoImage, setPendingLogoImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const supabase = createBrowserSupabaseClient();
+
+  const uploadToStorage = async (fileOrBlob: File | Blob) => {
+    setIsUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const ext = fileOrBlob.type.split('/')[1] || 'png';
+      const filename = `logo-${crypto.randomUUID()}.${ext}`;
+      const filePath = `${user.id}/${filename}`;
+
+      const { data, error } = await supabase.storage.from('employer-assets').upload(filePath, fileOrBlob, {
+        cacheControl: '3600',
+        upsert: false
+      });
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage.from('employer-assets').getPublicUrl(filePath);
+      return publicUrl;
+    } catch (e) {
+      console.error("Upload error", e);
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   useEffect(() => {
     setFormState(profile);
@@ -291,10 +305,10 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
               <div
                 className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
               >
-                {formState.logoDataUrl ? (
+                {formState.logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={formState.logoDataUrl}
+                    src={formState.logoUrl}
                     alt="Profile photo"
                     className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition-transform duration-200"
                     onClick={() => setIsLightboxOpen(true)}
@@ -313,14 +327,15 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-xs text-white/55 cursor-pointer hover:bg-white/[0.05] hover:text-white"
+                  disabled={isUploading}
+                  className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-xs text-white/55 cursor-pointer hover:bg-white/[0.05] hover:text-white disabled:opacity-50"
                 >
-                  {formState.logoDataUrl ? "Change Photo" : "Upload Photo"}
+                  {isUploading ? "Uploading..." : formState.logoUrl ? "Change Photo" : "Upload Photo"}
                 </button>
-                {formState.logoDataUrl && (
+                {formState.logoUrl && (
                   <button
                     type="button"
-                    onClick={() => set("logoDataUrl", null)}
+                    onClick={() => set("logoUrl", null)}
                     className="ml-2 rounded-lg border border-red-500/15 bg-red-500/[0.07] px-3 py-2 text-xs text-red-300 cursor-pointer hover:bg-red-500/10"
                   >
                     Remove
@@ -485,7 +500,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
 
       {/* Lightbox modal for enlarged logo */}
       <AnimatePresence>
-        {isLightboxOpen && formState.logoDataUrl && (
+        {isLightboxOpen && formState.logoUrl && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -502,7 +517,7 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={formState.logoDataUrl}
+                src={formState.logoUrl}
                 alt="Enlarged profile photo"
                 className="max-h-[80vh] max-w-[80vw] object-contain rounded-lg"
               />
@@ -519,9 +534,12 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
       <ImageCropModal
         imageSrc={pendingLogoImage}
         onCancel={() => setPendingLogoImage(null)}
-        onApply={(dataUrl) => {
-          set("logoDataUrl", dataUrl);
+        onApply={async (dataUrl) => {
           setPendingLogoImage(null);
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          const publicUrl = await uploadToStorage(blob);
+          if (publicUrl) set("logoUrl", publicUrl);
         }}
       />
     </ViewMotion>
