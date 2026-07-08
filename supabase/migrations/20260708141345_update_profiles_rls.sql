@@ -1,1 +1,26 @@
-GRANT ALL ON TABLE public.profiles TO anon; GRANT ALL ON TABLE public.profiles TO authenticated; GRANT ALL ON TABLE public.profiles TO service_role; DO $var$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'Users can view own profile.') THEN CREATE POLICY "Users can view own profile." ON public.profiles FOR SELECT USING (auth.uid() = id); END IF; IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'Users can update own profile.') THEN CREATE POLICY "Users can update own profile." ON public.profiles FOR UPDATE USING (auth.uid() = id); END IF; END $var$ ;
+-- Ensure RLS is enabled
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Least-privilege grants
+REVOKE ALL ON TABLE public.profiles FROM anon, authenticated;
+GRANT SELECT, UPDATE ON TABLE public.profiles TO authenticated;
+GRANT ALL ON TABLE public.profiles TO service_role;
+
+DO $var$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'Users can view own profile.'
+  ) THEN
+    CREATE POLICY "Users can view own profile." ON public.profiles FOR SELECT
+      USING (auth.uid() = id);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'Users can update own profile.'
+  ) THEN
+    CREATE POLICY "Users can update own profile." ON public.profiles FOR UPDATE
+      USING (auth.uid() = id)
+      WITH CHECK (auth.uid() = id);
+  END IF;
+END
+$var$;
