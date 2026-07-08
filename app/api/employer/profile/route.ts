@@ -35,7 +35,7 @@ export async function GET() {
     console.error('Error fetching company from profiles:', profileError)
   }
 
-  console.log('Fetched profileData:', profileData);
+  // Avoid verbose logging of profile data in server logs
 
   const profile: CompanyProfile = {
     name: profileData?.company || '',
