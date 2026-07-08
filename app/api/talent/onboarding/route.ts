@@ -93,12 +93,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Diff and Upsert Educations
-    const incomingEduIds = payload.education?.map(e => e.id).filter(Boolean) || []
-    if (incomingEduIds.length > 0) {
-      await supabase.from('talent_educations').delete().eq('profile_id', profileId).not('id', 'in', `(${incomingEduIds.join(',')})`)
-    } else {
-      await supabase.from('talent_educations').delete().eq('profile_id', profileId)
-    }
+    // Safer than constructing an `in.(...)` filter from client-provided IDs.
+    await supabase.from('talent_educations').delete().eq('profile_id', profileId)
 
     if (payload.education?.length) {
       const validEducations = payload.education.filter(e => e.school?.trim() || e.degree?.trim())
