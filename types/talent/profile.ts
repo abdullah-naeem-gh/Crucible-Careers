@@ -1,5 +1,5 @@
 export interface TalentExperience {
-  id: string
+  id: string // UUID
   company: string
   role: string
   location: string
@@ -12,7 +12,7 @@ export interface TalentExperience {
 }
 
 export interface TalentEducation {
-  id: string
+  id: string // UUID
   school: string
   degree: string
   field: string
@@ -22,23 +22,22 @@ export interface TalentEducation {
 }
 
 export interface TalentProject {
-  id: string
+  id: string // UUID
   title: string
   description: string
   link: string
-  imageDataUrl: string | null
+  imageUrl: string | null
   videoUrl: string
 }
 
 export interface TalentProfile {
-  id: string
-  profileName: string
-  isPrimary: boolean
-  name: string
+  id: string // UUID
+  firstName: string
+  lastName: string
   headline: string
   email: string
   location: string
-  photoDataUrl: string | null
+  photoUrl: string | null
   overview: string
   availability: string
   workPreference: string
@@ -51,6 +50,7 @@ export interface TalentProfile {
   portfolio: string
   introVideoUrl: string
   resumeFilename: string
+  resumeUrl: string
   experience: TalentExperience[]
   education: TalentEducation[]
   projects: TalentProject[]

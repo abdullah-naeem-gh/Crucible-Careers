@@ -9,7 +9,7 @@ const F = 'w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-3 text
 
 export function newEducation(): TalentEducation {
   return {
-    id: `edu-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    id: crypto.randomUUID(),
     school: '', degree: '', field: '', startYear: '', endYear: '', description: '',
   }
 }

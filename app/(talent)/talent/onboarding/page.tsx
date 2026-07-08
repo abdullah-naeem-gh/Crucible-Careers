@@ -16,7 +16,7 @@ import OnboardingStep7, { newProject, type Step7Data } from '@/components/talent
 import OnboardingStep8, { type MatchedJob } from '@/components/talent/onboarding/OnboardingStep8'
 
 import { JOBS } from '@/lib/talent/data/jobs'
-import { createBlankTalentProfile, saveTalentProfiles } from '@/lib/talent/services/profile.service'
+import { createBlankTalentProfile, saveTalentProfile } from '@/lib/talent/services/profile.service'
 import type { TalentEducation, TalentExperience } from '@/types/talent/profile'
 
 // ─── Job matching ─────────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ const slideVariants = {
 }
 
 // ─── Steps that allow "I'll do this later" (0-indexed) ────────────────────────
-const SKIPPABLE_STEPS = new Set([4, 5, 6])
+const SKIPPABLE_STEPS = new Set([4, 5])
 
 // ─── Inner content ────────────────────────────────────────────────────────────
 
@@ -98,12 +98,11 @@ function OnboardingContent() {
 
   const [step, setStep] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)
+  const [isSaving, setIsSaving] = useState(false)
 
   // ── Step 2: Basics ──
   const [s2, setS2] = useState<Step2Data>({
-    name: firstName,
     headline: '',
-    email: '',
     location: '',
     languagesStr: 'English',
   })
@@ -148,37 +147,54 @@ function OnboardingContent() {
 
   // ── Gate per step ──
   const canContinue = (() => {
-    if (step === 1) return s2.name.trim() !== '' && s2.email.trim() !== '' && s2.headline.trim() !== ''
+    if (step === 1) return s2.headline.trim() !== ''
     if (step === 3) return s4.skills.length > 0
     return true
   })()
 
   // ── Finish ──
-  const saveAndExplore = () => {
-    const blank = createBlankTalentProfile()
-    const profile = {
-      ...blank,
-      name: s2.name,
-      headline: s2.headline,
-      email: s2.email,
-      location: s2.location,
-      languages: s2.languagesStr.split(',').map((l) => l.trim()).filter(Boolean),
-      availability: s3.availability,
-      workPreference: s3.workPreference,
-      preferredRoles: s3.preferredRoles,
-      hourlyRate: s3.hourlyRate,
-      skills: s4.skills,
-      experience,
-      education,
-      projects: s7.projects,
-      overview: s7.overview,
-      linkedin: s7.linkedin,
-      github: s7.github,
-      portfolio: s7.portfolio,
-      introVideoUrl: s7.introVideoUrl,
+  const saveProfile = async () => {
+    setIsSaving(true)
+    try {
+      const blank = createBlankTalentProfile()
+      const profile = {
+        ...blank,
+        firstName: '', // Handled by backend from auth session
+        lastName: '', // Handled by backend from auth session
+        headline: s2.headline,
+        email: '', // Handled by backend from auth session
+        location: s2.location,
+        languages: s2.languagesStr.split(',').map((l) => l.trim()).filter(Boolean),
+        availability: s3.availability,
+        workPreference: s3.workPreference,
+        preferredRoles: s3.preferredRoles,
+        hourlyRate: s3.hourlyRate,
+        skills: s4.skills,
+        experience,
+        education,
+        projects: s7.projects,
+        overview: s7.overview,
+        linkedin: s7.linkedin,
+        github: s7.github,
+        portfolio: s7.portfolio,
+        introVideoUrl: s7.introVideoUrl,
+      }
+      await saveTalentProfile(profile)
+    } catch (err) {
+      console.error('Error saving profile:', err)
+      // In a real app, you might want to show a toast here
+    } finally {
+      setIsSaving(false)
     }
-    saveTalentProfiles([profile])
-    router.push(`/talent/dashboard?tab=jobs&onboarded=1&name=${encodeURIComponent(firstName || s2.name)}`)
+  }
+
+  const handleNext = async () => {
+    if (step === 6) {
+      await saveProfile()
+      goNext()
+    } else {
+      goNext()
+    }
   }
 
   const isCelebrationStep = step === 7
@@ -248,12 +264,13 @@ function OnboardingContent() {
                     {step === 6 && <OnboardingStep7 data={s7} onChange={setS7} />}
                     {step === 7 && (
                       <OnboardingStep8
-                        firstName={firstName || s2.name}
+                        firstName={firstName}
                         skills={s4.skills}
                         preferredRoles={s3.preferredRoles}
                         matchCount={matchCount}
                         topMatches={topMatches}
-                        onExplore={saveAndExplore}
+                        onExplore={() => router.push(`/talent/dashboard?tab=jobs&onboarded=1&name=${encodeURIComponent(firstName)}`)}
+                        isSaving={isSaving}
                       />
                     )}
                   </motion.div>
@@ -286,17 +303,17 @@ function OnboardingContent() {
 
                   {/* Continue */}
                   <motion.button
-                    onClick={goNext}
-                    whileHover={canContinue ? { scale: 1.02 } : {}}
-                    whileTap={canContinue ? { scale: 0.97 } : {}}
-                    disabled={!canContinue}
+                    onClick={handleNext}
+                    whileHover={canContinue && !isSaving ? { scale: 1.02 } : {}}
+                    whileTap={canContinue && !isSaving ? { scale: 0.97 } : {}}
+                    disabled={!canContinue || isSaving}
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-all ${
-                      canContinue
+                      canContinue && !isSaving
                         ? 'bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white shadow-md shadow-orange-200/60 hover:shadow-orange-300/70'
                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     }`}
                   >
-                    {isWelcomeStep ? 'Get started →' : step === 6 ? 'See my matches →' : 'Continue →'}
+                    {isSaving ? 'Saving...' : isWelcomeStep ? 'Get started →' : step === 6 ? 'See my matches →' : 'Continue →'}
                   </motion.button>
                 </div>
               </div>

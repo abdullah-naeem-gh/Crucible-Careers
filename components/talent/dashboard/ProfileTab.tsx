@@ -7,7 +7,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   IconBrandGithub,
   IconBrandLinkedin,
-  IconBriefcase,
   IconCheck,
   IconChevronDown,
   IconCamera,
@@ -17,31 +16,28 @@ import {
   IconMapPin,
   IconPlus,
   IconRotate2,
-  IconTrash,
-  IconVideo,
-  IconWorld,
 } from '@tabler/icons-react'
-import Stepper, { Step } from '@/components/talent/profile/Stepper'
+import { IconVideo, IconWorld, IconLoader2 } from '@tabler/icons-react'
 import { TalentEducation, TalentExperience, TalentProfile, TalentProject } from '@/types/talent/profile'
-import { createBlankTalentProfile, upsertTalentProfile, calculateCompletionPercentage } from '@/lib/talent/services/profile.service'
+import { calculateCompletionPercentage } from '@/lib/talent/services/profile.service'
+import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import LocationPicker from '@/components/ui/LocationPicker'
 
 interface ProfileTabProps {
-  profiles: TalentProfile[]
-  onProfilesChange: (profiles: TalentProfile[]) => void
+  profile: TalentProfile | null
+  onProfileChange: (profile: TalentProfile | null) => void
 }
 
 const surface = 'rounded-[24px] border border-gray-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:border-white/[0.07] dark:bg-[#171717] dark:shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]'
 const insetSurface = 'rounded-2xl border border-gray-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.045)] dark:border-white/[0.065] dark:bg-[#141414] dark:shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]'
 const labelClass = 'mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-white/35'
 const fieldClass = 'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-white/[0.08] dark:bg-[#121212] dark:text-white dark:placeholder:text-white/20'
-const selectClass = fieldClass + ' cursor-pointer'
 const WORK_PREFERENCES = ['Remote', 'On-site', 'Hybrid']
 const AVAILABILITY_OPTIONS = ['Open to work', 'Available immediately', 'Available in 2 weeks', 'Available in 1 month', 'Not actively looking']
 
 const newExperience = (): TalentExperience => ({
-  id: `exp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  id: crypto.randomUUID(),
   company: '',
   role: '',
   location: '',
@@ -49,10 +45,12 @@ const newExperience = (): TalentExperience => ({
   endDate: '',
   current: false,
   description: '',
+  previousSalary: '',
+  payslipVerified: false,
 })
 
 const newEducation = (): TalentEducation => ({
-  id: `edu-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  id: crypto.randomUUID(),
   school: '',
   degree: '',
   field: '',
@@ -62,11 +60,11 @@ const newEducation = (): TalentEducation => ({
 })
 
 const newProject = (): TalentProject => ({
-  id: `project-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  id: crypto.randomUUID(),
   title: '',
   description: '',
   link: '',
-  imageDataUrl: null,
+  imageUrl: null,
   videoUrl: '',
 })
 
@@ -78,10 +76,9 @@ function joinList(value: string[]) {
   return value.join(', ')
 }
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (!parts.length) return 'TP'
-  return parts.slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+function initials(first: string, last: string) {
+  if (!first && !last) return 'TP'
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
 }
 
 function normalizeUrl(url: string) {
@@ -140,9 +137,6 @@ function CsvField({
   return <input {...sharedProps} />
 }
 
-function nextProfileName(count: number) {
-  return 'Profile ' + (count + 1)
-}
 
 function CustomSelect({
   value,
@@ -249,6 +243,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
     </div>
   )
 }
+
 function ProfilePreview({ profile }: { profile: TalentProfile }) {
   const visibleExperience = profile.experience.filter((item) => item.company || item.role || item.description)
   const visibleEducation = profile.education.filter((item) => item.school || item.degree || item.field)
@@ -262,7 +257,7 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
 
   return (
     <motion.div
-      key={profile.id + profile.updatedAt + profile.name + profile.headline}
+      key={profile.id + profile.updatedAt + profile.firstName + profile.lastName + profile.headline}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
@@ -274,17 +269,17 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
           <div className="min-w-0">
             <div className="flex items-start gap-4">
               <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] border border-white/60 bg-gradient-to-br from-orange-100 to-white shadow-[0_10px_24px_rgba(255,107,0,0.14)] dark:border-white/[0.08] dark:from-[#FF6B00]/20 dark:to-[#FF914D]/10">
-                {profile.photoDataUrl ? (
+                {profile.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profile.photoDataUrl} alt="Profile" className="h-full w-full object-cover" />
+                  <img src={profile.photoUrl} alt="Profile" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="absolute inset-0 grid place-items-center text-xl font-bold text-[#FF6B00]">{initials(profile.name)}</span>
+                  <span className="absolute inset-0 grid place-items-center text-xl font-bold text-[#FF6B00]">{initials(profile.firstName, profile.lastName)}</span>
                 )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Profile Preview</p>
                 <h2 className="mt-2 truncate text-[28px] font-semibold text-gray-950 dark:text-white">
-                  {profile.name || <span className="text-gray-400 dark:text-white/25">Your name</span>}
+                  {profile.firstName || profile.lastName ? `${profile.firstName} ${profile.lastName}`.trim() : <span className="text-gray-400 dark:text-white/25">Your name</span>}
                 </h2>
                 <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600 dark:text-white/50">
                   {profile.headline || <span className="italic text-gray-400 dark:text-white/20">Professional headline</span>}
@@ -350,9 +345,9 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
                 {visibleProjects.map((item) => (
                   <div key={item.id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 dark:border-white/[0.06] dark:bg-white/[0.025]">
                     <div className="flex gap-3">
-                      {item.imageDataUrl && (
+                      {item.imageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.imageDataUrl} alt="Project" className="h-16 w-20 shrink-0 rounded-lg object-cover" />
+                        <img src={item.imageUrl} alt="Project" className="h-16 w-20 shrink-0 rounded-lg object-cover" />
                       )}
                       <div className="min-w-0 flex-1">
                         <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{item.title || 'Project title'}</h4>
@@ -418,7 +413,7 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
                 {profile.github && <a href={normalizeUrl(profile.github)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-gray-700 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-white/60"><IconBrandGithub size={15} /> GitHub</a>}
                 {profile.portfolio && <a href={normalizeUrl(profile.portfolio)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-[#FF6B00] dark:border-white/[0.06] dark:bg-white/[0.025]"><IconWorld size={15} /> Portfolio</a>}
                 {profile.introVideoUrl && <a href={normalizeUrl(profile.introVideoUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-[#FF6B00] dark:border-white/[0.06] dark:bg-white/[0.025]"><IconVideo size={15} /> Intro video</a>}
-                {profile.resumeFilename && <span className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-gray-600 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-white/45"><IconFileText size={15} /> {profile.resumeFilename}</span>}
+                {profile.resumeUrl && <a href={normalizeUrl(profile.resumeUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-gray-600 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-white/45 hover:text-orange-500"><IconFileText size={15} /> {profile.resumeFilename || 'View Resume'}</a>}
               </div>
             ) : (
               <p className="text-xs italic text-gray-400 dark:text-white/20">No external links or media added yet.</p>
@@ -429,260 +424,11 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
     </motion.div>
   )
 }
-function OnboardingModal({
-  open,
-  onClose,
-  onCreate,
-  defaultProfileName,
-  existingProfile,
-}: {
-  open: boolean
-  onClose: () => void
-  onCreate: (profile: TalentProfile) => void
-  defaultProfileName: string
-  existingProfile?: TalentProfile | null
-}) {
-  const [draft, setDraft] = useState<TalentProfile>(() => existingProfile || createBlankTalentProfile({
-    profileName: 'My Profile',
-    availability: 'Open to work',
-    workPreference: 'Remote',
-    languages: ['English'],
-    education: [newEducation()],
-    experience: [newExperience()],
-    projects: [newProject()],
-  }))
 
-  useEffect(() => {
-    if (open) {
-      setDraft(existingProfile ? { ...existingProfile } : createBlankTalentProfile({
-        profileName: 'My Profile',
-        availability: 'Open to work',
-        workPreference: 'Remote',
-        languages: ['English'],
-        education: [newEducation()],
-        experience: [newExperience()],
-        projects: [newProject()],
-      }))
-    }
-  }, [open, existingProfile])
-
-  const set = <K extends keyof TalentProfile>(key: K, value: TalentProfile[K]) => {
-    setDraft((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const createProfile = () => {
-    onCreate({
-      ...draft,
-      profileName: 'My Profile',
-      updatedAt: new Date().toISOString(),
-    })
-  }
-
-  const skipToManual = () => {
-    onCreate(createBlankTalentProfile({
-      profileName: 'My Profile',
-      education: [newEducation()],
-      experience: [newExperience()],
-      projects: [newProject()],
-    }))
-  }
-
-  return (
-    <AnimatePresence initial={false}>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-3 sm:p-4"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 14, filter: 'blur(2px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: 8, filter: 'blur(2px)' }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="solid-popup-modal max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)] dark:border-white/[0.07] dark:bg-[#171717] [&_button:not(:disabled)]:cursor-pointer"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-white/[0.07] sm:px-6">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Profile setup</p>
-                <h2 className="mt-1 text-xl font-semibold text-gray-950 dark:text-white">Set up your profile</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={skipToManual} className="cursor-pointer hidden rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/[0.04] sm:block">
-                  Open full editor
-                </button>
-                <button type="button" onClick={onClose} className="cursor-pointer grid h-9 w-9 place-items-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/[0.04]">
-                  x
-                </button>
-              </div>
-            </div>
-            <div className="max-h-[78vh] overflow-auto p-5 custom-scrollbar sm:p-6">
-              <Stepper onFinalStepCompleted={createProfile} backButtonText="Previous" nextButtonText="Next">
-                <Step>
-                  <div className="grid min-h-[26rem] place-items-center text-center">
-                    <div className="max-w-xl">
-                      <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-orange-500/10 text-[#FF6B00]"><IconBriefcase size={30} /></div>
-                      <h3 className="text-3xl font-semibold text-gray-950 dark:text-white">Create your talent profile</h3>
-                      <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-white/45">
-                        Add the essentials employers expect to see: your headline, skills, work history, education, project proofs, and links.
-                      </p>
-                      <button type="button" onClick={skipToManual} className="cursor-pointer mt-6 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 dark:border-white/10 dark:text-white/55 sm:hidden">
-                        Open full editor
-                      </button>
-                    </div>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="space-y-4">
-                    <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Start with the basics</h3>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <Field label="Full name" required><input className={fieldClass} value={draft.name} onChange={(e) => set('name', e.target.value)} placeholder="Alex Johnson" /></Field>
-                      <Field label="Professional headline" required><input className={fieldClass} value={draft.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field>
-                      <Field label="Email" required><input type="email" className={fieldClass} value={draft.email} onChange={(e) => set('email', e.target.value)} placeholder="alex@email.com" /></Field>
-                      <div className="sm:col-span-2">
-                        <Field label="Location">
-                          <LocationPicker value={draft.location} onChange={(value) => set('location', value)} />
-                        </Field>
-                      </div>
-                      <Field label="Languages"><CsvField value={draft.languages} onChange={(value) => set('languages', value)} placeholder="English, Urdu" /></Field>
-                    </div>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="space-y-4">
-                    <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Define how you want to work</h3>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <Field label="Availability"><CustomSelect value={draft.availability} options={AVAILABILITY_OPTIONS} onChange={(value) => set('availability', value)} /></Field>
-                      <Field label="Work preference"><CustomSelect value={draft.workPreference} options={WORK_PREFERENCES} onChange={(value) => set('workPreference', value)} /></Field>
-                      <Field label="Preferred roles"><CsvField value={draft.preferredRoles} onChange={(value) => set('preferredRoles', value)} placeholder="Frontend Engineer, React Developer" /></Field>
-                      <Field label="Rate or salary preference"><input className={fieldClass} value={draft.hourlyRate} onChange={(e) => set('hourlyRate', e.target.value)} placeholder="USD 35/hr or PKR 250k/mo" /></Field>
-                    </div>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="space-y-4">
-                    <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add searchable skills</h3>
-                    <Field label="Skills" required><CsvField rows={6} value={draft.skills} onChange={(value) => set('skills', value)} placeholder="React, TypeScript, Next.js, Tailwind CSS" /></Field>
-                    <p className="text-xs text-gray-500 dark:text-white/35">Use comma-separated skills. These become chips in the preview and help matching surfaces later.</p>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add work experience</h3>
-                      <button type="button" onClick={() => set('experience', [...draft.experience, newExperience()])} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10"><IconPlus size={14} /> Add</button>
-                    </div>
-                    <div className="space-y-4 max-h-[48vh] overflow-y-auto pr-1 custom-scrollbar">
-                      {draft.experience.map((item, index) => (
-                        <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
-                          <div className="mb-3 flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Experience {index + 1}</span>
-                            {draft.experience.length > 1 && <button type="button" onClick={() => set('experience', draft.experience.filter((entry) => entry.id !== item.id))} className="cursor-pointer text-xs font-medium text-red-500">Remove</button>}
-                          </div>
-                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Field label="Role"><input className={fieldClass} value={item.role} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, role: e.target.value } : entry))} placeholder="Frontend Engineer" /></Field>
-                            <Field label="Company"><input className={fieldClass} value={item.company} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, company: e.target.value } : entry))} placeholder="TechCorp" /></Field>
-                            <Field label="Start"><input className={fieldClass} value={item.startDate} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, startDate: e.target.value } : entry))} placeholder="2023" /></Field>
-                            <Field label="End"><input className={fieldClass} value={item.current ? 'Present' : item.endDate} disabled={item.current} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, endDate: e.target.value } : entry))} placeholder="Present" /></Field>
-                            <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-white/45 sm:col-span-2">
-                              <input type="checkbox" checked={item.current} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, current: e.target.checked, endDate: e.target.checked ? '' : entry.endDate } : entry))} className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#FF6B00] focus:ring-orange-500" />
-                              Currently working here / Present
-                            </label>
-                            <div className="sm:col-span-2"><Field label="Impact"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => set('experience', draft.experience.map((entry) => entry.id === item.id ? { ...entry, description: e.target.value } : entry))} placeholder="Describe outcomes, ownership, and measurable impact." /></Field></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add education</h3>
-                      <button type="button" onClick={() => set('education', [...draft.education, newEducation()])} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10"><IconPlus size={14} /> Add</button>
-                    </div>
-                    <div className="space-y-4 max-h-[48vh] overflow-y-auto pr-1 custom-scrollbar">
-                      {draft.education.map((item, index) => (
-                        <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
-                          <div className="mb-3 flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Education {index + 1}</span>
-                            {draft.education.length > 1 && <button type="button" onClick={() => set('education', draft.education.filter((entry) => entry.id !== item.id))} className="cursor-pointer text-xs font-medium text-red-500">Remove</button>}
-                          </div>
-                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Field label="School"><input className={fieldClass} value={item.school} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, school: e.target.value } : entry))} placeholder="University name" /></Field>
-                            <Field label="Degree"><input className={fieldClass} value={item.degree} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, degree: e.target.value } : entry))} placeholder="BS Computer Science" /></Field>
-                            <Field label="Field"><input className={fieldClass} value={item.field} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, field: e.target.value } : entry))} placeholder="Software Engineering" /></Field>
-                            <div className="grid grid-cols-2 gap-3">
-                               <Field label="From"><input className={fieldClass} value={item.startYear} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, startYear: e.target.value } : entry))} placeholder="2020" /></Field>
-                               <Field label="To"><input className={fieldClass} value={item.endYear} onChange={(e) => set('education', draft.education.map((entry) => entry.id === item.id ? { ...entry, endYear: e.target.value } : entry))} placeholder="2024" /></Field>
-                             </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Add project proofs</h3>
-                      <button type="button" onClick={() => set('projects', [...draft.projects, newProject()])} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10"><IconPlus size={14} /> Add</button>
-                    </div>
-                    <div className="space-y-4 max-h-[48vh] overflow-y-auto pr-1 custom-scrollbar">
-                      {draft.projects.map((item, index) => (
-                        <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
-                          <div className="mb-3 flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Project {index + 1}</span>
-                            {draft.projects.length > 1 && <button type="button" onClick={() => set('projects', draft.projects.filter((entry) => entry.id !== item.id))} className="cursor-pointer text-xs font-medium text-red-500">Remove</button>}
-                          </div>
-                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Field label="Project title"><input className={fieldClass} value={item.title} onChange={(e) => set('projects', draft.projects.map((entry) => entry.id === item.id ? { ...entry, title: e.target.value } : entry))} placeholder="AI recruiting dashboard" /></Field>
-                            <Field label="Project link"><input type="url" className={fieldClass} value={item.link} onChange={(e) => set('projects', draft.projects.map((entry) => entry.id === item.id ? { ...entry, link: e.target.value } : entry))} placeholder="https://example.com" /></Field>
-                            <Field label="Optional video URL"><input type="url" className={fieldClass} value={item.videoUrl} onChange={(e) => set('projects', draft.projects.map((entry) => entry.id === item.id ? { ...entry, videoUrl: e.target.value } : entry))} placeholder="Loom or YouTube link" /></Field>
-                            <div className="sm:col-span-2"><Field label="Project summary"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => set('projects', draft.projects.map((entry) => entry.id === item.id ? { ...entry, description: e.target.value } : entry))} placeholder="Explain the problem, your role, and the result." /></Field></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="space-y-4">
-                    <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Finish with intro and links</h3>
-                    <Field label="Overview" required><textarea className={fieldClass} rows={5} value={draft.overview} onChange={(e) => set('overview', e.target.value)} placeholder="Write a concise client-facing profile overview." /></Field>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <Field label="LinkedIn"><input type="url" className={fieldClass} value={draft.linkedin} onChange={(e) => set('linkedin', e.target.value)} placeholder="linkedin.com/in/..." /></Field>
-                      <Field label="GitHub"><input type="url" className={fieldClass} value={draft.github} onChange={(e) => set('github', e.target.value)} placeholder="github.com/..." /></Field>
-                      <Field label="Portfolio"><input type="url" className={fieldClass} value={draft.portfolio} onChange={(e) => set('portfolio', e.target.value)} placeholder="your-site.com" /></Field>
-                      <Field label="Intro video URL"><input type="url" className={fieldClass} value={draft.introVideoUrl} onChange={(e) => set('introVideoUrl', e.target.value)} placeholder="Loom or YouTube link" /></Field>
-                    </div>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="grid min-h-[26rem] gap-5 lg:grid-cols-2">
-                    <div>
-                      <h3 className="text-2xl font-semibold text-gray-950 dark:text-white">Review your profile</h3>
-                      <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-white/45">Create the profile now, then continue refining every field in the full manual editor.</p>
-                    </div>
-                    <ProfilePreview profile={draft} />
-                  </div>
-                </Step>
-              </Stepper>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-}
 function getMissingProfileSections(profile: TalentProfile | null): string[] {
   if (!profile) return []
   const missing: string[] = []
-  if (!profile.name?.trim() || !profile.email?.trim() || !profile.headline?.trim() || !profile.location?.trim() || !profile.photoDataUrl) {
+  if (!(profile.firstName?.trim() || profile.lastName?.trim()) || !profile.email?.trim() || !profile.headline?.trim() || !profile.location?.trim() || !profile.photoUrl) {
     missing.push('Identity')
   }
   if (!profile.overview?.trim() || !profile.availability?.trim() || !profile.workPreference?.trim()) {
@@ -691,14 +437,14 @@ function getMissingProfileSections(profile: TalentProfile | null): string[] {
   if (!profile.skills || profile.skills.length === 0) {
     missing.push('Skills and languages')
   }
-  const hasValidExp = Array.isArray(profile.experience) && 
-    profile.experience.length > 0 && 
+  const hasValidExp = Array.isArray(profile.experience) &&
+    profile.experience.length > 0 &&
     profile.experience.some(exp => exp.company?.trim() || exp.role?.trim())
   if (!hasValidExp) {
     missing.push('Experience')
   }
-  const hasValidEdu = Array.isArray(profile.education) && 
-    profile.education.length > 0 && 
+  const hasValidEdu = Array.isArray(profile.education) &&
+    profile.education.length > 0 &&
     profile.education.some(edu => edu.school?.trim() || edu.degree?.trim())
   if (!hasValidEdu) {
     missing.push('Education')
@@ -706,9 +452,8 @@ function getMissingProfileSections(profile: TalentProfile | null): string[] {
   return missing
 }
 
-export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabProps) {
-  const [activeProfileId, setActiveProfileId] = useState<string | null>(profiles[0]?.id ?? null)
-  const [formState, setFormState] = useState<TalentProfile | null>(profiles[0] ?? null)
+export default function ProfileTab({ profile, onProfileChange }: ProfileTabProps) {
+  const [formState, setFormState] = useState<TalentProfile | null>(profile)
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -716,54 +461,50 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
   const resumeInputRef = useRef<HTMLInputElement>(null)
   const [pendingProfilePhoto, setPendingProfilePhoto] = useState<string | null>(null)
   const [pendingProjectImage, setPendingProjectImage] = useState<{ projectId: string; imageSrc: string } | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [verifyingId, setVerifyingId] = useState<string | null>(null)
+  const supabase = createBrowserSupabaseClient()
 
-  const activeProfile = useMemo(
-    () => profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0] ?? null,
-    [activeProfileId, profiles],
-  )
+  const uploadToStorage = async (fileOrBlob: File | Blob, pathPrefix: string, originalName?: string) => {
+    setIsUploading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Not authenticated")
+
+      const extFromName = originalName && originalName.includes('.') ? originalName.split('.').pop() : undefined
+      const ext = (extFromName || fileOrBlob.type.split('/')[1] || 'bin').toLowerCase()
+      const filename = `${pathPrefix}-${crypto.randomUUID()}.${ext}`
+
+      const { data, error } = await supabase.storage.from('talent-assets').upload(filename, fileOrBlob, {
+        cacheControl: '3600',
+        upsert: false
+      })
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage.from('talent-assets').getPublicUrl(filename)
+      return publicUrl
+    } catch (e) {
+      console.error("Upload error", e)
+      return null
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   useEffect(() => {
-    if (!profiles.length) {
-      setActiveProfileId(null)
-      setFormState(null)
-      return
-    }
-
-    const nextActive = activeProfile ?? profiles[0]
-    setActiveProfileId(nextActive.id)
-    setFormState(nextActive)
-  }, [activeProfile, profiles])
+    setFormState(profile)
+  }, [profile])
 
   const set = <K extends keyof TalentProfile>(key: K, value: TalentProfile[K]) => {
     setFormState((prev) => (prev ? { ...prev, [key]: value } : prev))
   }
 
-  const saveProfile = (profile = formState) => {
-    if (!profile) return
-    const nextProfiles = upsertTalentProfile(profiles, profile)
-    onProfilesChange(nextProfiles)
-    setActiveProfileId(profile.id)
+  const saveProfile = (p = formState) => {
+    if (!p) return
+    onProfileChange(p)
     setIsEditing(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 1800)
-  }
-
-  const createProfile = (profile: TalentProfile) => {
-    const nextProfile = { ...profile, isPrimary: profiles.length === 0 }
-    const next = upsertTalentProfile(profiles, nextProfile)
-    onProfilesChange(next)
-    setActiveProfileId(nextProfile.id)
-    setFormState(nextProfile)
-  }
-
-  const removeProfile = (id: string) => {
-    const next = profiles.filter((profile) => profile.id !== id)
-    onProfilesChange(next)
-
-    if (id === activeProfileId) {
-      setActiveProfileId(next[0]?.id ?? null)
-      setFormState(next[0] ?? null)
-    }
   }
 
   const updateExperience = (id: string, updates: Partial<TalentExperience>) => {
@@ -779,6 +520,14 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
   const updateProject = (id: string, updates: Partial<TalentProject>) => {
     if (!formState) return
     set('projects', formState.projects.map((item) => (item.id === id ? { ...item, ...updates } : item)))
+  }
+
+  const handleVerify = (id: string) => {
+    setVerifyingId(id)
+    setTimeout(() => {
+      updateExperience(id, { payslipVerified: true })
+      setVerifyingId(null)
+    }, 1200)
   }
 
   const addExperience = () => {
@@ -848,7 +597,7 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
                 onClick={() => saveProfile()}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(255,107,0,0.18)]"
               >
-                <IconDeviceFloppy size={16} />
+                {saved ? <IconCheck size={16} /> : <IconDeviceFloppy size={16} />}
                 {saved ? 'Saved' : 'Save'}
               </motion.button>
             ) : (
@@ -869,137 +618,181 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
           <AnimatePresence initial={false} mode="wait">
             {isEditing ? (
               <motion.div key="profile-edit" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.22, ease: 'easeOut' }} className="space-y-4">
-              <FormSection title="Identity" highlight={missingProfileSections.includes('Identity')}>
-                <div className="mb-5 flex items-center gap-4">
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-orange-50 dark:border-white/10 dark:bg-white/[0.03]">
-                    {formState.photoDataUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={formState.photoDataUrl} alt="Profile" className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="absolute inset-0 grid place-items-center text-lg font-bold text-[#FF6B00]">{initials(formState.name)}</span>
-                    )}
-                  </div>
-                  <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => { handleImageFile(event.target.files?.[0], setPendingProfilePhoto); event.target.value = ''; }} />
-                  <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => photoInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/55 dark:hover:bg-white/[0.06] dark:hover:text-white">
-                      <IconCamera size={15} /> {formState.photoDataUrl ? 'Change photo' : 'Upload photo'}
-                    </button>
-                    {formState.photoDataUrl && <button type="button" onClick={() => set('photoDataUrl', null)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:border-red-500/15 dark:bg-red-500/[0.07] dark:text-red-300 dark:hover:bg-red-500/20">Remove</button>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field label="Full name" required><input className={fieldClass} value={formState.name} onChange={(e) => set('name', e.target.value)} /></Field>
-                  <Field label="Email" required><input type="email" className={fieldClass} value={formState.email} onChange={(e) => set('email', e.target.value)} /></Field>
-                  <div className="sm:col-span-2"><Field label="Headline" required><input className={fieldClass} value={formState.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field></div>
-                  <div className="sm:col-span-2">
-                    <Field label="Location">
-                      <LocationPicker value={formState.location} onChange={(value) => set('location', value)} />
-                    </Field>
-                  </div>
-                </div>
-              </FormSection>
-              <FormSection title="Positioning" highlight={missingProfileSections.includes('Positioning')}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field label="Availability"><CustomSelect value={formState.availability} options={AVAILABILITY_OPTIONS} onChange={(value) => set('availability', value)} /></Field>
-                  <Field label="Work preference"><CustomSelect value={formState.workPreference} options={WORK_PREFERENCES} onChange={(value) => set('workPreference', value)} /></Field>
-                  <Field label="Preferred roles"><CsvField value={formState.preferredRoles} onChange={(value) => set('preferredRoles', value)} /></Field>
-                  <Field label="Rate or salary preference"><input className={fieldClass} value={formState.hourlyRate} onChange={(e) => set('hourlyRate', e.target.value)} /></Field>
-                  <div className="sm:col-span-2"><Field label="Overview" required><textarea className={fieldClass} rows={5} value={formState.overview} onChange={(e) => set('overview', e.target.value)} /></Field></div>
-                </div>
-              </FormSection>
-
-              <FormSection title="Skills and languages" highlight={missingProfileSections.includes('Skills and languages')}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field label="Skills" required><CsvField rows={4} value={formState.skills} onChange={(value) => set('skills', value)} /></Field>
-                  <Field label="Languages"><CsvField rows={4} value={formState.languages} onChange={(value) => set('languages', value)} /></Field>
-                </div>
-              </FormSection>
-
-              <FormSection title="Experience" highlight={missingProfileSections.includes('Experience')} action={<button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
-                <div className="space-y-4">
-                  {formState.experience.map((item) => (
-                    <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Work entry</span>
-                        <button type="button" onClick={() => set('experience', formState.experience.filter((exp) => exp.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
-                      </div>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <Field label="Role"><input className={fieldClass} value={item.role} onChange={(e) => updateExperience(item.id, { role: e.target.value })} /></Field>
-                        <Field label="Company"><input className={fieldClass} value={item.company} onChange={(e) => updateExperience(item.id, { company: e.target.value })} /></Field>
-                        <Field label="Location"><input className={fieldClass} value={item.location} onChange={(e) => updateExperience(item.id, { location: e.target.value })} /></Field>
-                        <Field label="Start"><input className={fieldClass} value={item.startDate} onChange={(e) => updateExperience(item.id, { startDate: e.target.value })} /></Field>
-                        <Field label="End"><input className={fieldClass} value={item.current ? 'Present' : item.endDate} disabled={item.current} onChange={(e) => updateExperience(item.id, { endDate: e.target.value })} /></Field>
-                        <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-white/45 sm:col-span-2">
-                          <input type="checkbox" checked={item.current} onChange={(e) => updateExperience(item.id, { current: e.target.checked, endDate: e.target.checked ? '' : item.endDate })} className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#FF6B00] focus:ring-orange-500" />
-                          Currently working here / Present
-                        </label>
-                        <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateExperience(item.id, { description: e.target.value })} /></Field></div>
-                      </div>
+                <FormSection title="Identity" highlight={missingProfileSections.includes('Identity')}>
+                  <div className="mb-5 flex items-center gap-4">
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-orange-50 dark:border-white/10 dark:bg-white/[0.03]">
+                      {formState.photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={formState.photoUrl} alt="Profile" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="absolute inset-0 grid place-items-center text-lg font-bold text-[#FF6B00]">{initials(formState.firstName, formState.lastName)}</span>
+                      )}
                     </div>
-                  ))}
-                  <button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another experience</button>
-                </div>
-              </FormSection>
+                    <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => { handleImageFile(event.target.files?.[0], setPendingProfilePhoto); event.target.value = ''; }} />
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => photoInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/55 dark:hover:bg-white/[0.06] dark:hover:text-white" disabled={isUploading}>
+                        {isUploading ? <IconLoader2 size={15} className="animate-spin" /> : <IconCamera size={15} />}
+                        {formState.photoUrl ? 'Change photo' : 'Upload photo'}
+                      </button>
+                      {formState.photoUrl && <button type="button" onClick={() => set('photoUrl', null)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:border-red-500/15 dark:bg-red-500/[0.07] dark:text-red-300 dark:hover:bg-red-500/20">Remove</button>}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="First name" required><input className={fieldClass} value={formState.firstName} onChange={(e) => set('firstName', e.target.value)} /></Field>
+                    <Field label="Last name" required><input className={fieldClass} value={formState.lastName} onChange={(e) => set('lastName', e.target.value)} /></Field>
+                    <div className="sm:col-span-2"><Field label="Email" required><input type="email" className={fieldClass} value={formState.email} onChange={(e) => set('email', e.target.value)} /></Field></div>
+                    <div className="sm:col-span-2"><Field label="Headline" required><input className={fieldClass} value={formState.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field></div>
+                    <div className="sm:col-span-2">
+                      <Field label="Location">
+                        <LocationPicker value={formState.location} onChange={(value) => set('location', value)} />
+                      </Field>
+                    </div>
+                  </div>
+                </FormSection>
+                <FormSection title="Positioning" highlight={missingProfileSections.includes('Positioning')}>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="Availability"><CustomSelect value={formState.availability} options={AVAILABILITY_OPTIONS} onChange={(value) => set('availability', value)} /></Field>
+                    <Field label="Work preference"><CustomSelect value={formState.workPreference} options={WORK_PREFERENCES} onChange={(value) => set('workPreference', value)} /></Field>
+                    <Field label="Preferred roles"><CsvField value={formState.preferredRoles} onChange={(value) => set('preferredRoles', value)} /></Field>
+                    <Field label="Rate or salary preference"><input className={fieldClass} value={formState.hourlyRate} onChange={(e) => set('hourlyRate', e.target.value)} /></Field>
+                    <div className="sm:col-span-2"><Field label="Overview" required><textarea className={fieldClass} rows={5} value={formState.overview} onChange={(e) => set('overview', e.target.value)} /></Field></div>
+                  </div>
+                </FormSection>
 
-              <FormSection title="Education" highlight={missingProfileSections.includes('Education')} action={<button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
-                <div className="space-y-4">
-                  {formState.education.map((item) => (
-                    <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Education entry</span>
-                        <button type="button" onClick={() => set('education', formState.education.filter((edu) => edu.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
-                      </div>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <Field label="School"><input className={fieldClass} value={item.school} onChange={(e) => updateEducation(item.id, { school: e.target.value })} /></Field>
-                        <Field label="Degree"><input className={fieldClass} value={item.degree} onChange={(e) => updateEducation(item.id, { degree: e.target.value })} /></Field>
-                        <Field label="Field"><input className={fieldClass} value={item.field} onChange={(e) => updateEducation(item.id, { field: e.target.value })} /></Field>
-                        <div className="grid grid-cols-2 gap-3">
-                          <Field label="From"><input className={fieldClass} value={item.startYear} onChange={(e) => updateEducation(item.id, { startYear: e.target.value })} placeholder="2020" /></Field>
-                          <Field label="To"><input className={fieldClass} value={item.endYear} onChange={(e) => updateEducation(item.id, { endYear: e.target.value })} placeholder="2024" /></Field>
+                <FormSection title="Skills and languages" highlight={missingProfileSections.includes('Skills and languages')}>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="Skills" required><CsvField rows={4} value={formState.skills} onChange={(value) => set('skills', value)} /></Field>
+                    <Field label="Languages"><CsvField rows={4} value={formState.languages} onChange={(value) => set('languages', value)} /></Field>
+                  </div>
+                </FormSection>
+
+                <FormSection title="Experience" highlight={missingProfileSections.includes('Experience')} action={<button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+                  <div className="space-y-4">
+                    {formState.experience.map((item) => (
+                      <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Work entry</span>
+                          <button type="button" onClick={() => set('experience', formState.experience.filter((exp) => exp.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <Field label="Role"><input className={fieldClass} value={item.role} onChange={(e) => updateExperience(item.id, { role: e.target.value })} /></Field>
+                          <Field label="Company"><input className={fieldClass} value={item.company} onChange={(e) => updateExperience(item.id, { company: e.target.value })} /></Field>
+                          <Field label="Location"><input className={fieldClass} value={item.location} onChange={(e) => updateExperience(item.id, { location: e.target.value })} /></Field>
+                          <Field label="Start"><input className={fieldClass} value={item.startDate} onChange={(e) => updateExperience(item.id, { startDate: e.target.value })} /></Field>
+                          <Field label="End"><input className={fieldClass} value={item.current ? 'Present' : item.endDate} disabled={item.current} onChange={(e) => updateExperience(item.id, { endDate: e.target.value })} /></Field>
+                          <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-white/45 sm:col-span-2">
+                            <input type="checkbox" checked={item.current} onChange={(e) => updateExperience(item.id, { current: e.target.checked, endDate: e.target.checked ? '' : item.endDate })} className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#FF6B00] focus:ring-orange-500" />
+                            Currently working here / Present
+                          </label>
+                          <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-gray-100 pt-3 mt-1 dark:border-white/5">
+                            <div>
+                              <Field label="Previous Salary"><input className={fieldClass} value={item.previousSalary || ''} onChange={(e) => updateExperience(item.id, { previousSalary: e.target.value })} placeholder="e.g. $80,000 / yr" /></Field>
+                            </div>
+                            <div className="flex flex-col justify-end">
+                              <label className={labelClass}>Verification status</label>
+                              {item.payslipVerified ? (
+                                <div className="flex items-center gap-2 h-[46px] px-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50 text-emerald-700 text-sm font-semibold dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                  <IconCheck size={18} className="text-emerald-600 dark:text-emerald-400" />
+                                  <span>Verified with payslips</span>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={verifyingId === item.id}
+                                  onClick={() => handleVerify(item.id)}
+                                  className="flex items-center justify-center gap-2 h-[46px] w-full rounded-xl border border-dashed border-orange-300 bg-orange-50/30 text-[#FF6B00] hover:bg-orange-50 hover:border-orange-400 text-xs font-semibold transition-all disabled:opacity-75 dark:border-orange-500/30 dark:bg-orange-500/5 dark:hover:bg-orange-500/10 dark:hover:border-orange-500/40"
+                                >
+                                  {verifyingId === item.id ? (
+                                    <>
+                                      <IconLoader2 size={16} className="animate-spin" />
+                                      <span>Uploading & verifying...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <IconFileText size={16} />
+                                      <span>Verify with payslips</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="sm:col-span-2"><Field label="Impact"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateExperience(item.id, { description: e.target.value })} placeholder="Describe outcomes, ownership, and measurable impact." /></Field></div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  <button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another education</button>
-                </div>
-              </FormSection>
+                    ))}
+                    <button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another experience</button>
+                  </div>
+                </FormSection>
 
-              <FormSection title="Project proofs" action={<button type="button" onClick={addProject} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
-                <div className="space-y-4">
-                  {formState.projects.map((item) => (
-                    <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Project entry</span>
-                        <button type="button" onClick={() => set('projects', formState.projects.filter((project) => project.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                <FormSection title="Education" highlight={missingProfileSections.includes('Education')} action={<button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+                  <div className="space-y-4">
+                    {formState.education.map((item) => (
+                      <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Education entry</span>
+                          <button type="button" onClick={() => set('education', formState.education.filter((edu) => edu.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <Field label="School"><input className={fieldClass} value={item.school} onChange={(e) => updateEducation(item.id, { school: e.target.value })} /></Field>
+                          <Field label="Degree"><input className={fieldClass} value={item.degree} onChange={(e) => updateEducation(item.id, { degree: e.target.value })} /></Field>
+                          <Field label="Field"><input className={fieldClass} value={item.field} onChange={(e) => updateEducation(item.id, { field: e.target.value })} /></Field>
+                          <div className="grid grid-cols-2 gap-3">
+                            <Field label="From"><input className={fieldClass} value={item.startYear} onChange={(e) => updateEducation(item.id, { startYear: e.target.value })} placeholder="2020" /></Field>
+                            <Field label="To"><input className={fieldClass} value={item.endYear} onChange={(e) => updateEducation(item.id, { endYear: e.target.value })} placeholder="2024" /></Field>
+                          </div>
+                          <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={2} value={item.description || ''} onChange={(e) => updateEducation(item.id, { description: e.target.value })} placeholder="Notable achievements, coursework, or clubs." /></Field></div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <Field label="Title"><input className={fieldClass} value={item.title} onChange={(e) => updateProject(item.id, { title: e.target.value })} /></Field>
-                        <Field label="Link"><input type="url" className={fieldClass} value={item.link} onChange={(e) => updateProject(item.id, { link: e.target.value })} /></Field>
-                        <Field label="Video URL"><input type="url" className={fieldClass} value={item.videoUrl} onChange={(e) => updateProject(item.id, { videoUrl: e.target.value })} /></Field>
-                        <Field label="Image"><input type="file" accept="image/*" className="block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#FF6B00] dark:text-white/35 dark:file:bg-orange-500/10" onChange={(event) => handleImageFile(event.target.files?.[0], (dataUrl) => updateProject(item.id, { imageDataUrl: dataUrl }))} /></Field>
-                        <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateProject(item.id, { description: e.target.value })} /></Field></div>
-                      </div>
-                    </div>
-                  ))}
-                  <button type="button" onClick={addProject} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another project</button>
-                </div>
-              </FormSection>
+                    ))}
+                    <button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another education</button>
+                  </div>
+                </FormSection>
 
-              <FormSection title="Links and media">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field label="LinkedIn"><input type="url" className={fieldClass} value={formState.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
-                  <Field label="GitHub"><input type="url" className={fieldClass} value={formState.github} onChange={(e) => set('github', e.target.value)} /></Field>
-                  <Field label="Portfolio"><input type="url" className={fieldClass} value={formState.portfolio} onChange={(e) => set('portfolio', e.target.value)} /></Field>
-                  <Field label="Intro video URL"><input type="url" className={fieldClass} value={formState.introVideoUrl} onChange={(e) => set('introVideoUrl', e.target.value)} /></Field>
-                  <Field label="Resume">
-                    <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(event) => set('resumeFilename', event.target.files?.[0]?.name ?? '')} />
-                    <button type="button" onClick={() => resumeInputRef.current?.click()} className="inline-flex w-full items-center justify-between rounded-xl border border-dashed border-gray-300 bg-white/60 px-3 py-2.5 text-sm text-gray-600 cursor-pointer hover:bg-gray-100 hover:border-gray-400 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:border-white/20 hover:text-gray-900 dark:hover:text-white transition-all">
-                      <span>{formState.resumeFilename || 'Upload resume metadata'}</span>
-                      <IconFileText size={16} />
-                    </button>
-                  </Field>
-                </div>
-              </FormSection>
+                <FormSection title="Project proofs" action={<button type="button" onClick={addProject} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+                  <div className="space-y-4">
+                    {formState.projects.map((item) => (
+                      <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Project entry</span>
+                          <button type="button" onClick={() => set('projects', formState.projects.filter((project) => project.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <Field label="Title"><input className={fieldClass} value={item.title} onChange={(e) => updateProject(item.id, { title: e.target.value })} /></Field>
+                          <Field label="Link"><input type="url" className={fieldClass} value={item.link} onChange={(e) => updateProject(item.id, { link: e.target.value })} /></Field>
+                          <Field label="Video URL"><input type="url" className={fieldClass} value={item.videoUrl} onChange={(e) => updateProject(item.id, { videoUrl: e.target.value })} /></Field>
+                          <Field label="Image"><input type="file" accept="image/*" className="block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#FF6B00] dark:text-white/35 dark:file:bg-orange-500/10" onChange={(event) => handleImageFile(event.target.files?.[0], (dataUrl) => setPendingProjectImage({ projectId: item.id, imageSrc: dataUrl }))} /></Field>
+                          <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateProject(item.id, { description: e.target.value })} /></Field></div>
+                        </div>
+                      </div>
+                    ))}
+                    <button type="button" onClick={addProject} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another project</button>
+                  </div>
+                </FormSection>
+
+                <FormSection title="Links and media">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="LinkedIn"><input type="url" className={fieldClass} value={formState.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
+                    <Field label="GitHub"><input type="url" className={fieldClass} value={formState.github} onChange={(e) => set('github', e.target.value)} /></Field>
+                    <Field label="Portfolio"><input type="url" className={fieldClass} value={formState.portfolio} onChange={(e) => set('portfolio', e.target.value)} /></Field>
+                    <Field label="Intro video URL"><input type="url" className={fieldClass} value={formState.introVideoUrl} onChange={(e) => set('introVideoUrl', e.target.value)} /></Field>
+                    <Field label="Resume">
+                      <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={async (event) => {
+                        const file = event.target.files?.[0]
+                        if (!file) return
+                        const publicUrl = await uploadToStorage(file, 'resume', file.name)
+                        if (publicUrl) {
+                          setFormState(prev => prev ? { ...prev, resumeFilename: file.name, resumeUrl: publicUrl } : prev)
+                        }
+                        event.target.value = ''
+                      }} />
+                      <button type="button" onClick={() => resumeInputRef.current?.click()} disabled={isUploading} className="inline-flex w-full items-center justify-between rounded-xl border border-dashed border-gray-300 bg-white/60 px-3 py-2.5 text-sm text-gray-600 cursor-pointer hover:bg-gray-100 hover:border-gray-400 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:border-white/20 hover:text-gray-900 dark:hover:text-white transition-all disabled:opacity-50">
+                        <span>{formState.resumeFilename || 'Upload resume pdf'}</span>
+                        {isUploading ? <IconLoader2 size={16} className="animate-spin" /> : <IconFileText size={16} />}
+                      </button>
+                    </Field>
+                  </div>
+                </FormSection>
               </motion.div>
             ) : (
               <motion.div key="profile-preview" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
@@ -1013,24 +806,29 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
       <ImageCropModal
         imageSrc={pendingProfilePhoto}
         onCancel={() => setPendingProfilePhoto(null)}
-        onApply={(dataUrl) => {
-          set('photoDataUrl', dataUrl)
+        onApply={async (dataUrl) => {
           setPendingProfilePhoto(null)
+          const response = await fetch(dataUrl)
+          const blob = await response.blob()
+          const publicUrl = await uploadToStorage(blob, 'profile')
+          if (publicUrl) set('photoUrl', publicUrl)
         }}
       />
       <ImageCropModal
         imageSrc={pendingProjectImage?.imageSrc ?? null}
         onCancel={() => setPendingProjectImage(null)}
-        onApply={(dataUrl) => {
-          if (pendingProjectImage) {
-            updateProject(pendingProjectImage.projectId, { imageDataUrl: dataUrl })
-          }
+        onApply={async (dataUrl) => {
+          const projectId = pendingProjectImage?.projectId
           setPendingProjectImage(null)
+          if (projectId) {
+            const response = await fetch(dataUrl)
+            const blob = await response.blob()
+            const publicUrl = await uploadToStorage(blob, 'project')
+            if (publicUrl) updateProject(projectId, { imageUrl: publicUrl })
+          }
         }}
         aspectRatio={16 / 9}
       />
     </div>
   )
 }
-
-
