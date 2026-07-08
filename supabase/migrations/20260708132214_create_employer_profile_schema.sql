@@ -22,9 +22,10 @@ CREATE TABLE IF NOT EXISTS public.employer_profiles (
 -- Enable RLS
 ALTER TABLE public.employer_profiles ENABLE ROW LEVEL SECURITY;
 
--- Grant permissions explicitly
-GRANT ALL ON TABLE public.employer_profiles TO anon;
-GRANT ALL ON TABLE public.employer_profiles TO authenticated;
+-- Grant permissions explicitly (least privilege)
+REVOKE ALL ON TABLE public.employer_profiles FROM anon, authenticated;
+GRANT SELECT ON TABLE public.employer_profiles TO anon;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.employer_profiles TO authenticated;
 GRANT ALL ON TABLE public.employer_profiles TO service_role;
 
 -- Create policies
@@ -38,8 +39,8 @@ CREATE POLICY "Users can insert their own profile."
 
 CREATE POLICY "Users can update own profile."
   ON public.employer_profiles FOR UPDATE
-  USING (auth.uid() = id);
-
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 -- Create a trigger function to update the updated_at timestamp
 CREATE TRIGGER update_employer_profiles_updated_at
   BEFORE UPDATE ON public.employer_profiles
