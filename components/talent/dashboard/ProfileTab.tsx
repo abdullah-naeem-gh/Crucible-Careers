@@ -253,144 +253,179 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
   const visibleExperience = profile.experience.filter((item) => item.company || item.role || item.description)
   const visibleEducation = profile.education.filter((item) => item.school || item.degree || item.field)
   const visibleProjects = profile.projects.filter((item) => item.title || item.description || item.link)
+  const stats = [
+    { label: 'Skills', value: profile.skills.length },
+    { label: 'Experience', value: visibleExperience.length },
+    { label: 'Projects', value: visibleProjects.length },
+    { label: 'Education', value: visibleEducation.length },
+  ]
 
   return (
     <motion.div
       key={profile.id + profile.updatedAt + profile.name + profile.headline}
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className="space-y-4"
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.26, ease: 'easeOut' }}
+      className="space-y-5"
     >
-      <div className={`${insetSurface} p-4`}>
-        <div className="flex items-start gap-4">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-orange-100 to-white dark:border-white/[0.08] dark:from-[#FF6B00]/20 dark:to-[#FF914D]/10">
-            {profile.photoDataUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.photoDataUrl} alt="Profile" className="h-full w-full object-cover" />
-            ) : (
-              <span className="absolute inset-0 grid place-items-center text-lg font-bold text-[#FF6B00]">{initials(profile.name)}</span>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-xl font-semibold text-gray-950 dark:text-white">
-              {profile.name || <span className="text-gray-400 dark:text-white/25">Your name</span>}
-            </h2>
-            <p className="mt-1 text-sm text-gray-600 dark:text-white/45">
-              {profile.headline || <span className="italic text-gray-400 dark:text-white/20">Professional headline</span>}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-gray-500 dark:text-white/35">
-              {profile.location && <span className="inline-flex items-center gap-1"><IconMapPin size={13} />{profile.location}</span>}
-              {profile.availability && <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{profile.availability}</span>}
-              {profile.workPreference && <span className="rounded-md border border-gray-200 px-2 py-0.5 dark:border-white/10">{profile.workPreference}</span>}
+      <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:border-white/[0.08] dark:bg-[#171717]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="min-w-0">
+            <div className="flex items-start gap-4">
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] border border-white/60 bg-gradient-to-br from-orange-100 to-white shadow-[0_10px_24px_rgba(255,107,0,0.14)] dark:border-white/[0.08] dark:from-[#FF6B00]/20 dark:to-[#FF914D]/10">
+                {profile.photoDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.photoDataUrl} alt="Profile" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="absolute inset-0 grid place-items-center text-xl font-bold text-[#FF6B00]">{initials(profile.name)}</span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Profile Preview</p>
+                <h2 className="mt-2 truncate text-[28px] font-semibold text-gray-950 dark:text-white">
+                  {profile.name || <span className="text-gray-400 dark:text-white/25">Your name</span>}
+                </h2>
+                <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600 dark:text-white/50">
+                  {profile.headline || <span className="italic text-gray-400 dark:text-white/20">Professional headline</span>}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-gray-600 dark:text-white/40">
+                  {profile.location && <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-white/80 px-3 py-1 dark:border-white/10 dark:bg-white/[0.04]"><IconMapPin size={13} />{profile.location}</span>}
+                  {profile.availability && <span className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{profile.availability}</span>}
+                  {profile.workPreference && <span className="rounded-full border border-gray-200/80 bg-white/80 px-3 py-1 dark:border-white/10 dark:bg-white/[0.04]">{profile.workPreference}</span>}
+                </div>
+              </div>
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 self-start">
+            {stats.map((stat) => (
+              <div key={stat.label} className="rounded-2xl border border-gray-200/80 bg-white/80 p-3 backdrop-blur-sm dark:border-white/[0.08] dark:bg-white/[0.04]">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-400 dark:text-white/30">{stat.label}</div>
+                <div className="mt-2 text-2xl font-semibold text-gray-950 dark:text-white">{stat.value}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <PreviewSection title="Overview">
-        {profile.overview ? (
-          <p className="whitespace-pre-line text-sm leading-relaxed text-gray-600 dark:text-white/55">{profile.overview}</p>
-        ) : (
-          <p className="text-xs italic text-gray-400 dark:text-white/20">No professional overview summary provided yet.</p>
-        )}
-      </PreviewSection>
+      <div className="grid gap-5 xl:grid-cols-12">
+        <div className="space-y-5 xl:col-span-7">
+          <PreviewSection title="Overview">
+            {profile.overview ? (
+              <p className="whitespace-pre-line text-sm leading-relaxed text-gray-600 dark:text-white/55">{profile.overview}</p>
+            ) : (
+              <p className="text-xs italic text-gray-400 dark:text-white/20">No professional overview summary provided yet.</p>
+            )}
+          </PreviewSection>
 
-      <PreviewSection title="Skills and focus">
-        <div className="space-y-3">
-          {profile.preferredRoles.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {profile.preferredRoles.map((role) => (
-                <span key={role} className="rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-[#FF914D]">{role}</span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs italic text-gray-400 dark:text-white/20">No preferred roles specified</p>
-          )}
-          {profile.skills.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {profile.skills.map((skill) => (
-                <span key={skill} className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700 dark:border-white/[0.07] dark:bg-white/[0.025] dark:text-white/50">{skill}</span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs italic text-gray-400 dark:text-white/20">No skills added yet</p>
-          )}
-        </div>
-      </PreviewSection>
-
-      <PreviewSection title="Work history">
-        {visibleExperience.length > 0 ? (
-          <div className="space-y-4">
-            {visibleExperience.map((item) => (
-              <div key={item.id} className="border-l-2 border-orange-200 pl-3 dark:border-orange-500/25">
-                <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{item.role || 'Role title'}</h4>
-                <div className="mt-1 flex flex-wrap justify-between gap-2 text-xs text-gray-500 dark:text-white/35">
-                  <span className="font-medium text-[#FF6B00]">{item.company || 'Company'}</span>
-                  <span>{item.startDate || 'Start'} - {item.current ? 'Present' : item.endDate || 'End'}</span>
-                </div>
-                {item.description && <p className="mt-2 text-xs leading-relaxed text-gray-600 dark:text-white/50">{item.description}</p>}
+          <PreviewSection title="Work history">
+            {visibleExperience.length > 0 ? (
+              <div className="space-y-4">
+                {visibleExperience.map((item) => (
+                  <div key={item.id} className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4 dark:border-white/[0.06] dark:bg-white/[0.025]">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{item.role || 'Role title'}</h4>
+                        <div className="mt-1 text-xs font-medium text-[#FF6B00]">{item.company || 'Company'}</div>
+                      </div>
+                      <span className="text-[11px] text-gray-500 dark:text-white/35">{item.startDate || 'Start'} - {item.current ? 'Present' : item.endDate || 'End'}</span>
+                    </div>
+                    {(item.location || item.description) && (
+                      <div className="mt-3 space-y-2">
+                        {item.location && <div className="text-[11px] text-gray-500 dark:text-white/35">{item.location}</div>}
+                        {item.description && <p className="text-xs leading-relaxed text-gray-600 dark:text-white/50">{item.description}</p>}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs italic text-gray-400 dark:text-white/20">No work experience entries added.</p>
-        )}
-      </PreviewSection>
+            ) : (
+              <p className="text-xs italic text-gray-400 dark:text-white/20">No work experience entries added.</p>
+            )}
+          </PreviewSection>
 
-      <PreviewSection title="Project proofs">
-        {visibleProjects.length > 0 ? (
-          <div className="space-y-3">
-            {visibleProjects.map((item) => (
-              <div key={item.id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 dark:border-white/[0.06] dark:bg-white/[0.025]">
-                <div className="flex gap-3">
-                  {item.imageDataUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.imageDataUrl} alt="Project" className="h-14 w-16 shrink-0 rounded-lg object-cover" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{item.title || 'Project title'}</h4>
-                    {item.description && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-600 dark:text-white/45">{item.description}</p>}
-                    <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-medium text-[#FF6B00]">
-                      {item.link && <a href={normalizeUrl(item.link)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1">Link <IconExternalLink size={12} /></a>}
-                      {item.videoUrl && <span className="inline-flex items-center gap-1"><IconVideo size={12} /> Video</span>}
+          <PreviewSection title="Project proofs">
+            {visibleProjects.length > 0 ? (
+              <div className="space-y-3">
+                {visibleProjects.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 dark:border-white/[0.06] dark:bg-white/[0.025]">
+                    <div className="flex gap-3">
+                      {item.imageDataUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.imageDataUrl} alt="Project" className="h-16 w-20 shrink-0 rounded-lg object-cover" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{item.title || 'Project title'}</h4>
+                        {item.description && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-600 dark:text-white/45">{item.description}</p>}
+                        <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-medium text-[#FF6B00]">
+                          {item.link && <a href={normalizeUrl(item.link)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1">Link <IconExternalLink size={12} /></a>}
+                          {item.videoUrl && <span className="inline-flex items-center gap-1"><IconVideo size={12} /> Video</span>}
+                        </div>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs italic text-gray-400 dark:text-white/20">No project proofs added.</p>
+            )}
+          </PreviewSection>
+        </div>
+
+        <div className="space-y-5 xl:col-span-5">
+          <PreviewSection title="Skills and focus">
+            <div className="space-y-3">
+              {profile.preferredRoles.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {profile.preferredRoles.map((role) => (
+                    <span key={role} className="rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-[#FF914D]">{role}</span>
+                  ))}
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs italic text-gray-400 dark:text-white/20">No project proofs added.</p>
-        )}
-      </PreviewSection>
+              ) : (
+                <p className="text-xs italic text-gray-400 dark:text-white/20">No preferred roles specified</p>
+              )}
+              {profile.skills.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.skills.map((skill) => (
+                    <span key={skill} className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700 dark:border-white/[0.07] dark:bg-white/[0.025] dark:text-white/50">{skill}</span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs italic text-gray-400 dark:text-white/20">No skills added yet</p>
+              )}
+            </div>
+          </PreviewSection>
 
-      <PreviewSection title="Education">
-        {visibleEducation.length > 0 ? (
-          <div className="space-y-3 text-sm text-gray-700 dark:text-white/55">
-            {visibleEducation.map((item) => (
-              <div key={item.id}>
-                <div className="font-semibold text-gray-950 dark:text-white">{item.school || 'School'}</div>
-                <div className="text-xs text-gray-500 dark:text-white/35">{[item.degree, item.field].filter(Boolean).join(', ') || 'Degree'} - {item.startYear || 'Start'} to {item.endYear || 'End'}</div>
+          <PreviewSection title="Education">
+            {visibleEducation.length > 0 ? (
+              <div className="space-y-3 text-sm text-gray-700 dark:text-white/55">
+                {visibleEducation.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 dark:border-white/[0.06] dark:bg-white/[0.025]">
+                    <div className="font-semibold text-gray-950 dark:text-white">{item.school || 'School'}</div>
+                    <div className="mt-1 text-xs text-gray-500 dark:text-white/35">{[item.degree, item.field].filter(Boolean).join(', ') || 'Degree'} - {item.startYear || 'Start'} to {item.endYear || 'End'}</div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs italic text-gray-400 dark:text-white/20">No education entries added.</p>
-        )}
-      </PreviewSection>
+            ) : (
+              <p className="text-xs italic text-gray-400 dark:text-white/20">No education entries added.</p>
+            )}
+          </PreviewSection>
 
-      {(profile.linkedin || profile.github || profile.portfolio || profile.introVideoUrl || profile.resumeFilename) && (
-        <PreviewSection title="Links and media">
-          <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-            {profile.linkedin && <a href={normalizeUrl(profile.linkedin)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 dark:text-sky-300"><IconBrandLinkedin size={15} /> LinkedIn</a>}
-            {profile.github && <a href={normalizeUrl(profile.github)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-gray-700 dark:text-white/60"><IconBrandGithub size={15} /> GitHub</a>}
-            {profile.portfolio && <a href={normalizeUrl(profile.portfolio)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#FF6B00]"><IconWorld size={15} /> Portfolio</a>}
-            {profile.introVideoUrl && <a href={normalizeUrl(profile.introVideoUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#FF6B00]"><IconVideo size={15} /> Intro video</a>}
-            {profile.resumeFilename && <span className="inline-flex items-center gap-2 text-gray-600 dark:text-white/45"><IconFileText size={15} /> {profile.resumeFilename}</span>}
-          </div>
-        </PreviewSection>
-      )}
+          <PreviewSection title="Links and media">
+            {(profile.linkedin || profile.github || profile.portfolio || profile.introVideoUrl || profile.resumeFilename) ? (
+              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 xl:grid-cols-1">
+                {profile.linkedin && <a href={normalizeUrl(profile.linkedin)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-blue-600 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-sky-300"><IconBrandLinkedin size={15} /> LinkedIn</a>}
+                {profile.github && <a href={normalizeUrl(profile.github)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-gray-700 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-white/60"><IconBrandGithub size={15} /> GitHub</a>}
+                {profile.portfolio && <a href={normalizeUrl(profile.portfolio)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-[#FF6B00] dark:border-white/[0.06] dark:bg-white/[0.025]"><IconWorld size={15} /> Portfolio</a>}
+                {profile.introVideoUrl && <a href={normalizeUrl(profile.introVideoUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-[#FF6B00] dark:border-white/[0.06] dark:bg-white/[0.025]"><IconVideo size={15} /> Intro video</a>}
+                {profile.resumeFilename && <span className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-gray-600 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-white/45"><IconFileText size={15} /> {profile.resumeFilename}</span>}
+              </div>
+            ) : (
+              <p className="text-xs italic text-gray-400 dark:text-white/20">No external links or media added yet.</p>
+            )}
+          </PreviewSection>
+        </div>
+      </div>
     </motion.div>
   )
 }
@@ -675,6 +710,7 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
   const [activeProfileId, setActiveProfileId] = useState<string | null>(profiles[0]?.id ?? null)
   const [formState, setFormState] = useState<TalentProfile | null>(profiles[0] ?? null)
   const router = useRouter()
+  const [isEditing, setIsEditing] = useState(false)
   const [saved, setSaved] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const resumeInputRef = useRef<HTMLInputElement>(null)
@@ -707,6 +743,7 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
     const nextProfiles = upsertTalentProfile(profiles, profile)
     onProfilesChange(nextProfiles)
     setActiveProfileId(profile.id)
+    setIsEditing(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 1800)
   }
@@ -778,180 +815,200 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
 
   return (
     <div className="h-full min-h-0 [&_button:not(:disabled)]:cursor-pointer">
-      <div className="grid h-full min-h-0 grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
-        <section className={`${surface} flex min-h-[42rem] flex-col overflow-hidden lg:col-span-5 lg:min-h-0 lg:h-full`}>
-          <div className="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-5 dark:border-white/[0.07]">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Talent Profile</p>
-              <div className="flex items-center gap-3">
-                <h1 className="mt-1 text-2xl font-semibold text-gray-950 dark:text-white">Build your profile</h1>
-                <span className="mt-1 inline-flex items-center rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-semibold text-[#FF6B00] dark:bg-orange-500/10 dark:text-[#FF914D]">
-                  {completionPercentage}% Complete
-                </span>
-              </div>
+      <section className={`${surface} flex min-h-[42rem] flex-col overflow-hidden lg:min-h-0 lg:h-full`}>
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 px-5 py-5 dark:border-white/[0.07]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Talent Profile</p>
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-semibold text-gray-950 dark:text-white">
+                {isEditing ? 'Edit your profile' : 'Your profile'}
+              </h1>
+              <span className="inline-flex items-center rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-semibold text-[#FF6B00] dark:bg-orange-500/10 dark:text-[#FF914D]">
+                {completionPercentage}% Complete
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <button
+          </div>
+          <div className="flex items-center gap-2 self-start">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => router.push('/talent/onboarding')}
+              title="Restart profile setup via onboarding"
+              aria-label="Restart setup"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05] dark:hover:text-white"
+            >
+              <IconRotate2 size={18} />
+            </motion.button>
+            {isEditing ? (
+              <motion.button
                 type="button"
-                onClick={() => router.push('/talent/onboarding')}
-                title="Restart profile setup via onboarding"
-                aria-label="Restart setup"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/75 dark:hover:bg-white/[0.05] dark:hover:text-white"
-              >
-                <IconRotate2 size={18} />
-              </button>
-              <button
-                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => saveProfile()}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(255,107,0,0.18)]"
               >
                 <IconDeviceFloppy size={16} />
                 {saved ? 'Saved' : 'Save'}
-              </button>
-            </div>
+              </motion.button>
+            ) : (
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsEditing(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-950 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/80 dark:hover:bg-white/[0.05] dark:hover:text-white"
+              >
+                Edit
+              </motion.button>
+            )}
           </div>
+        </div>
 
-          <div className="min-h-0 flex-1 space-y-4 overflow-auto p-5 custom-scrollbar">
-            <FormSection title="Identity" highlight={missingProfileSections.includes('Identity')}>
-              <div className="mb-5 flex items-center gap-4">
-                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-orange-50 dark:border-white/10 dark:bg-white/[0.03]">
-                  {formState.photoDataUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={formState.photoDataUrl} alt="Profile" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="absolute inset-0 grid place-items-center text-lg font-bold text-[#FF6B00]">{initials(formState.name)}</span>
-                  )}
-                </div>
-                <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => { handleImageFile(event.target.files?.[0], setPendingProfilePhoto); event.target.value = ''; }} />
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => photoInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/55 dark:hover:bg-white/[0.06] dark:hover:text-white">
-                    <IconCamera size={15} /> {formState.photoDataUrl ? 'Change photo' : 'Upload photo'}
-                  </button>
-                  {formState.photoDataUrl && <button type="button" onClick={() => set('photoDataUrl', null)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:border-red-500/15 dark:bg-red-500/[0.07] dark:text-red-300 dark:hover:bg-red-500/20">Remove</button>}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Full name" required><input className={fieldClass} value={formState.name} onChange={(e) => set('name', e.target.value)} /></Field>
-                <Field label="Email" required><input type="email" className={fieldClass} value={formState.email} onChange={(e) => set('email', e.target.value)} /></Field>
-                <div className="sm:col-span-2"><Field label="Headline" required><input className={fieldClass} value={formState.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field></div>
-                <div className="sm:col-span-2">
-                  <Field label="Location">
-                    <LocationPicker value={formState.location} onChange={(value) => set('location', value)} />
-                  </Field>
-                </div>
-              </div>
-            </FormSection>
-            <FormSection title="Positioning" highlight={missingProfileSections.includes('Positioning')}>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Availability"><CustomSelect value={formState.availability} options={AVAILABILITY_OPTIONS} onChange={(value) => set('availability', value)} /></Field>
-                <Field label="Work preference"><CustomSelect value={formState.workPreference} options={WORK_PREFERENCES} onChange={(value) => set('workPreference', value)} /></Field>
-                <Field label="Preferred roles"><CsvField value={formState.preferredRoles} onChange={(value) => set('preferredRoles', value)} /></Field>
-                <Field label="Rate or salary preference"><input className={fieldClass} value={formState.hourlyRate} onChange={(e) => set('hourlyRate', e.target.value)} /></Field>
-                <div className="sm:col-span-2"><Field label="Overview" required><textarea className={fieldClass} rows={5} value={formState.overview} onChange={(e) => set('overview', e.target.value)} /></Field></div>
-              </div>
-            </FormSection>
-
-            <FormSection title="Skills and languages" highlight={missingProfileSections.includes('Skills and languages')}>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Skills" required><CsvField rows={4} value={formState.skills} onChange={(value) => set('skills', value)} /></Field>
-                <Field label="Languages"><CsvField rows={4} value={formState.languages} onChange={(value) => set('languages', value)} /></Field>
-              </div>
-            </FormSection>
-
-            <FormSection title="Experience" highlight={missingProfileSections.includes('Experience')} action={<button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
-              <div className="space-y-4">
-                {formState.experience.map((item) => (
-                  <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
-                    <div className="mb-3 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Work entry</span>
-                      <button type="button" onClick={() => set('experience', formState.experience.filter((exp) => exp.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field label="Role"><input className={fieldClass} value={item.role} onChange={(e) => updateExperience(item.id, { role: e.target.value })} /></Field>
-                      <Field label="Company"><input className={fieldClass} value={item.company} onChange={(e) => updateExperience(item.id, { company: e.target.value })} /></Field>
-                      <Field label="Location"><input className={fieldClass} value={item.location} onChange={(e) => updateExperience(item.id, { location: e.target.value })} /></Field>
-                      <Field label="Start"><input className={fieldClass} value={item.startDate} onChange={(e) => updateExperience(item.id, { startDate: e.target.value })} /></Field>
-                      <Field label="End"><input className={fieldClass} value={item.current ? 'Present' : item.endDate} disabled={item.current} onChange={(e) => updateExperience(item.id, { endDate: e.target.value })} /></Field>
-                      <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-white/45 sm:col-span-2">
-                        <input type="checkbox" checked={item.current} onChange={(e) => updateExperience(item.id, { current: e.target.checked, endDate: e.target.checked ? '' : item.endDate })} className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#FF6B00] focus:ring-orange-500" />
-                        Currently working here / Present
-                      </label>
-                      <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateExperience(item.id, { description: e.target.value })} /></Field></div>
-                    </div>
+        <div className="min-h-0 flex-1 overflow-auto p-5 custom-scrollbar">
+          <AnimatePresence initial={false} mode="wait">
+            {isEditing ? (
+              <motion.div key="profile-edit" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.22, ease: 'easeOut' }} className="space-y-4">
+              <FormSection title="Identity" highlight={missingProfileSections.includes('Identity')}>
+                <div className="mb-5 flex items-center gap-4">
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-orange-50 dark:border-white/10 dark:bg-white/[0.03]">
+                    {formState.photoDataUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={formState.photoDataUrl} alt="Profile" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="absolute inset-0 grid place-items-center text-lg font-bold text-[#FF6B00]">{initials(formState.name)}</span>
+                    )}
                   </div>
-                ))}
-                <button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another experience</button>
-              </div>
-            </FormSection>
+                  <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => { handleImageFile(event.target.files?.[0], setPendingProfilePhoto); event.target.value = ''; }} />
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => photoInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/55 dark:hover:bg-white/[0.06] dark:hover:text-white">
+                      <IconCamera size={15} /> {formState.photoDataUrl ? 'Change photo' : 'Upload photo'}
+                    </button>
+                    {formState.photoDataUrl && <button type="button" onClick={() => set('photoDataUrl', null)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:border-red-500/15 dark:bg-red-500/[0.07] dark:text-red-300 dark:hover:bg-red-500/20">Remove</button>}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Full name" required><input className={fieldClass} value={formState.name} onChange={(e) => set('name', e.target.value)} /></Field>
+                  <Field label="Email" required><input type="email" className={fieldClass} value={formState.email} onChange={(e) => set('email', e.target.value)} /></Field>
+                  <div className="sm:col-span-2"><Field label="Headline" required><input className={fieldClass} value={formState.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field></div>
+                  <div className="sm:col-span-2">
+                    <Field label="Location">
+                      <LocationPicker value={formState.location} onChange={(value) => set('location', value)} />
+                    </Field>
+                  </div>
+                </div>
+              </FormSection>
+              <FormSection title="Positioning" highlight={missingProfileSections.includes('Positioning')}>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Availability"><CustomSelect value={formState.availability} options={AVAILABILITY_OPTIONS} onChange={(value) => set('availability', value)} /></Field>
+                  <Field label="Work preference"><CustomSelect value={formState.workPreference} options={WORK_PREFERENCES} onChange={(value) => set('workPreference', value)} /></Field>
+                  <Field label="Preferred roles"><CsvField value={formState.preferredRoles} onChange={(value) => set('preferredRoles', value)} /></Field>
+                  <Field label="Rate or salary preference"><input className={fieldClass} value={formState.hourlyRate} onChange={(e) => set('hourlyRate', e.target.value)} /></Field>
+                  <div className="sm:col-span-2"><Field label="Overview" required><textarea className={fieldClass} rows={5} value={formState.overview} onChange={(e) => set('overview', e.target.value)} /></Field></div>
+                </div>
+              </FormSection>
 
-            <FormSection title="Education" highlight={missingProfileSections.includes('Education')} action={<button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
-              <div className="space-y-4">
-                {formState.education.map((item) => (
-                  <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
-                    <div className="mb-3 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Education entry</span>
-                      <button type="button" onClick={() => set('education', formState.education.filter((edu) => edu.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field label="School"><input className={fieldClass} value={item.school} onChange={(e) => updateEducation(item.id, { school: e.target.value })} /></Field>
-                      <Field label="Degree"><input className={fieldClass} value={item.degree} onChange={(e) => updateEducation(item.id, { degree: e.target.value })} /></Field>
-                      <Field label="Field"><input className={fieldClass} value={item.field} onChange={(e) => updateEducation(item.id, { field: e.target.value })} /></Field>
-                      <div className="grid grid-cols-2 gap-3">
-                        <Field label="From"><input className={fieldClass} value={item.startYear} onChange={(e) => updateEducation(item.id, { startYear: e.target.value })} placeholder="2020" /></Field>
-                        <Field label="To"><input className={fieldClass} value={item.endYear} onChange={(e) => updateEducation(item.id, { endYear: e.target.value })} placeholder="2024" /></Field>
+              <FormSection title="Skills and languages" highlight={missingProfileSections.includes('Skills and languages')}>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Skills" required><CsvField rows={4} value={formState.skills} onChange={(value) => set('skills', value)} /></Field>
+                  <Field label="Languages"><CsvField rows={4} value={formState.languages} onChange={(value) => set('languages', value)} /></Field>
+                </div>
+              </FormSection>
+
+              <FormSection title="Experience" highlight={missingProfileSections.includes('Experience')} action={<button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+                <div className="space-y-4">
+                  {formState.experience.map((item) => (
+                    <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Work entry</span>
+                        <button type="button" onClick={() => set('experience', formState.experience.filter((exp) => exp.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <Field label="Role"><input className={fieldClass} value={item.role} onChange={(e) => updateExperience(item.id, { role: e.target.value })} /></Field>
+                        <Field label="Company"><input className={fieldClass} value={item.company} onChange={(e) => updateExperience(item.id, { company: e.target.value })} /></Field>
+                        <Field label="Location"><input className={fieldClass} value={item.location} onChange={(e) => updateExperience(item.id, { location: e.target.value })} /></Field>
+                        <Field label="Start"><input className={fieldClass} value={item.startDate} onChange={(e) => updateExperience(item.id, { startDate: e.target.value })} /></Field>
+                        <Field label="End"><input className={fieldClass} value={item.current ? 'Present' : item.endDate} disabled={item.current} onChange={(e) => updateExperience(item.id, { endDate: e.target.value })} /></Field>
+                        <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-white/45 sm:col-span-2">
+                          <input type="checkbox" checked={item.current} onChange={(e) => updateExperience(item.id, { current: e.target.checked, endDate: e.target.checked ? '' : item.endDate })} className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#FF6B00] focus:ring-orange-500" />
+                          Currently working here / Present
+                        </label>
+                        <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateExperience(item.id, { description: e.target.value })} /></Field></div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                <button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another education</button>
-              </div>
-            </FormSection>
+                  ))}
+                  <button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another experience</button>
+                </div>
+              </FormSection>
 
-            <FormSection title="Project proofs" action={<button type="button" onClick={addProject} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
-              <div className="space-y-4">
-                {formState.projects.map((item) => (
-                  <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
-                    <div className="mb-3 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Project entry</span>
-                      <button type="button" onClick={() => set('projects', formState.projects.filter((project) => project.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+              <FormSection title="Education" highlight={missingProfileSections.includes('Education')} action={<button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+                <div className="space-y-4">
+                  {formState.education.map((item) => (
+                    <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Education entry</span>
+                        <button type="button" onClick={() => set('education', formState.education.filter((edu) => edu.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <Field label="School"><input className={fieldClass} value={item.school} onChange={(e) => updateEducation(item.id, { school: e.target.value })} /></Field>
+                        <Field label="Degree"><input className={fieldClass} value={item.degree} onChange={(e) => updateEducation(item.id, { degree: e.target.value })} /></Field>
+                        <Field label="Field"><input className={fieldClass} value={item.field} onChange={(e) => updateEducation(item.id, { field: e.target.value })} /></Field>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Field label="From"><input className={fieldClass} value={item.startYear} onChange={(e) => updateEducation(item.id, { startYear: e.target.value })} placeholder="2020" /></Field>
+                          <Field label="To"><input className={fieldClass} value={item.endYear} onChange={(e) => updateEducation(item.id, { endYear: e.target.value })} placeholder="2024" /></Field>
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field label="Title"><input className={fieldClass} value={item.title} onChange={(e) => updateProject(item.id, { title: e.target.value })} /></Field>
-                      <Field label="Link"><input type="url" className={fieldClass} value={item.link} onChange={(e) => updateProject(item.id, { link: e.target.value })} /></Field>
-                      <Field label="Video URL"><input type="url" className={fieldClass} value={item.videoUrl} onChange={(e) => updateProject(item.id, { videoUrl: e.target.value })} /></Field>
-                      <Field label="Image"><input type="file" accept="image/*" className="block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#FF6B00] dark:text-white/35 dark:file:bg-orange-500/10" onChange={(event) => handleImageFile(event.target.files?.[0], (dataUrl) => updateProject(item.id, { imageDataUrl: dataUrl }))} /></Field>
-                      <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateProject(item.id, { description: e.target.value })} /></Field></div>
+                  ))}
+                  <button type="button" onClick={addEducation} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another education</button>
+                </div>
+              </FormSection>
+
+              <FormSection title="Project proofs" action={<button type="button" onClick={addProject} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
+                <div className="space-y-4">
+                  {formState.projects.map((item) => (
+                    <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Project entry</span>
+                        <button type="button" onClick={() => set('projects', formState.projects.filter((project) => project.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <Field label="Title"><input className={fieldClass} value={item.title} onChange={(e) => updateProject(item.id, { title: e.target.value })} /></Field>
+                        <Field label="Link"><input type="url" className={fieldClass} value={item.link} onChange={(e) => updateProject(item.id, { link: e.target.value })} /></Field>
+                        <Field label="Video URL"><input type="url" className={fieldClass} value={item.videoUrl} onChange={(e) => updateProject(item.id, { videoUrl: e.target.value })} /></Field>
+                        <Field label="Image"><input type="file" accept="image/*" className="block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#FF6B00] dark:text-white/35 dark:file:bg-orange-500/10" onChange={(event) => handleImageFile(event.target.files?.[0], (dataUrl) => updateProject(item.id, { imageDataUrl: dataUrl }))} /></Field>
+                        <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateProject(item.id, { description: e.target.value })} /></Field></div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <button type="button" onClick={addProject} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another project</button>
-              </div>
-            </FormSection>
+                  ))}
+                  <button type="button" onClick={addProject} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-orange-200 hover:text-[#FF6B00] dark:border-white/10 dark:bg-transparent dark:text-white/50"><IconPlus size={15} /> Add another project</button>
+                </div>
+              </FormSection>
 
-            <FormSection title="Links and media">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="LinkedIn"><input type="url" className={fieldClass} value={formState.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
-                <Field label="GitHub"><input type="url" className={fieldClass} value={formState.github} onChange={(e) => set('github', e.target.value)} /></Field>
-                <Field label="Portfolio"><input type="url" className={fieldClass} value={formState.portfolio} onChange={(e) => set('portfolio', e.target.value)} /></Field>
-                <Field label="Intro video URL"><input type="url" className={fieldClass} value={formState.introVideoUrl} onChange={(e) => set('introVideoUrl', e.target.value)} /></Field>
-                <Field label="Resume">
-                  <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(event) => set('resumeFilename', event.target.files?.[0]?.name ?? '')} />
-                  <button type="button" onClick={() => resumeInputRef.current?.click()} className="inline-flex w-full items-center justify-between rounded-xl border border-dashed border-gray-300 bg-white/60 px-3 py-2.5 text-sm text-gray-600 cursor-pointer hover:bg-gray-100 hover:border-gray-400 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:border-white/20 hover:text-gray-900 dark:hover:text-white transition-all">
-                    <span>{formState.resumeFilename || 'Upload resume metadata'}</span>
-                    <IconFileText size={16} />
-                  </button>
-                </Field>
-              </div>
-            </FormSection>
-          </div>
-        </section>
-
-        <section className={`${surface} min-h-[42rem] overflow-auto p-5 custom-scrollbar lg:col-span-4 lg:min-h-0 lg:h-full`}>
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-white/30">Live preview</p>
-          <ProfilePreview profile={activeProfile ?? formState} />
-        </section>
-      </div>
-
+              <FormSection title="Links and media">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="LinkedIn"><input type="url" className={fieldClass} value={formState.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
+                  <Field label="GitHub"><input type="url" className={fieldClass} value={formState.github} onChange={(e) => set('github', e.target.value)} /></Field>
+                  <Field label="Portfolio"><input type="url" className={fieldClass} value={formState.portfolio} onChange={(e) => set('portfolio', e.target.value)} /></Field>
+                  <Field label="Intro video URL"><input type="url" className={fieldClass} value={formState.introVideoUrl} onChange={(e) => set('introVideoUrl', e.target.value)} /></Field>
+                  <Field label="Resume">
+                    <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(event) => set('resumeFilename', event.target.files?.[0]?.name ?? '')} />
+                    <button type="button" onClick={() => resumeInputRef.current?.click()} className="inline-flex w-full items-center justify-between rounded-xl border border-dashed border-gray-300 bg-white/60 px-3 py-2.5 text-sm text-gray-600 cursor-pointer hover:bg-gray-100 hover:border-gray-400 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:border-white/20 hover:text-gray-900 dark:hover:text-white transition-all">
+                      <span>{formState.resumeFilename || 'Upload resume metadata'}</span>
+                      <IconFileText size={16} />
+                    </button>
+                  </Field>
+                </div>
+              </FormSection>
+              </motion.div>
+            ) : (
+              <motion.div key="profile-preview" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
+                <ProfilePreview profile={formState} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </section>
 
       <ImageCropModal
         imageSrc={pendingProfilePhoto}
@@ -975,3 +1032,5 @@ export default function ProfileTab({ profiles, onProfilesChange }: ProfileTabPro
     </div>
   )
 }
+
+
