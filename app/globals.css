@@ -333,7 +333,8 @@ input[type="submit"]:not(:disabled) {
 
 .dashboard-theme-light [class*="bg-[#101010]"],
 .dashboard-theme-light [class*="bg-[#171717]"],
-.dashboard-theme-light [class*="bg-[#121212]"] {
+.dashboard-theme-light [class*="bg-[#121212]"],
+.dashboard-theme-light [class*="bg-[#1b1b1b]"] {
   background: rgba(255, 255, 255, 0.78) !important;
   background-color: rgba(255, 255, 255, 0.78) !important;
   backdrop-filter: blur(18px);
@@ -714,3 +715,42 @@ textarea[rows="5"] {
 textarea[rows="6"] {
   min-height: max(12.75rem, calc(6lh + 1.5rem));
 }
+
+/* Custom dashboard toggles with explicit high contrast overriding wildcard rules */
+.custom-toggle-track {
+  display: block;
+  height: 1.5rem;
+  width: 2.75rem;
+  border-radius: 9999px;
+  background-color: #cbd5e1 !important; /* light mode unchecked */
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+.dashboard-theme-dark .custom-toggle-track {
+  background-color: rgba(255, 255, 255, 0.16) !important; /* dark mode unchecked */
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Peer checked state */
+.peer:checked ~ .custom-toggle-track {
+  background-color: #ff6b00 !important; /* checked (both modes) */
+  background: #ff6b00 !important;
+}
+
+.custom-toggle-knob {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  height: 1rem;
+  width: 1rem;
+  border-radius: 9999px;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.peer:checked ~ .custom-toggle-knob {
+  transform: translateX(1.25rem) !important;
+}
