@@ -68,12 +68,8 @@ export async function POST(request: NextRequest) {
     const profileId = profile.id
 
     // 2. Diff and Upsert Experiences
-    const incomingExpIds = payload.experience?.map(e => e.id).filter(Boolean) || []
-    if (incomingExpIds.length > 0) {
-      await supabase.from('talent_experiences').delete().eq('profile_id', profileId).not('id', 'in', `(${incomingExpIds.join(',')})`)
-    } else {
-      await supabase.from('talent_experiences').delete().eq('profile_id', profileId)
-    }
+    // Safer than constructing an `in.(...)` filter from client-provided IDs.
+    await supabase.from('talent_experiences').delete().eq('profile_id', profileId)
 
     if (payload.experience?.length) {
       const validExperiences = payload.experience.filter(e => e.company?.trim() || e.role?.trim())
