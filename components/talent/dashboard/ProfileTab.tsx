@@ -438,9 +438,9 @@ export default function ProfileTab({ profile, onProfileChange }: ProfileTabProps
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Not authenticated")
 
-      const ext = originalName ? originalName.split('.').pop() : (fileOrBlob.type.split('/')[1] || 'png')
+      const extFromName = originalName && originalName.includes('.') ? originalName.split('.').pop() : undefined
+      const ext = (extFromName || fileOrBlob.type.split('/')[1] || 'bin').toLowerCase()
       const filename = `${pathPrefix}-${crypto.randomUUID()}.${ext}`
-      const filePath = `${user.id}/${filename}`
       
       const { data, error } = await supabase.storage.from('talent-assets').upload(filePath, fileOrBlob, {
         cacheControl: '3600',
