@@ -115,12 +115,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Diff and Upsert Projects
-    const incomingProjIds = payload.projects?.map(p => p.id).filter(Boolean) || []
-    if (incomingProjIds.length > 0) {
-      await supabase.from('talent_projects').delete().eq('profile_id', profileId).not('id', 'in', `(${incomingProjIds.join(',')})`)
-    } else {
-      await supabase.from('talent_projects').delete().eq('profile_id', profileId)
-    }
+    // Safer than constructing an `in.(...)` filter from client-provided IDs.
+    await supabase.from('talent_projects').delete().eq('profile_id', profileId)
 
     if (payload.projects?.length) {
       const validProjects = payload.projects.filter(p => p.title?.trim())
