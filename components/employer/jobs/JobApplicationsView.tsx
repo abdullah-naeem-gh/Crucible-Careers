@@ -23,6 +23,8 @@ import {
   IconSparkles,
   IconX,
   IconSend,
+  IconExternalLink,
+  IconVideo,
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
 
@@ -61,6 +63,31 @@ interface CandidateProfile {
   }>;
   rating?: number;
   note?: string;
+  experience?: Array<{
+    id: string;
+    company: string;
+    role: string;
+    startDate: string;
+    endDate: string;
+    current?: boolean;
+    description?: string;
+  }>;
+  educationList?: Array<{
+    id: string;
+    school: string;
+    degree: string;
+    field: string;
+    startYear?: string;
+    endYear?: string;
+    description?: string;
+  }>;
+  projects?: Array<{
+    id: string;
+    title: string;
+    link?: string;
+    videoUrl?: string;
+    description?: string;
+  }>;
 }
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
@@ -217,12 +244,58 @@ function calculateAtsScore(candidateSkills: string[], jobTags: string[]): number
 }
 
 function getJobApplicants(job: EmployerJob): CandidateProfile[] {
+  const mockExp = [
+    {
+      id: "mexp-1",
+      company: "InnovateTech Corp",
+      role: "Software Developer",
+      startDate: "2023",
+      endDate: "2026",
+      current: true,
+      description: "Led development of various features and optimized system architecture."
+    },
+    {
+      id: "mexp-2",
+      company: "CodeBase LLC",
+      role: "Junior Developer",
+      startDate: "2021",
+      endDate: "2023",
+      current: false,
+      description: "Maintained legacy codebases and wrote integration tests."
+    }
+  ];
+
+  const mockEdu = [
+    {
+      id: "medu-1",
+      school: "State University of Technology",
+      degree: "B.S. Computer Science",
+      field: "Computer Science",
+      startYear: "2017",
+      endYear: "2021",
+      description: ""
+    }
+  ];
+
+  const mockProj = [
+    {
+      id: "mproj-1",
+      title: "Real-time Chat App",
+      link: "github.com/example/chat",
+      videoUrl: "youtube.com/watch?v=demo",
+      description: "A fast chat app with WebSockets, room system and message history."
+    }
+  ];
+
   // If we have hardcoded candidates for this specific title
   const candidatesForTitle = MOCK_CANDIDATES_BANK[job.title];
   if (candidatesForTitle) {
     return candidatesForTitle.map((c, index) => ({
       ...c,
       appliedDate: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      experience: c.experience || mockExp,
+      educationList: c.educationList || mockEdu,
+      projects: c.projects || mockProj
     }));
   }
 
@@ -252,7 +325,10 @@ function getJobApplicants(job: EmployerJob): CandidateProfile[] {
       skills: allSkills,
       education: index === 0 ? "M.S. in Computer Science, MIT" : "B.S. in Computer Science, University of Illinois",
       linkedin: `linkedin.com/in/${gn.name.toLowerCase().replace(" ", "-")}`,
-      github: `github.com/${gn.name.toLowerCase().replace(" ", "")}`
+      github: `github.com/${gn.name.toLowerCase().replace(" ", "")}`,
+      experience: mockExp,
+      educationList: mockEdu,
+      projects: mockProj
     };
   });
 }
@@ -1285,6 +1361,99 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                           ? ans.value.join(", ")
                           : ans.value || "—"}
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Work History */}
+            {selectedApplicant.experience && selectedApplicant.experience.length > 0 && (
+              <div className="border-t border-white/[0.07] pt-5">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Work Experience</h3>
+                <div className="space-y-3">
+                  {selectedApplicant.experience.map((exp) => (
+                    <div key={exp.id} className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-1">
+                        <h4 className="text-sm font-bold text-white/90">{exp.role}</h4>
+                        <span className="text-[10px] text-[#FF914D] font-semibold bg-orange-500/10 px-2 py-0.5 rounded">
+                          {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
+                        </span>
+                      </div>
+                      <div className="text-xs text-white/50 font-medium mt-0.5">{exp.company}</div>
+                      {exp.description && (
+                        <p className="text-xs text-white/40 mt-2 leading-relaxed whitespace-pre-line">
+                          {exp.description}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Education History */}
+            {selectedApplicant.educationList && selectedApplicant.educationList.length > 0 && (
+              <div className="border-t border-white/[0.07] pt-5">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Education</h3>
+                <div className="space-y-3">
+                  {selectedApplicant.educationList.map((edu) => (
+                    <div key={edu.id} className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-3.5">
+                      <div className="flex flex-wrap items-center justify-between gap-1">
+                        <h4 className="text-sm font-bold text-white/90">{edu.degree}</h4>
+                        {(edu.startYear || edu.endYear) && (
+                          <span className="text-[10px] text-white/45 font-medium">
+                            {edu.startYear} - {edu.endYear}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-white/55 mt-0.5">{edu.school}</div>
+                      {edu.field && <div className="text-[11px] text-white/40">Field: {edu.field}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Project Proofs */}
+            {selectedApplicant.projects && selectedApplicant.projects.length > 0 && (
+              <div className="border-t border-white/[0.07] pt-5">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Project Proofs</h3>
+                <div className="space-y-3">
+                  {selectedApplicant.projects.map((proj) => (
+                    <div key={proj.id} className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="text-sm font-bold text-white/90">{proj.title}</h4>
+                        {proj.link && (
+                          <a
+                            href={proj.link.startsWith('http') ? proj.link : `https://${proj.link}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] text-[#FF914D] hover:underline"
+                          >
+                            View link <IconExternalLink size={10} />
+                          </a>
+                        )}
+                      </div>
+                      {proj.description && (
+                        <p className="text-xs text-white/40 mt-1.5 leading-relaxed">
+                          {proj.description}
+                        </p>
+                      )}
+                      {proj.videoUrl && (
+                        <div className="mt-2.5 flex items-center gap-1.5 text-xs text-sky-400 bg-sky-500/5 border border-sky-500/10 p-2 rounded-lg">
+                          <IconVideo size={13} />
+                          <span className="font-medium">Video proof:</span>
+                          <a
+                            href={proj.videoUrl.startsWith('http') ? proj.videoUrl : `https://${proj.videoUrl}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                          >
+                            Watch demo video
+                          </a>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

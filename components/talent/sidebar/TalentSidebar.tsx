@@ -30,6 +30,7 @@ interface TalentSidebarProps {
   applicationCount?: number
   savedCount?: number
   profileNeedsSetup?: boolean
+  profileCompletion?: number
 }
 
 export default function TalentSidebar({
@@ -38,7 +39,8 @@ export default function TalentSidebar({
   jobCount = 4,
   applicationCount = 12,
   savedCount = 5,
-  profileNeedsSetup = false
+  profileNeedsSetup = false,
+  profileCompletion = 0
 }: TalentSidebarProps) {
   const pathname = usePathname()
 
@@ -46,7 +48,7 @@ export default function TalentSidebar({
     if (activeTab) {
       return activeTab === key
     }
-    if (key === 'jobs') {
+    if (key === 'profile') {
       return pathname === '/talent/dashboard'
     }
     return pathname === `/talent/dashboard/${key}`
@@ -57,7 +59,7 @@ export default function TalentSidebar({
     const IconComponent = TAB_ICONS[key]
     return (
       <Link
-        href={onTabChange ? '#' : key === 'jobs' ? '/talent/dashboard' : `/talent/dashboard/${key}`}
+        href={onTabChange ? '#' : key === 'profile' ? '/talent/dashboard' : `/talent/dashboard/${key}`}
         onClick={(e) => {
           if (onTabChange) {
             e.preventDefault()
@@ -117,11 +119,11 @@ export default function TalentSidebar({
       </div>
 
       <nav className="space-y-1.5 text-sm">
+        {renderTab('profile', 'Profile', undefined, profileNeedsSetup ? 'Set-up Now' : undefined)}
         {renderTab('jobs', 'Jobs', jobCount)}
         {renderTab('companies', 'Companies')}
         {renderTab('applications', 'Applications', applicationCount)}
         {renderTab('saved', 'Saved', savedCount)}
-        {renderTab('profile', 'Profile', undefined, profileNeedsSetup ? 'Set-up Now' : undefined)}
         {renderTab('exams', 'Exams & Badges')}
         {renderTab('settings', 'Settings')}
       </nav>
@@ -149,8 +151,11 @@ export default function TalentSidebar({
       </div>
 
       <div className="mt-auto hidden rounded-2xl border border-orange-200 bg-gradient-to-br from-[#FF6B00]/10 to-[#FF914D]/10 p-4 dark:border-orange-500/20 dark:from-orange-500/10 dark:to-orange-400/[0.035] lg:block">
-        <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">Boost your match</div>
-        <div className="mb-4 text-xs leading-relaxed text-gray-600 dark:text-white/45">Complete your profile to increase your match score by up to 20%.</div>
+        <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">Profile Completion</div>
+        <div className="my-2 h-2 w-full rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] transition-all duration-500" style={{ width: `${profileCompletion}%` }} />
+        </div>
+        <div className="mb-4 text-xs leading-relaxed text-gray-600 dark:text-white/45">{profileCompletion}% complete. Keep building to stand out!</div>
         <Link
           href={onTabChange ? '#' : '/talent/dashboard/profile'}
           onClick={(e) => {

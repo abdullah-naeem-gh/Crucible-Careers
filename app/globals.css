@@ -554,4 +554,163 @@ input[type="submit"]:not(:disabled) {
   --tw-shadow-color: rgba(15, 23, 42, 0.08) !important;
 }
 
+/* Ensure the profile setup modal / popup is solid white (solid dark in dark mode) and not frosted */
+.solid-popup-modal {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+}
 
+.dashboard-theme-light .solid-popup-modal,
+.dashboard-theme-light .solid-popup-modal [class*="bg-white/"],
+.dashboard-theme-light .solid-popup-modal [class*="bg-[#171717]"],
+.dashboard-theme-light .solid-popup-modal [class*="bg-[#141414]"],
+.dashboard-theme-light .solid-popup-modal [class*="bg-[#121212]"] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+}
+.dashboard-theme-dark .solid-popup-modal {
+  background: #171717 !important;
+  background-color: #171717 !important;
+  backdrop-filter: none !important;
+}
+
+/* Scoped profile dropdown surfaces override broad dashboard theme wildcard rules. */
+.profile-select-trigger {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  color: #111827 !important;
+}
+
+.profile-select-trigger:hover {
+  background: #fff7ed !important;
+  background-color: #fff7ed !important;
+  border-color: #fdba74 !important;
+}
+
+.profile-select-placeholder {
+  color: #9ca3af !important;
+}
+
+.profile-select-menu {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+  ring-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+.profile-select-option {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out !important;
+}
+
+.profile-select-option:hover {
+  background: #fff7ed !important;
+  background-color: #fff7ed !important;
+  color: #c84f00 !important;
+}
+
+.profile-select-option-active {
+  background: #ffedd5 !important;
+  background-color: #ffedd5 !important;
+  color: #c84f00 !important;
+}
+
+.profile-select-search {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  color: #111827 !important;
+}
+
+.profile-select-search::placeholder,
+.profile-select-empty {
+  color: #9ca3af !important;
+}
+
+.dashboard-theme-dark .profile-select-trigger {
+  background: #121212 !important;
+  background-color: #121212 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f7f7f7 !important;
+}
+
+.dashboard-theme-dark .profile-select-trigger:hover {
+  background: rgba(255, 255, 255, 0.055) !important;
+  background-color: rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(255, 145, 77, 0.4) !important;
+}
+
+.dashboard-theme-dark .profile-select-placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.dashboard-theme-dark .profile-select-menu {
+  background: #161616 !important;
+  background-color: #161616 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.dashboard-theme-dark .profile-select-option {
+  background: #161616 !important;
+  background-color: #161616 !important;
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.dashboard-theme-dark .profile-select-option:hover {
+  background: #222222 !important;
+  background-color: #222222 !important;
+  color: #ff914d !important;
+}
+
+.dashboard-theme-dark .profile-select-option-active {
+  background: #0d0d0d !important;
+  background-color: #0d0d0d !important;
+  color: #ff914d !important;
+}
+
+.dashboard-theme-dark .profile-select-search {
+  background: #101010 !important;
+  background-color: #101010 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f7f7f7 !important;
+}
+
+.dashboard-theme-dark .profile-select-search::placeholder,
+.dashboard-theme-dark .profile-select-empty {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+/* Textareas should grow with content and never collapse below usable text height. */
+textarea {
+  field-sizing: content;
+  resize: vertical;
+  min-height: max(7.5rem, calc(3lh + 1.5rem));
+  max-width: 100%;
+  overflow-y: hidden;
+}
+
+textarea[rows="2"] {
+  min-height: max(5.75rem, calc(2lh + 1.5rem));
+}
+
+textarea[rows="3"] {
+  min-height: max(7.5rem, calc(3lh + 1.5rem));
+}
+
+textarea[rows="4"] {
+  min-height: max(9.25rem, calc(4lh + 1.5rem));
+}
+
+textarea[rows="5"] {
+  min-height: max(11rem, calc(5lh + 1.5rem));
+}
+
+textarea[rows="6"] {
+  min-height: max(12.75rem, calc(6lh + 1.5rem));
+}
