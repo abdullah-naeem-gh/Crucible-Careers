@@ -155,10 +155,10 @@ const DEFAULT_PROFILE: CompanyProfile = {
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 
 function EmployerDashboardContent() {
-  const company = "TechCorp";
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
+  const onboarded = searchParams.get("onboarded");
   const initialTab: EmployerTab =
     requestedTab === "jobs" || requestedTab === "analytics" || requestedTab === "profile"
       ? (requestedTab as EmployerTab)
@@ -171,6 +171,8 @@ function EmployerDashboardContent() {
   const [hydrated, setHydrated] = useState(false);
   const [profile, setProfile] = useState<CompanyProfile>(DEFAULT_PROFILE);
   const [viewingJobApplicantsId, setViewingJobApplicantsId] = useState<string | null>(null);
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
+  const company = profile.name || "Your Company";
 
   useEffect(() => {
     try {
@@ -186,12 +188,24 @@ function EmployerDashboardContent() {
 
     try {
       const savedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
-      if (savedProfile) setProfile(JSON.parse(savedProfile));
+      if (savedProfile) {
+        setProfile(JSON.parse(savedProfile));
+      } else if (!onboarded) {
+        // First visit with no profile → redirect to onboarding
+        router.replace("/employer/onboarding");
+        return;
+      }
     } catch {
       /* use default */
     } finally {
       setHydrated(true);
     }
+
+    if (onboarded) {
+      setShowWelcomeBanner(true);
+      setTimeout(() => setShowWelcomeBanner(false), 4000);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -274,6 +288,20 @@ function EmployerDashboardContent() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#101010] text-white">
+      {/* Welcome banner after onboarding */}
+      <AnimatePresence>
+        {showWelcomeBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-2xl border border-[#FF6B00]/20 bg-[#FF6B00]/10 px-5 py-3 text-sm text-[#FF914D] backdrop-blur-md shadow-lg"
+          >
+            🎉 <span>Welcome to Crucible Careers — your profile is live!</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(255,107,0,0.09),transparent_30%),radial-gradient(circle_at_85%_90%,rgba(255,145,77,0.05),transparent_28%)]" />
         <div
