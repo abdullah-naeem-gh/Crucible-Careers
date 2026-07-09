@@ -7,3 +7,4 @@ tsconfig.tsbuildinfo
 .agents
 .playwright-mcp
 tsconfig.tsbuildinfo
+supabase/
