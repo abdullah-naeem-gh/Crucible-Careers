@@ -528,7 +528,7 @@ const FooterSection = () => (
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen">
+    <div className="landing-page min-h-screen">
       <NavBar />
       <HeroSection />
       <div className="relative z-20">
