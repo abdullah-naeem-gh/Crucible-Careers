@@ -474,14 +474,15 @@ export default function ProfileTab({ profile, onProfileChange }: ProfileTabProps
       const extFromName = originalName && originalName.includes('.') ? originalName.split('.').pop() : undefined
       const ext = (extFromName || fileOrBlob.type.split('/')[1] || 'bin').toLowerCase()
       const filename = `${pathPrefix}-${crypto.randomUUID()}.${ext}`
+      const filePath = `${user.id}/${filename}`
 
-      const { data, error } = await supabase.storage.from('talent-assets').upload(filename, fileOrBlob, {
+      const { data, error } = await supabase.storage.from('talent-assets').upload(filePath, fileOrBlob, {
         cacheControl: '3600',
         upsert: false
       })
       if (error) throw error
 
-      const { data: { publicUrl } } = supabase.storage.from('talent-assets').getPublicUrl(filename)
+      const { data: { publicUrl } } = supabase.storage.from('talent-assets').getPublicUrl(filePath)
       return publicUrl
     } catch (e) {
       console.error("Upload error", e)
@@ -640,7 +641,7 @@ export default function ProfileTab({ profile, onProfileChange }: ProfileTabProps
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Field label="First name" required><input className={fieldClass} value={formState.firstName} onChange={(e) => set('firstName', e.target.value)} /></Field>
                     <Field label="Last name" required><input className={fieldClass} value={formState.lastName} onChange={(e) => set('lastName', e.target.value)} /></Field>
-                    <div className="sm:col-span-2"><Field label="Email" required><input type="email" className={fieldClass} value={formState.email} onChange={(e) => set('email', e.target.value)} /></Field></div>
+                    <div className="sm:col-span-2"><Field label="Email" required><input type="email" className={fieldClass + " disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:dark:bg-white/5"} value={formState.email} disabled onChange={(e) => set('email', e.target.value)} /></Field></div>
                     <div className="sm:col-span-2"><Field label="Headline" required><input className={fieldClass} value={formState.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field></div>
                     <div className="sm:col-span-2">
                       <Field label="Location">
