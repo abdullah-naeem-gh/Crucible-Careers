@@ -9,13 +9,14 @@ import JobApplicationsView from "@/components/employer/jobs/JobApplicationsView"
 // Import modular tab components
 import OverviewTab, { EmployerJob, Analytics } from "@/components/employer/dashboard/OverviewTab";
 import JobsTab from "@/components/employer/dashboard/JobsTab";
+import AllApplicantsKanbanTab from "@/components/employer/dashboard/AllApplicantsKanbanTab";
 import AnalyticsTab from "@/components/employer/dashboard/AnalyticsTab";
 import ProfileTab from "@/components/employer/dashboard/ProfileTab";
 import JobForm from "@/components/employer/dashboard/JobForm";
 import { getEmployerProfile, saveEmployerProfile } from "@/lib/employer/services/profile.service";
 import { CompanyProfile } from "@/types/employer/profile";
 
-type EmployerTab = "overview" | "jobs" | "analytics" | "profile";
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile";
 
 const STORAGE_KEY = "recruiter_jobs";
 const PROFILE_STORAGE_KEY = "recruiter_profile";
@@ -160,9 +161,10 @@ function EmployerDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
+  const requestedJobId = searchParams.get("job");
   const onboarded = searchParams.get("onboarded");
   const initialTab: EmployerTab =
-    requestedTab === "jobs" || requestedTab === "analytics" || requestedTab === "profile"
+    requestedTab === "jobs" || requestedTab === "applicants" || requestedTab === "analytics" || requestedTab === "profile"
       ? (requestedTab as EmployerTab)
       : "overview";
 
@@ -273,6 +275,14 @@ function EmployerDashboardContent() {
     );
   };
 
+  const openApplicantsKanban = (jobId?: string | null) => {
+    setActiveTab("applicants");
+    setViewingJobApplicantsId(null);
+    router.replace(
+      jobId ? `/employer/dashboard?tab=applicants&job=${jobId}` : "/employer/dashboard?tab=applicants",
+      { scroll: false },
+    );
+  };
   const addJob = (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "matchScore">) => {
     const newJob: EmployerJob = {
       ...job,
@@ -349,7 +359,7 @@ function EmployerDashboardContent() {
                     setViewingJobApplicantsId(jobId);
                     changeTab("jobs");
                   }}
-                  onTabChange={changeTab}
+                  onTabChange={(tab) => changeTab(tab)}
                   onNewJob={() => setIsFormOpen(true)}
                 />
               )}
@@ -360,6 +370,7 @@ function EmployerDashboardContent() {
                     jobId={viewingJobApplicantsId}
                     jobs={jobs}
                     onBack={() => setViewingJobApplicantsId(null)}
+                    onOpenKanban={(jobId) => openApplicantsKanban(jobId)}
                   />
                 ) : (
                   <JobsTab
@@ -373,6 +384,14 @@ function EmployerDashboardContent() {
                     onViewApplications={setViewingJobApplicantsId}
                   />
                 )
+              )}
+              {activeTab === "applicants" && (
+                <AllApplicantsKanbanTab
+                  key="applicants"
+                  jobs={jobs}
+                  initialJobId={requestedJobId}
+                  onJobChange={(jobId) => router.replace(`/employer/dashboard?tab=applicants&job=${jobId}`, { scroll: false })}
+                />
               )}
               {activeTab === "analytics" && (
                 <AnalyticsTab key="analytics" jobs={jobs} analytics={analytics} />

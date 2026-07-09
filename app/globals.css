@@ -760,4 +760,72 @@ textarea[rows="6"] {
 
 .peer:checked ~ .custom-toggle-knob {
   transform: translateX(1.25rem) !important;
-}
+}
+/* Kanban board surfaces: explicit light/dark tokens avoid broad wildcard theme collisions. */
+.kanban-header {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.kanban-column {
+  background: #131313 !important;
+  background-color: #131313 !important;
+  border-color: rgba(255, 255, 255, 0.065) !important;
+}
+
+.kanban-card {
+  background: #1a1a1a !important;
+  background-color: #1a1a1a !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+  color: #f7f7f7 !important;
+  box-shadow: 8px 8px 18px rgba(0, 0, 0, 0.24), -3px -3px 10px rgba(255, 255, 255, 0.018) !important;
+}
+
+.kanban-card:hover {
+  border-color: rgba(255, 107, 0, 0.32) !important;
+}
+
+.kanban-empty {
+  background: rgba(255, 255, 255, 0.015) !important;
+  background-color: rgba(255, 255, 255, 0.015) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.kanban-stat {
+  background: #141414 !important;
+  background-color: #141414 !important;
+  border-color: rgba(255, 255, 255, 0.065) !important;
+  box-shadow: inset 2px 2px 8px rgba(0, 0, 0, 0.2), inset -1px -1px 3px rgba(255, 255, 255, 0.025) !important;
+}
+
+.dashboard-theme-light .kanban-column {
+  background: #f8fafc !important;
+  background-color: #f8fafc !important;
+  border-color: rgba(203, 213, 225, 0.9) !important;
+}
+
+.dashboard-theme-light .kanban-card {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: rgba(203, 213, 225, 0.95) !important;
+  color: #111827 !important;
+  box-shadow: 8px 8px 18px rgba(15, 23, 42, 0.055), -4px -4px 14px rgba(255, 255, 255, 0.9) !important;
+}
+
+.dashboard-theme-light .kanban-card:hover {
+  border-color: rgba(255, 107, 0, 0.34) !important;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.09) !important;
+}
+
+.dashboard-theme-light .kanban-empty {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: rgba(203, 213, 225, 0.8) !important;
+}
+
+.dashboard-theme-light .kanban-stat {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: rgba(203, 213, 225, 0.9) !important;
+  box-shadow: inset 1px 1px 5px rgba(15, 23, 42, 0.035), 0 10px 24px rgba(15, 23, 42, 0.04) !important;
+}

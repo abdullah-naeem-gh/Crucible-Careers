@@ -9,9 +9,10 @@ import {
   IconBriefcase,
   IconChartBar,
   IconBuilding,
+  IconUsers,
 } from "@tabler/icons-react";
 
-type EmployerTab = "overview" | "jobs" | "analytics" | "profile";
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile";
 
 interface EmployerSidebarProps {
   activeTab: EmployerTab;
@@ -25,6 +26,7 @@ interface EmployerSidebarProps {
 const tabs: Array<{ key: EmployerTab; label: string }> = [
   { key: "overview", label: "Overview" },
   { key: "jobs", label: "Job Listings" },
+  { key: "applicants", label: "All Applicants" },
   { key: "analytics", label: "Analytics" },
   { key: "profile", label: "Company Profile" },
 ];
@@ -32,6 +34,7 @@ const tabs: Array<{ key: EmployerTab; label: string }> = [
 const TAB_ICONS: Record<EmployerTab, React.ComponentType<any>> = {
   overview: IconLayoutDashboard,
   jobs: IconBriefcase,
+  applicants: IconUsers,
   analytics: IconChartBar,
   profile: IconBuilding,
 };
@@ -75,7 +78,7 @@ export default function EmployerSidebar({
       <nav className="space-y-1.5 text-sm">
         {tabs.map((tab) => {
           const active = activeTab === tab.key;
-          const count = tab.key === "jobs" ? jobCount : tab.key === "overview" ? applicationCount : null;
+          const count = tab.key === "jobs" ? jobCount : tab.key === "overview" || tab.key === "applicants" ? applicationCount : null;
           const IconComponent = TAB_ICONS[tab.key];
 
           return (
