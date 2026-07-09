@@ -6,12 +6,13 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 
 type JobType = 'Full-time' | 'Part-time' | 'Contract' | 'Internship'
 type JobStatus = 'Active' | 'Draft' | 'Paused' | 'Closed'
+type LocationType = 'On-Site' | 'Remote' | 'Hybrid'
 
 export interface EmployerJob {
   id: string
   title: string
-  company: string
   location: string
+  locationType: LocationType
   type: JobType
   status: JobStatus
   salary?: string
@@ -24,10 +25,10 @@ export interface EmployerJob {
 const STORAGE_KEY = 'recruiter_jobs'
 
 const DEMO_JOBS: EmployerJob[] = [
-  { id: '1', title: 'AI Engineer', company: 'Vyro', location: 'Karachi, Pakistan', type: 'Full-time', status: 'Active', salary: 'PKR 250k - 350k', tags: [], postedAt: '1 day ago', applications: 18, views: 89 },
-  { id: '2', title: 'Senior Frontend Engineer', company: 'TechCorp', location: 'Remote', type: 'Full-time', status: 'Active', salary: 'USD 120k - 150k', tags: [], postedAt: '2 days ago', applications: 24, views: 156 },
-  { id: '3', title: 'Product Manager', company: 'TechCorp', location: 'San Francisco, CA', type: 'Full-time', status: 'Active', salary: 'USD 130k - 160k', tags: [], postedAt: '1 week ago', applications: 18, views: 89 },
-  { id: '4', title: 'DevOps Engineer', company: 'TechCorp', location: 'Remote', type: 'Contract', status: 'Draft', salary: 'USD 100k - 130k', tags: [], postedAt: 'Draft', applications: 0, views: 0 },
+  { id: '1', title: 'AI Engineer', location: 'Lahore', locationType: 'On-Site', type: 'Full-time', status: 'Active', salary: 'PKR 250k - 350k', tags: [], postedAt: '1 day ago', applications: 18, views: 89 },
+  { id: '2', title: 'Senior Frontend Engineer', location: 'Islamabad', locationType: 'Remote', type: 'Full-time', status: 'Active', salary: 'USD 120k - 150k', tags: [], postedAt: '2 days ago', applications: 24, views: 156 },
+  { id: '3', title: 'Product Manager', location: 'Karachi', locationType: 'Hybrid', type: 'Full-time', status: 'Active', salary: 'USD 130k - 160k', tags: [], postedAt: '1 week ago', applications: 18, views: 89 },
+  { id: '4', title: 'DevOps Engineer', location: 'Lahore', locationType: 'Remote', type: 'Contract', status: 'Draft', salary: 'USD 100k - 130k', tags: [], postedAt: 'Draft', applications: 0, views: 0 },
 ]
 
 export default function EmployerJobs() {
@@ -94,7 +95,7 @@ export default function EmployerJobs() {
                   <tr key={job.id} className="hover:bg-gray-50">
                     <td className="px-5 py-4">
                       <div className="font-medium text-gray-900">{job.title}</div>
-                      <div className="text-xs text-gray-500">{job.company} • {job.location}</div>
+                      <div className="text-xs text-gray-500">{job.locationType} • {job.location}</div>
                     </td>
                     <td className="px-5 py-4">
                       <StatusBadge status={job.status} />
@@ -139,7 +140,7 @@ export default function EmployerJobs() {
               setJobs(updated)
               localStorage.setItem('recruiter_jobs', JSON.stringify(updated))
               setIsFormOpen(false)
-            }} defaultCompany={company} />
+            }} />
           </div>
         </div>
       )}
@@ -149,18 +150,18 @@ export default function EmployerJobs() {
 
 interface NewJobPayload {
   title: string
-  company: string
   location: string
+  locationType: LocationType
   type: JobType
   status: JobStatus
   salary?: string
   tags: string[]
 }
 
-function NewJobForm({ onSubmit, defaultCompany }: { onSubmit: (job: NewJobPayload) => void, defaultCompany: string }) {
+function NewJobForm({ onSubmit }: { onSubmit: (job: NewJobPayload) => void }) {
   const [title, setTitle] = useState('')
-  const [company, setCompany] = useState(defaultCompany)
-  const [location, setLocation] = useState('Remote')
+  const [location, setLocation] = useState('')
+  const [locationType, setLocationType] = useState<LocationType>('On-Site')
   const [type, setType] = useState<JobType>('Full-time')
   const [status, setStatus] = useState<JobStatus>('Draft')
   const [currency, setCurrency] = useState('USD')
@@ -168,18 +169,20 @@ function NewJobForm({ onSubmit, defaultCompany }: { onSubmit: (job: NewJobPayloa
   const [tags, setTags] = useState('')
 
   return (
-    <form className="p-5 grid grid-cols-2 gap-3" onSubmit={(e) => { e.preventDefault(); onSubmit({ title, company, location, type, status, salary: salary ? `${currency} ${salary}` : undefined, tags: tags.split(',').map(t=>t.trim()).filter(Boolean) }); }}>
+    <form className="p-5 grid grid-cols-2 gap-3" onSubmit={(e) => { e.preventDefault(); onSubmit({ title, location, locationType, type, status, salary: salary ? `${currency} ${salary}` : undefined, tags: tags.split(',').map(t=>t.trim()).filter(Boolean) }); }}>
       <div className="col-span-2">
         <label className="block text-sm text-gray-600 mb-1">Job title</label>
         <input value={title} onChange={e=>setTitle(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200" placeholder="e.g. Senior Frontend Engineer" />
       </div>
       <div>
-        <label className="block text-sm text-gray-600 mb-1">Company</label>
-        <input value={company} onChange={e=>setCompany(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200" />
+        <label className="block text-sm text-gray-600 mb-1">Location</label>
+        <input value={location} onChange={e=>setLocation(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200" placeholder="e.g. Lahore" />
       </div>
       <div>
-        <label className="block text-sm text-gray-600 mb-1">Location</label>
-        <input value={location} onChange={e=>setLocation(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200" />
+        <label className="block text-sm text-gray-600 mb-1">Location Type</label>
+        <select value={locationType} onChange={e=>setLocationType(e.target.value as LocationType)} className="w-full px-3 py-2 rounded-lg border border-gray-200">
+          {(['On-Site','Remote','Hybrid'] as LocationType[]).map(t=> <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
       <div>
         <label className="block text-sm text-gray-600 mb-1">Type</label>
@@ -208,7 +211,7 @@ function NewJobForm({ onSubmit, defaultCompany }: { onSubmit: (job: NewJobPayloa
         <input value={tags} onChange={e=>setTags(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200" placeholder="React, TypeScript, Node.js" />
       </div>
       <div className="col-span-2 flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => { setTitle(''); setCompany(defaultCompany); setLocation('Remote'); setType('Full-time'); setStatus('Draft'); setCurrency('USD'); setSalary(''); setTags(''); }} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 bg-white hover:bg-gray-50">Reset</button>
+        <button type="button" onClick={() => { setTitle(''); setLocation(''); setLocationType('On-Site'); setType('Full-time'); setStatus('Draft'); setCurrency('USD'); setSalary(''); setTags(''); }} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 bg-white hover:bg-gray-50">Reset</button>
         <button type="submit" className="px-4 py-2 rounded-lg text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D]">Create Job</button>
       </div>
     </form>

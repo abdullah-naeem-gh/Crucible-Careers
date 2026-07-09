@@ -17,7 +17,6 @@ import { CompanyProfile } from "@/types/employer/profile";
 
 type EmployerTab = "overview" | "jobs" | "analytics" | "profile";
 
-const STORAGE_KEY = "recruiter_jobs";
 const PROFILE_STORAGE_KEY = "recruiter_profile";
 
 const DEMO_JOBS: EmployerJob[] = [
@@ -170,6 +169,7 @@ function EmployerDashboardContent() {
   const [jobs, setJobs] = useState<EmployerJob[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<EmployerJob | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [profile, setProfile] = useState<CompanyProfile>(DEFAULT_PROFILE);
   const [viewingJobApplicantsId, setViewingJobApplicantsId] = useState<string | null>(null);
@@ -177,17 +177,21 @@ function EmployerDashboardContent() {
   const company = profile.name || "Your Company";
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      const parsed = saved ? JSON.parse(saved) : null;
-      const initialJobs = Array.isArray(parsed) && parsed.length ? parsed : DEMO_JOBS;
-      setJobs(initialJobs);
-      setSelectedJobId(initialJobs[0]?.id ?? null);
-    } catch {
-      setJobs(DEMO_JOBS);
-      setSelectedJobId(DEMO_JOBS[0].id);
-    }
-
+    const loadJobs = async () => {
+      try {
+        const res = await fetch("/api/employer/jobs");
+        if (res.ok) {
+          const data = await res.json();
+          setJobs(data);
+          if (data.length > 0 && !selectedJobId) {
+            setSelectedJobId(data[0].id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load jobs", err);
+      }
+    };
+    
     // Fetch profile from API
     const loadProfile = async () => {
       try {
@@ -204,6 +208,8 @@ function EmployerDashboardContent() {
         setHydrated(true);
       }
     };
+    
+    loadJobs();
     loadProfile();
 
     if (onboarded) {
@@ -212,10 +218,6 @@ function EmployerDashboardContent() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
-  }, [hydrated, jobs]);
 
   // Handle profile updates from ProfileTab
   const handleProfileChange = async (updated: CompanyProfile) => {
@@ -273,28 +275,70 @@ function EmployerDashboardContent() {
     );
   };
 
-  const addJob = (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "matchScore">) => {
-    const newJob: EmployerJob = {
-      ...job,
-      id: String(Date.now()),
-      postedAt: "Just now",
-      applications: 0,
-      views: 0,
-      matchScore: 0,
-    };
-    setJobs((current) => [newJob, ...current]);
-    setSelectedJobId(newJob.id);
-    setIsFormOpen(false);
-    changeTab("jobs");
+  const saveJob = async (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "matchScore">) => {
+    try {
+      const isEditing = !!editingJob;
+      const url = isEditing ? `/api/employer/jobs/${editingJob.id}` : "/api/employer/jobs";
+      const method = isEditing ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(job),
+      });
+      
+      if (res.ok) {
+        const savedJob = await res.json();
+        
+        if (isEditing) {
+          setJobs((current) => current.map(j => j.id === savedJob.id ? savedJob : j));
+        } else {
+          setJobs((current) => [savedJob, ...current]);
+        }
+        
+        setSelectedJobId(savedJob.id);
+        setIsFormOpen(false);
+        setEditingJob(null);
+        changeTab("jobs");
+      } else {
+        console.error("Failed to save job");
+      }
+    } catch (err) {
+      console.error("API error", err);
+    }
   };
 
-  const updateJob = (id: string, updates: Partial<EmployerJob>) => {
+  const updateJob = async (id: string, updates: Partial<EmployerJob>) => {
     setJobs((current) => current.map((job) => (job.id === id ? { ...job, ...updates } : job)));
+    
+    try {
+      const res = await fetch(`/api/employer/jobs/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) {
+        console.error("Failed to update job");
+      }
+    } catch (err) {
+      console.error("API error", err);
+    }
   };
 
-  const removeJob = (id: string) => {
+  const removeJob = async (id: string) => {
     setJobs((current) => current.filter((job) => job.id !== id));
     if (selectedJobId === id) setSelectedJobId(null);
+    
+    try {
+      const res = await fetch(`/api/employer/jobs/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        console.error("Failed to delete job");
+      }
+    } catch (err) {
+      console.error("API error", err);
+    }
   };
 
   return (
@@ -333,7 +377,7 @@ function EmployerDashboardContent() {
               jobCount={analytics.totalJobs}
               applicationCount={analytics.totalApplications}
               onTabChange={changeTab}
-              onNewJob={() => setIsFormOpen(true)}
+              onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
             />
           </div>
 
@@ -350,7 +394,7 @@ function EmployerDashboardContent() {
                     changeTab("jobs");
                   }}
                   onTabChange={changeTab}
-                  onNewJob={() => setIsFormOpen(true)}
+                  onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
                 />
               )}
               {activeTab === "jobs" && (
@@ -367,7 +411,8 @@ function EmployerDashboardContent() {
                     jobs={jobs}
                     selectedJob={selectedJob}
                     onSelect={setSelectedJobId}
-                    onNewJob={() => setIsFormOpen(true)}
+                    onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
+                    onEditJob={(job) => { setEditingJob(job); setIsFormOpen(true); }}
                     onUpdate={updateJob}
                     onRemove={removeJob}
                     onViewApplications={setViewingJobApplicantsId}
@@ -403,15 +448,15 @@ function EmployerDashboardContent() {
             >
               <div className="flex items-center justify-between border-b border-white/[0.07] px-6 py-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Create New Job</h3>
-                  <p className="text-xs text-white/35">Draft or publish a job role for TechCorp</p>
+                  <h3 className="text-lg font-semibold text-white">{editingJob ? "Edit Job" : "Create New Job"}</h3>
+                  <p className="text-xs text-white/35">{editingJob ? "Update an existing role for TechCorp" : "Draft or publish a job role for TechCorp"}</p>
                 </div>
                 <button onClick={() => setIsFormOpen(false)} className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 text-white/45 cursor-pointer hover:bg-white/5 hover:text-white">
                   ×
                 </button>
               </div>
               <div className="p-6 overflow-y-auto max-h-[75vh] custom-scrollbar">
-                <JobForm defaultCompany={company} onSubmit={addJob} />
+                <JobForm defaultCompany={company} initialData={editingJob} onSubmit={saveJob} />
               </div>
             </motion.div>
           </motion.div>
