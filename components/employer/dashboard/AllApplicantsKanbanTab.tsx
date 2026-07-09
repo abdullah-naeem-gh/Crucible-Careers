@@ -163,7 +163,7 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, onJobChange
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(14rem,19rem)_minmax(13rem,16rem)_minmax(13rem,17rem)]">
+          <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(14rem,19rem)_minmax(13rem,17rem)_minmax(13rem,17rem)]">
             <div>
               <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-white/35">Job</label>
               <KanbanSelect
@@ -174,7 +174,7 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, onJobChange
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-white/35">Visible stages</label>
+              <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-white/35">Filters</label>
               <StageVisibilityDropdown
                 stages={STAGES}
                 visibleStages={visibleStages}
@@ -201,7 +201,7 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, onJobChange
               return (
                 <section key={stage.key} onDragOver={(event) => { event.preventDefault(); setDragOverStage(stage.key); }} onDragLeave={() => setDragOverStage(null)} onDrop={(event) => { event.preventDefault(); const applicantId = event.dataTransfer.getData("text/plain") || draggedApplicantId; if (applicantId) moveApplicant(applicantId, stage.key); setDraggedApplicantId(null); setDragOverStage(null); }} className={`kanban-column flex h-full w-[16.75rem] flex-col rounded-[20px] border p-2.5 transition-all ${isDragTarget ? "border-orange-500/45 bg-orange-500/[0.07] shadow-[0_0_0_2px_rgba(255,107,0,0.08)]" : "border-white/[0.065]"}`}>
                   <div className="mb-3 flex items-start justify-between gap-3 px-1">
-                    <div><div className={`text-sm font-bold ${stage.accent}`}>{stage.label}</div><div className="mt-1 text-[10px] leading-snug text-white/30">{stage.description}</div></div>
+                    <div><div className={`kanban-stage-title text-sm font-bold ${stage.accent}`}>{stage.label}</div><div className="mt-1 text-[10px] leading-snug text-white/30">{stage.description}</div></div>
                     <span className="rounded-full border border-white/[0.07] bg-white/[0.035] px-2 py-0.5 text-xs font-semibold text-white/45">{candidates.length}</span>
                   </div>
                   <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-1 py-1 custom-scrollbar">
@@ -339,7 +339,7 @@ function StageVisibilityDropdown({ stages, visibleStages, stageCounts, onToggle 
               const checked = visibleStages.includes(stage.key);
               const disabled = checked && visibleStages.length === 1;
               return (
-                <button key={stage.key} type="button" disabled={disabled} onMouseDown={(event) => event.preventDefault()} onClick={() => onToggle(stage.key)} className={`profile-select-option flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-45 ${checked ? "profile-select-option-active" : ""}`}>
+                <button key={stage.key} type="button" disabled={disabled} onMouseDown={(event) => event.preventDefault()} onClick={() => onToggle(stage.key)} className={`profile-select-option flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-45 ${checked ? "kanban-stage-option-checked" : ""}`}>
                   <span className={`grid h-4 w-4 shrink-0 place-items-center rounded border ${checked ? "border-[#FF6B00] bg-[#FF6B00] text-white" : "border-gray-300 text-transparent"}`}><IconCheck size={11} /></span>
                   <span className="min-w-0 flex-1 truncate">{stage.label}</span>
                   <span className="rounded-md bg-orange-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#FF914D]">{stageCounts[stage.key] ?? 0}</span>
