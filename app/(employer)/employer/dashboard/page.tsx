@@ -176,6 +176,7 @@ function EmployerDashboardContent() {
   const [profile, setProfile] = useState<CompanyProfile>(DEFAULT_PROFILE);
   const [viewingJobApplicantsId, setViewingJobApplicantsId] = useState<string | null>(null);
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const company = profile.name || "Your Company";
 
   useEffect(() => {
@@ -336,7 +337,7 @@ function EmployerDashboardContent() {
 
       <section className="relative z-10 min-h-screen px-2 py-5 sm:px-4 lg:px-4 lg:h-screen lg:py-0">
         <div className="mx-auto grid min-h-full max-w-[1720px] grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-7">
-          <div className="lg:col-span-3 lg:self-center">
+          <div className={isSidebarCollapsed ? "lg:col-span-1 lg:self-center" : "lg:col-span-3 lg:self-center"}>
             <EmployerSidebar
               activeTab={activeTab}
               company={company}
@@ -344,10 +345,12 @@ function EmployerDashboardContent() {
               applicationCount={analytics.totalApplications}
               onTabChange={changeTab}
               onNewJob={() => setIsFormOpen(true)}
+              collapsed={isSidebarCollapsed}
+              onCollapsedChange={setIsSidebarCollapsed}
             />
           </div>
 
-          <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
+          <div className={isSidebarCollapsed ? "min-h-[70vh] lg:col-span-11 lg:h-[92vh] lg:self-center" : "min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center"}>
             <AnimatePresence initial={false} mode="wait">
               {activeTab === "overview" && (
                 <OverviewTab
