@@ -67,6 +67,7 @@ export default function FormBuilder({ value, onChange }: FormBuilderProps) {
       setConfig({
         ...found,
         id: String(Date.now()),
+        fields: found.fields.map(f => ({ ...f, options: f.options ? [...f.options] : undefined }))
       });
       setExpandedFieldId(null);
     }
@@ -128,10 +129,11 @@ export default function FormBuilder({ value, onChange }: FormBuilderProps) {
           <IconTemplate size={18} className="text-[#FF914D]" />
           <span className="text-xs font-semibold uppercase tracking-wider text-white/50">Form Template</span>
           <select
+            value={FORM_TEMPLATES.find(t => t.name === config.name)?.id || ""}
             onChange={(e) => loadTemplate(e.target.value)}
-            defaultValue="engineering"
             className="rounded-lg border border-white/[0.08] bg-[#141414] px-2.5 py-1 text-xs text-white outline-none cursor-pointer focus:border-orange-500/50"
           >
+            <option value="" disabled className="hidden">Custom Form</option>
             {FORM_TEMPLATES.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -167,12 +169,25 @@ export default function FormBuilder({ value, onChange }: FormBuilderProps) {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           {/* Left panel: Fields list & add triggers */}
           <div className="lg:col-span-8 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-white/35">Form Fields ({config.fields.length})</h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white/35">Form Details</h4>
               <span className="text-[10px] text-white/25 flex items-center gap-1">
                 <IconInfoCircle size={10} /> Fields feed into candidate analytics
               </span>
             </div>
+
+            <div className="mb-6 space-y-1.5">
+              <label className="block text-[10px] uppercase tracking-wider text-white/40 font-semibold">Form Title</label>
+              <input 
+                type="text" 
+                value={config.name} 
+                onChange={(e) => setConfig(prev => ({ ...prev, name: e.target.value }))}
+                className={fieldClass} 
+                placeholder="e.g. Frontend Engineer Application" 
+              />
+            </div>
+
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white/35 mb-3">Form Fields ({config.fields.length})</h4>
 
             <div className="space-y-2.5">
               {config.fields.map((field, index) => {
@@ -408,7 +423,7 @@ export default function FormBuilder({ value, onChange }: FormBuilderProps) {
 
           <div className="mt-4 border-b border-white/[0.07] pb-4 mb-4">
             <span className="text-[10px] font-semibold tracking-wider text-orange-400 uppercase bg-orange-400/10 px-2 py-0.5 rounded-full">Apply Questionnaire Preview</span>
-            <h3 className="mt-2 text-base font-bold">Dynamic Candidate Intake</h3>
+            <h3 className="mt-2 text-base font-bold">{config.name}</h3>
             <p className="text-xs text-white/40">This is how candidates will see this application form.</p>
           </div>
 

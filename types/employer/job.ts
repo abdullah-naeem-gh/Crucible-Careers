@@ -1,5 +1,6 @@
 export type JobType = "Full-time" | "Part-time" | "Contract" | "Internship";
 export type JobStatus = "Draft" | "Active" | "Paused" | "Closed";
+export type LocationType = "On-Site" | "Remote" | "Hybrid";
 
 export type FieldType =
   | "text"
@@ -45,9 +46,10 @@ export interface FormConfig {
 
 export interface EmployerJob {
   id: string;
+  company?: string;
   title: string;
-  company: string;
   location: string;
+  locationType: LocationType;
   type: JobType;
   status: JobStatus;
   salary?: string;
