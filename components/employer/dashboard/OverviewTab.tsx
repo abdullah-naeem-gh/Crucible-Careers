@@ -13,26 +13,8 @@ import {
   IconBell
 } from "@tabler/icons-react";
 
-type JobType = "Full-time" | "Part-time" | "Contract" | "Internship";
-type JobStatus = "Active" | "Draft" | "Paused" | "Closed";
-
-export interface EmployerJob {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  type: JobType;
-  status: JobStatus;
-  salary?: string;
-  tags: string[];
-  postedAt: string;
-  description: string;
-  responsibilities: string[];
-  requirements: string[];
-  applications: number;
-  views: number;
-  matchScore: number;
-}
+import { EmployerJob, JobType, JobStatus } from "@/types/employer/job";
+export type { EmployerJob };
 
 export interface Analytics {
   totalJobs: number;
