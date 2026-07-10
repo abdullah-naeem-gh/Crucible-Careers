@@ -8,6 +8,11 @@ export type StatusType =
   | "Paused"
   | "Closed"
   | "Applied"
+  | "Shortlisted"
+  | "Interviewing"
+  | "Offered"
+  | "Hired"
+  | "Feedback"
   | "Under Review"
   | "Interview"
   | "Offer"
@@ -26,10 +31,14 @@ export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
     // Green Statuses
     Active: "border-transparent bg-emerald-600 text-white dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
     Offer: "border-transparent bg-emerald-600 text-white dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+    Offered: "border-transparent bg-emerald-600 text-white dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+    Hired: "border-transparent bg-green-700 text-white dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300",
     
     // Yellow/Amber Statuses
     Draft: "border-transparent bg-amber-600 text-white dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
     "Under Review": "border-transparent bg-amber-600 text-white dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
+    Shortlisted: "border-transparent bg-amber-600 text-white dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
+    Feedback: "border-transparent bg-cyan-600 text-white dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300",
     
     // Orange Statuses
     Paused: "border-transparent bg-orange-600 text-white dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300",
@@ -43,6 +52,7 @@ export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
     
     // Purple Statuses
     Interview: "border-transparent bg-purple-600 text-white dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-300",
+    Interviewing: "border-transparent bg-purple-600 text-white dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-300",
   };
 
   const statusClass =

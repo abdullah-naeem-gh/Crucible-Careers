@@ -152,7 +152,7 @@ function TalentDashboardContent() {
     const validTab = tab as TalentTab
     setActiveTab(validTab)
     router.replace(
-      validTab === 'jobs' ? '/talent/dashboard' : `/talent/dashboard?tab=${validTab}`,
+      `/talent/dashboard?tab=${validTab}`,
       { scroll: false }
     )
   }
