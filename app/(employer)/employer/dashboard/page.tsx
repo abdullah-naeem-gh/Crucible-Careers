@@ -177,7 +177,23 @@ function EmployerDashboardContent() {
   const [viewingJobApplicantsId, setViewingJobApplicantsId] = useState<string | null>(null);
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
+  const [expandedSidebarWidth, setExpandedSidebarWidth] = useState(360);
   const company = profile.name || "Your Company";
+
+  useEffect(() => {
+    const updateSidebarMetrics = () => {
+      const desktop = window.innerWidth >= 1024;
+      const availableWidth = Math.min(window.innerWidth - 32, 1720);
+
+      setIsDesktopLayout(desktop);
+      setExpandedSidebarWidth(Math.min(430, Math.max(280, Math.round(availableWidth * 0.25))));
+    };
+
+    updateSidebarMetrics();
+    window.addEventListener("resize", updateSidebarMetrics);
+    return () => window.removeEventListener("resize", updateSidebarMetrics);
+  }, []);
 
   useEffect(() => {
     try {
@@ -267,6 +283,7 @@ function EmployerDashboardContent() {
     };
   }, [jobs]);
 
+
   const changeTab = (tab: EmployerTab) => {
     setActiveTab(tab);
     setViewingJobApplicantsId(null);
@@ -336,8 +353,13 @@ function EmployerDashboardContent() {
       </div>
 
       <section className="relative z-10 min-h-screen px-2 py-5 sm:px-4 lg:px-4 lg:h-screen lg:py-0">
-        <div className="mx-auto grid min-h-full max-w-[1720px] grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-7">
-          <div className={isSidebarCollapsed ? "lg:col-span-1 lg:self-center" : "lg:col-span-3 lg:self-center"}>
+        <div className="mx-auto flex min-h-full max-w-[1720px] flex-col gap-5 lg:flex-row lg:gap-7">
+          <motion.div
+            initial={false}
+            animate={{ width: isDesktopLayout ? (isSidebarCollapsed ? 68 : expandedSidebarWidth) : "100%" }}
+            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+            className="min-w-0 shrink-0 overflow-visible lg:self-center"
+          >
             <EmployerSidebar
               activeTab={activeTab}
               company={company}
@@ -348,9 +370,14 @@ function EmployerDashboardContent() {
               collapsed={isSidebarCollapsed}
               onCollapsedChange={setIsSidebarCollapsed}
             />
-          </div>
+          </motion.div>
 
-          <div className={isSidebarCollapsed ? "min-h-[70vh] lg:col-span-11 lg:h-[92vh] lg:self-center" : "min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center"}>
+          <motion.div
+            initial={false}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="min-h-[70vh] min-w-0 flex-1 lg:h-[92vh] lg:self-center"
+          >
             <AnimatePresence initial={false} mode="wait">
               {activeTab === "overview" && (
                 <OverviewTab
@@ -403,7 +430,7 @@ function EmployerDashboardContent() {
                 <ProfileTab key="profile" profile={profile} onChange={handleProfileChange} />
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -450,3 +477,8 @@ export default function EmployerDashboard() {
     </Suspense>
   );
 }
+
+
+
+
+
