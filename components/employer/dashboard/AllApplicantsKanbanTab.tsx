@@ -31,6 +31,7 @@ import {
   updateApplicantPipelineStage,
   updateApplicantRating,
 } from "@/lib/employer/services/applicants.service";
+import StartChatModal from "@/components/shared/chat/StartChatModal";
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 const insetSurface = "rounded-2xl border border-white/[0.065] bg-[#141414] shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]";
@@ -51,14 +52,17 @@ interface AllApplicantsKanbanTabProps {
   jobs: EmployerJob[];
   initialJobId?: string | null;
   onJobChange?: (jobId: string) => void;
+  /** Called when user wants to navigate to Messages tab after starting a chat */
+  onOpenMessages?: () => void;
 }
 
-export default function AllApplicantsKanbanTab({ jobs, initialJobId, onJobChange }: AllApplicantsKanbanTabProps) {
+export default function AllApplicantsKanbanTab({ jobs, initialJobId, onJobChange, onOpenMessages }: AllApplicantsKanbanTabProps) {
   const firstJobId = jobs[0]?.id ?? "";
   const [selectedJobId, setSelectedJobId] = useState(initialJobId && jobs.some((job) => job.id === initialJobId) ? initialJobId : firstJobId);
   const [visibleStages, setVisibleStages] = useState<ApplicantPipelineStage[]>(DEFAULT_VISIBLE_STAGES);
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
+  const [chatModal, setChatModal] = useState<{ applicant: CandidateProfile; job: EmployerJob } | null>(null);
   const [draggedApplicantId, setDraggedApplicantId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<ApplicantPipelineStage | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -218,7 +222,22 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, onJobChange
         </div>
       </section>
 
-      <AnimatePresence>{selectedApplicant && selectedJob && <CandidateSlideOver candidate={selectedApplicant} job={selectedJob} visibleStages={visibleStages} onClose={() => setSelectedApplicant(null)} onMove={moveApplicant} noteText={noteText} onNoteTextChange={setNoteText} onSaveNote={saveNote} onSaveRating={saveRating} />}</AnimatePresence>
+      <AnimatePresence>{selectedApplicant && selectedJob && <CandidateSlideOver candidate={selectedApplicant} job={selectedJob} visibleStages={visibleStages} onClose={() => setSelectedApplicant(null)} onMove={moveApplicant} noteText={noteText} onNoteTextChange={setNoteText} onSaveNote={saveNote} onSaveRating={saveRating} onMessageApplicant={(applicant, job) => setChatModal({ applicant, job })} />}</AnimatePresence>
+      {chatModal && (
+        <StartChatModal
+          isOpen={true}
+          onClose={() => setChatModal(null)}
+          onSuccess={() => { setChatModal(null); onOpenMessages?.() }}
+          applicationId={chatModal.applicant.id}
+          jobId={chatModal.job.id}
+          jobTitle={chatModal.job.title}
+          companyName={chatModal.job.company}
+          talentName={chatModal.applicant.name}
+          talentEmail={chatModal.applicant.email}
+          initiatedBy="employer"
+          isDark={true}
+        />
+      )}
     </motion.div>
   );
 }
@@ -246,16 +265,25 @@ function ApplicantKanbanCard({ candidate, job, onOpen, onDragStart, onDragEnd }:
   );
 }
 
-function CandidateSlideOver({ candidate, job, visibleStages, noteText, onClose, onMove, onNoteTextChange, onSaveNote, onSaveRating }: { candidate: CandidateProfile; job: EmployerJob; visibleStages: ApplicantPipelineStage[]; noteText: string; onClose: () => void; onMove: (applicantId: string, stage: ApplicantPipelineStage) => void; onNoteTextChange: (value: string) => void; onSaveNote: (applicantId: string, note: string) => void; onSaveRating: (applicantId: string, rating: number) => void; }) {
+function CandidateSlideOver({ candidate, job, visibleStages, noteText, onClose, onMove, onNoteTextChange, onSaveNote, onSaveRating, onMessageApplicant }: { candidate: CandidateProfile; job: EmployerJob; visibleStages: ApplicantPipelineStage[]; noteText: string; onClose: () => void; onMove: (applicantId: string, stage: ApplicantPipelineStage) => void; onNoteTextChange: (value: string) => void; onSaveNote: (applicantId: string, note: string) => void; onSaveRating: (applicantId: string, rating: number) => void; onMessageApplicant: (applicant: CandidateProfile, job: EmployerJob) => void }) {
   const currentStage = getPipelineStage(candidate);
   const score = calculateAtsScore(candidate.skills, job.tags);
   const stageOptions = STAGES.filter((stage) => visibleStages.includes(stage.key) || stage.key === currentStage || stage.key === "feedback" || stage.key === "rejected");
+  const isActive = currentStage !== 'rejected';
   return (
     <motion.div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
       <motion.aside role="dialog" aria-modal="true" aria-label={`${candidate.name} profile`} initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 260, damping: 30 }} onClick={(event) => event.stopPropagation()} className="ml-auto flex h-full w-full max-w-3xl flex-col border-l border-white/[0.08] bg-[#111111] shadow-[-30px_0_80px_rgba(0,0,0,0.45)]">
         <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] p-5">
           <div className="flex min-w-0 items-start gap-4"><div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-xl font-bold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]">{candidate.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</div><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#FF914D]">{job.title}</p><h2 className="mt-1 truncate text-2xl font-bold text-white">{candidate.name}</h2><p className="truncate text-sm text-white/50">{candidate.title}</p><div className="mt-3 flex flex-wrap gap-2"><span className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">ATS Match: {score}%</span><span className="rounded-lg border border-orange-500/20 bg-orange-500/10 px-2.5 py-1 text-xs font-semibold text-[#FF914D]">{STAGES.find((stage) => stage.key === currentStage)?.label}</span></div></div></div>
-          <button type="button" onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 text-white/45 hover:bg-white/[0.04] hover:text-white cursor-pointer" aria-label="Close profile"><IconX size={18} /></button>
+          <div className="flex items-center gap-2 shrink-0">
+            {isActive && (
+              <button type="button" onClick={() => onMessageApplicant(candidate, job)} className="flex items-center gap-1.5 rounded-xl border border-[#FF6B00]/25 bg-[#FF6B00]/10 px-3 py-2 text-xs font-semibold text-[#FF914D] hover:bg-[#FF6B00]/20 transition-colors cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Message
+              </button>
+            )}
+            <button type="button" onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 text-white/45 hover:bg-white/[0.04] hover:text-white cursor-pointer" aria-label="Close profile"><IconX size={18} /></button>
+          </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-5 custom-scrollbar">
           <div className="mb-5 rounded-2xl border border-white/[0.065] bg-[#171717] p-4"><div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Move candidate</div><div className="flex flex-wrap gap-2">{stageOptions.map((stage) => <button key={stage.key} type="button" onClick={() => onMove(candidate.id, stage.key)} className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${currentStage === stage.key ? "border-orange-500/45 bg-orange-500/15 text-[#FF914D]" : "border-white/[0.08] bg-white/[0.025] text-white/55 hover:border-orange-500/35 hover:text-white"}`}>{stage.label}</button>)}</div></div>

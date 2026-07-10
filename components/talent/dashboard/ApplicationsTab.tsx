@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import StartChatModal from '@/components/shared/chat/StartChatModal'
 
 type ApplicationStatus = 'Applied' | 'Shortlisted' | 'Interviewing' | 'Offered' | 'Hired' | 'Feedback' | 'Rejected'
 
@@ -176,6 +177,7 @@ export default function ApplicationsTab() {
   const [applicationsList, setApplicationsList] = useState<Application[]>(DEMO_APPLICATIONS)
   const [appDetailsMap, setAppDetailsMap] = useState<Record<string, ApplicationDetail>>(DEMO_APP_DETAILS)
   const [selectedAppId, setSelectedAppId] = useState<string>(DEMO_APPLICATIONS[0].id)
+  const [chatModal, setChatModal] = useState<{ appId: string; jobTitle: string; company: string } | null>(null)
 
   const statuses = ['All', 'Applied', 'Shortlisted', 'Interviewing', 'Offered', 'Hired', 'Feedback', 'Rejected']
 
@@ -262,6 +264,7 @@ export default function ApplicationsTab() {
   const selectedAppDetail = appDetailsMap[selectedAppId] ?? null
 
   return (
+    <>
     <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
       {/* Left Column: Applications List (col-span-5) */}
       <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
@@ -347,10 +350,16 @@ export default function ApplicationsTab() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Link href={`/talent/dashboard/applications/${selectedAppDetail.id}`} className="flex-1 text-center py-2.5 rounded-xl border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 text-xs font-semibold transition-colors">
                 Detailed Page
               </Link>
+              <button
+                onClick={() => setChatModal({ appId: selectedAppDetail.id, jobTitle: selectedAppDetail.jobTitle, company: selectedAppDetail.company })}
+                className="flex-1 py-2.5 rounded-xl border border-[#FF6B00]/30 text-[#FF6B00] bg-[#FF6B00]/5 text-xs font-semibold hover:bg-[#FF6B00]/10 transition-colors"
+              >
+                Message Company
+              </button>
               <button className="flex-1 py-2.5 rounded-xl text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-xs font-semibold hover:opacity-95 transition-opacity">
                 Follow Up
               </button>
@@ -466,5 +475,21 @@ export default function ApplicationsTab() {
         )}
       </section>
     </div>
+    {chatModal && (
+      <StartChatModal
+        isOpen={true}
+        onClose={() => setChatModal(null)}
+        onSuccess={() => setChatModal(null)}
+        applicationId={chatModal.appId}
+        jobId={chatModal.appId}
+        jobTitle={chatModal.jobTitle}
+        companyName={chatModal.company}
+        talentName="You"
+        talentEmail=""
+        initiatedBy="talent"
+        isDark={false}
+      />
+    )}
+    </>
   )
 }

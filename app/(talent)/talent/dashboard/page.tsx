@@ -9,15 +9,15 @@ import { JOBS } from '@/lib/talent/data/jobs'
 import { TalentProfile } from '@/types/talent/profile'
 import { loadTalentProfile, saveTalentProfile, calculateCompletionPercentage } from '@/lib/talent/services/profile.service'
 
-// Import Modular Tab Components
 import CompaniesTab from '@/components/talent/dashboard/CompaniesTab'
 import ApplicationsTab, { DEMO_APPLICATIONS } from '@/components/talent/dashboard/ApplicationsTab'
 import SavedTab from '@/components/talent/dashboard/SavedTab'
 import ProfileTab from '@/components/talent/dashboard/ProfileTab'
 import ExamsTab from '@/components/talent/dashboard/ExamsTab'
 import SettingsTab from '@/components/talent/dashboard/SettingsTab'
+import MessagesTab from '@/components/shared/chat/MessagesTab'
 
-type TalentTab = 'jobs' | 'companies' | 'applications' | 'saved' | 'profile' | 'exams' | 'settings'
+type TalentTab = 'jobs' | 'companies' | 'applications' | 'saved' | 'profile' | 'exams' | 'messages' | 'settings'
 
 function ViewMotion({ children, className = "h-full" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -47,6 +47,7 @@ function TalentDashboardContent() {
     requestedTab === 'applications' ||
     requestedTab === 'saved' ||
     requestedTab === 'exams' ||
+    requestedTab === 'messages' ||
     requestedTab === 'settings'
   ) ? (requestedTab as TalentTab) : 'profile'
 
@@ -90,6 +91,7 @@ function TalentDashboardContent() {
         requestedTab === 'saved' ||
         requestedTab === 'profile' ||
         requestedTab === 'exams' ||
+        requestedTab === 'messages' ||
         requestedTab === 'settings'
       ) {
         setActiveTab(requestedTab as TalentTab)
@@ -281,6 +283,15 @@ function TalentDashboardContent() {
               {activeTab === 'settings' && (
                 <ViewMotion key="settings">
                   <SettingsTab />
+                </ViewMotion>
+              )}
+              {activeTab === 'messages' && (
+                <ViewMotion key="messages">
+                  <MessagesTab
+                    role="talent"
+                    myDisplayName={profile?.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : 'Alex Johnson'}
+                    isDark={false}
+                  />
                 </ViewMotion>
               )}
             </AnimatePresence>

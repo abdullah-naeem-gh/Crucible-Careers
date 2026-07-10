@@ -13,13 +13,13 @@ import AllApplicantsKanbanTab from "@/components/employer/dashboard/AllApplicant
 import AnalyticsTab from "@/components/employer/dashboard/AnalyticsTab";
 import ProfileTab from "@/components/employer/dashboard/ProfileTab";
 import JobForm from "@/components/employer/dashboard/JobForm";
+import MessagesTab from "@/components/shared/chat/MessagesTab";
 import { getEmployerProfile, saveEmployerProfile } from "@/lib/employer/services/profile.service";
 import { CompanyProfile } from "@/types/employer/profile";
 
-type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile";
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages";
 
 const STORAGE_KEY = "recruiter_jobs";
-const PROFILE_STORAGE_KEY = "recruiter_profile";
 
 const DEMO_JOBS: EmployerJob[] = [
   {
@@ -164,7 +164,7 @@ function EmployerDashboardContent() {
   const requestedJobId = searchParams.get("job");
   const onboarded = searchParams.get("onboarded");
   const initialTab: EmployerTab =
-    requestedTab === "jobs" || requestedTab === "applicants" || requestedTab === "analytics" || requestedTab === "profile"
+    requestedTab === "jobs" || requestedTab === "applicants" || requestedTab === "analytics" || requestedTab === "profile" || requestedTab === "messages"
       ? (requestedTab as EmployerTab)
       : "overview";
 
@@ -301,6 +301,7 @@ function EmployerDashboardContent() {
       { scroll: false },
     );
   };
+
   const addJob = (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "matchScore">) => {
     const newJob: EmployerJob = {
       ...job,
@@ -421,6 +422,7 @@ function EmployerDashboardContent() {
                   jobs={jobs}
                   initialJobId={requestedJobId}
                   onJobChange={(jobId) => router.replace(`/employer/dashboard?tab=applicants&job=${jobId}`, { scroll: false })}
+                  onOpenMessages={() => changeTab("messages")}
                 />
               )}
               {activeTab === "analytics" && (
@@ -428,6 +430,14 @@ function EmployerDashboardContent() {
               )}
               {activeTab === "profile" && (
                 <ProfileTab key="profile" profile={profile} onChange={handleProfileChange} />
+              )}
+              {activeTab === "messages" && (
+                <MessagesTab
+                  key="messages"
+                  role="employer"
+                  myDisplayName={company}
+                  isDark={true}
+                />
               )}
             </AnimatePresence>
           </motion.div>
@@ -477,8 +487,3 @@ export default function EmployerDashboard() {
     </Suspense>
   );
 }
-
-
-
-
-

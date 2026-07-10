@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { DashboardThemeSwitcher } from "@/components/shared/theme/DashboardThemeProvider";
+import ChatNotificationBell from "@/components/shared/chat/ChatNotificationBell";
+import { subscribeChatChanges, getTotalUnread } from "@/lib/shared/chat/chat.service";
 
 import {
   IconLayoutDashboard,
@@ -14,9 +16,10 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconLogout,
+  IconMessage,
 } from "@tabler/icons-react";
 
-type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile";
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages";
 
 interface EmployerSidebarProps {
   activeTab: EmployerTab;
@@ -35,6 +38,7 @@ const tabs: Array<{ key: EmployerTab; label: string }> = [
   { key: "jobs", label: "Job Listings" },
   { key: "applicants", label: "All Applicants" },
   { key: "analytics", label: "Analytics" },
+  { key: "messages", label: "Messages" },
 ];
 
 const TAB_ICONS: Record<EmployerTab, React.ComponentType<any>> = {
@@ -43,6 +47,7 @@ const TAB_ICONS: Record<EmployerTab, React.ComponentType<any>> = {
   applicants: IconUsers,
   analytics: IconChartBar,
   profile: IconBuilding,
+  messages: IconMessage,
 };
 
 export default function EmployerSidebar({
@@ -57,8 +62,15 @@ export default function EmployerSidebar({
 }: EmployerSidebarProps) {
   const [showExpandedDetails, setShowExpandedDetails] = useState(!collapsed);
   const [showNoJobsPrompt, setShowNoJobsPrompt] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
   const expandedReady = !collapsed && showExpandedDetails;
   const railMode = !expandedReady;
+
+  useEffect(() => {
+    const refresh = () => setChatUnread(getTotalUnread('employer'))
+    refresh()
+    return subscribeChatChanges(refresh)
+  }, []);
 
   useEffect(() => {
     if (collapsed) {
@@ -87,11 +99,16 @@ export default function EmployerSidebar({
       transition={{ opacity: { duration: 0.35, ease: "easeOut" }, x: { duration: 0.35, ease: "easeOut" } }}
       className={`relative flex min-h-[18rem] overflow-hidden flex-col rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)] transition-[padding,border-radius] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:h-[92vh] ${collapsed ? "items-center px-2 py-3 lg:px-2 lg:py-3" : "p-5 lg:p-6"}`}
     >
-      {expandedReady && <DashboardThemeSwitcher className="absolute right-4 top-4 sm:right-5 sm:top-5" />}
+      {expandedReady && (
+        <div className="absolute right-4 top-4 sm:right-5 sm:top-5 flex items-center gap-2">
+          <ChatNotificationBell role="employer" isDark={true} onOpenMessages={() => onTabChange('messages')} />
+          <DashboardThemeSwitcher />
+        </div>
+      )}
       <button
         type="button"
         onClick={() => onCollapsedChange?.(!collapsed)}
-        className={railMode ? "absolute left-1/2 top-3 grid h-8 w-8 -translate-x-1/2 place-items-center rounded-full text-white/45 transition-colors hover:text-white cursor-pointer" : "absolute right-16 top-4 grid h-9 w-9 place-items-center rounded-full text-white/45 transition-colors hover:text-white cursor-pointer sm:right-16 sm:top-5"}
+        className={railMode ? "absolute left-1/2 top-3 grid h-8 w-8 -translate-x-1/2 place-items-center rounded-full text-white/45 transition-colors hover:text-white cursor-pointer" : "absolute right-24 top-4 grid h-9 w-9 place-items-center rounded-full text-white/45 transition-colors hover:text-white cursor-pointer sm:right-24 sm:top-5"}
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? <IconChevronRight size={17} /> : <IconChevronLeft size={17} />}
@@ -126,7 +143,10 @@ export default function EmployerSidebar({
         <nav className={railMode ? "flex w-full flex-col items-center gap-1.5 text-sm" : "space-y-1.5 text-sm"}>
           {tabs.map((tab) => {
             const active = activeTab === tab.key;
-            const count = tab.key === "jobs" ? jobCount : tab.key === "overview" || tab.key === "applicants" ? applicationCount : null;
+              const count = tab.key === "jobs" ? jobCount
+                : tab.key === "overview" || tab.key === "applicants" ? applicationCount
+                : tab.key === "messages" ? (chatUnread > 0 ? chatUnread : null)
+                : null;
             const IconComponent = TAB_ICONS[tab.key];
 
             return (
