@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { IconUsers, IconChevronDown, IconChevronUp, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { IconUsers, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import { EmployerJob } from "@/types/employer/job";
-
-const JOBS_PER_PAGE = 10;
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 const insetSurface = "rounded-2xl border border-white/[0.065] bg-[#141414] shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]";
@@ -73,14 +71,6 @@ export default function JobsTab({
 }: JobsTabProps) {
   const [isFormPreviewOpen, setIsFormPreviewOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const totalPages = Math.max(1, Math.ceil(jobs.length / JOBS_PER_PAGE));
-  const paginatedJobs = jobs.slice((currentPage - 1) * JOBS_PER_PAGE, currentPage * JOBS_PER_PAGE);
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
 
   return (
     <ViewMotion className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
@@ -103,7 +93,7 @@ export default function JobsTab({
         </div>
 
         <div className="min-h-0 flex-1 space-y-3 overflow-auto custom-scrollbar p-5">
-          {paginatedJobs.map((job) => (
+          {jobs.map((job) => (
             <motion.div
               key={job.id}
               role="button"
@@ -154,30 +144,6 @@ export default function JobsTab({
             </motion.div>
           ))}
         </div>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-white/[0.07] px-5 py-3">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-white/55 cursor-pointer hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
-            >
-              <IconChevronLeft size={16} />
-            </button>
-            <span className="text-xs text-white/35">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-white/55 cursor-pointer hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
-            >
-              <IconChevronRight size={16} />
-            </button>
-          </div>
-        )}
       </section>
 
       <section className={`${surface} min-h-[38rem] overflow-auto custom-scrollbar p-6 lg:col-span-4 lg:min-h-0`}>
