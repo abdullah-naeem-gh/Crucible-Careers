@@ -5,6 +5,8 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import { JOBS } from '@/lib/talent/data/jobs'
+import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
+import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
 
 export default function CompanyProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -15,6 +17,8 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
   const [jobCount, setJobCount] = useState(JOBS.length)
   const [appCount, setAppCount] = useState(0)
   const [savedCount, setSavedCount] = useState(0)
+  const [savedJobIds, setSavedJobIds] = useState<string[]>([])
+  const { appliedJobIds } = useAppliedJobIds()
 
   useEffect(() => {
     fetch(`/api/talent/companies/${companyId}`)
@@ -42,10 +46,45 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
       const savedBookmarked = localStorage.getItem('talent_saved_jobs')
       const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
       setSavedCount(bookmarked.length)
+      setSavedJobIds(bookmarked.map((j: any) => j.id))
     } catch (e) {
       console.error(e)
     }
   }, [companyId])
+
+  const isRoleSaved = (id: string) => savedJobIds.includes(id)
+
+  const toggleSaveRole = (role: { id: string; title: string; type: string; location: string; salary: string }) => {
+    try {
+      const stored = localStorage.getItem('talent_saved_jobs')
+      const parsed = stored ? JSON.parse(stored) : []
+      let updated
+      if (parsed.some((j: any) => j.id === role.id)) {
+        updated = parsed.filter((j: any) => j.id !== role.id)
+      } else {
+        const savedItem = {
+          id: role.id,
+          title: role.title,
+          company: company?.name || 'Unknown Company',
+          location: role.location || 'Remote',
+          type: role.type || 'Full-time',
+          salary: role.salary || undefined,
+          tags: [],
+          postedAt: 'Recently',
+          description: '',
+          matchScore: 0,
+          savedAt: new Date().toISOString().split('T')[0],
+        }
+        updated = [...parsed, savedItem]
+      }
+      localStorage.setItem('talent_saved_jobs', JSON.stringify(updated))
+      setSavedJobIds(updated.map((j: any) => j.id))
+      setSavedCount(updated.length)
+      window.dispatchEvent(new Event('talent_saved_jobs_changed'))
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   if (loading || !company) {
     return (
@@ -228,12 +267,32 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
                           <span className="text-green-700 font-semibold">{role.salary}</span>
                         </div>
                       </div>
-                      <Link 
-                        href={`/apply/${role.id}`}
-                        className="w-full py-2 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white text-xs font-semibold hover:opacity-95 shadow-sm transition-all text-center"
-                      >
-                        Apply Now
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSaveRole(role)}
+                          className="shrink-0 p-2 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white"
+                          title={isRoleSaved(role.id) ? 'Saved' : 'Save Job'}
+                        >
+                          {isRoleSaved(role.id) ? (
+                            <IconBookmarkFilled className="h-3.5 w-3.5 text-[#FF6B00]" />
+                          ) : (
+                            <IconBookmark className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        {appliedJobIds.has(role.id) ? (
+                          <span className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                            <IconCheck size={14} /> Applied
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/apply/${role.id}`}
+                            className="flex-1 py-2 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white text-xs font-semibold hover:opacity-95 shadow-sm transition-all text-center"
+                          >
+                            Apply Now
+                          </Link>
+                        )}
+                      </div>
                     </motion.div>
                   ))}
                   {company.openRoles.length === 0 && (

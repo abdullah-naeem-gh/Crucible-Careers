@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ScrapedJob } from '@/types/talent/job'
 import useDebounce from '@/hooks/shared/useDebounce'
 import Link from 'next/link'
-import { IconBookmark, IconBookmarkFilled } from '@tabler/icons-react'
+import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
+import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
 
 interface Props {
   jobs: ScrapedJob[]
@@ -41,6 +42,7 @@ export default function JobBrowser({ jobs }: Props) {
   const detailPanelRef = useRef<HTMLDivElement>(null)
   const [showFloatingApply, setShowFloatingApply] = useState(false)
   const [savedJobIds, setSavedJobIds] = useState<string[]>([])
+  const { appliedJobIds } = useAppliedJobIds()
 
   useEffect(() => {
     try {
@@ -288,6 +290,11 @@ export default function JobBrowser({ jobs }: Props) {
                               <span className="font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/20 px-2 py-0.5 rounded-md text-[10px] leading-tight shadow-sm">
                                 {getMatchScore(job._id)}% Match
                               </span>
+                              {appliedJobIds.has(job._id) && (
+                                <span className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-white bg-emerald-600 border border-transparent px-1.5 py-0.5 rounded font-bold">
+                                  <IconCheck size={10} /> Applied
+                                </span>
+                              )}
                               {job.source === 'Crucible' && (
                                 <span className="text-[9px] uppercase tracking-wider text-white bg-[#FF6B00] border border-transparent dark:text-orange-300 dark:bg-orange-500/10 dark:border-orange-500/20 px-1.5 py-0.5 rounded font-bold">
                                   Platform
@@ -362,12 +369,18 @@ export default function JobBrowser({ jobs }: Props) {
                     exit={{ opacity: 0, scale: 0.85, y: -10 }}
                     className="pointer-events-auto mr-1"
                   >
-                    <Link
-                      href={`/apply/${selectedJob._id}`}
-                      className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-2 text-sm font-semibold text-white shadow-lg hover:opacity-90 transition-all cursor-pointer"
-                    >
-                      Apply Now
-                    </Link>
+                    {appliedJobIds.has(selectedJob._id) ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-5 py-2 text-sm font-semibold text-emerald-800 shadow-lg dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300">
+                        <IconCheck size={16} /> Applied
+                      </span>
+                    ) : (
+                      <Link
+                        href={`/apply/${selectedJob._id}`}
+                        className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-2 text-sm font-semibold text-white shadow-lg hover:opacity-90 transition-all cursor-pointer"
+                      >
+                        Apply Now
+                      </Link>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -425,12 +438,18 @@ export default function JobBrowser({ jobs }: Props) {
                     <IconBookmark className="h-5 w-5" />
                   )}
                 </button>
-                <Link
-                  href={`/apply/${selectedJob._id}`}
-                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-2 text-sm font-medium text-white shadow-[0_4px_12px_rgba(255,107,0,0.15)] hover:opacity-90 transition-opacity cursor-pointer"
-                >
-                  Apply Now
-                </Link>
+                {appliedJobIds.has(selectedJob._id) ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-5 py-2 text-sm font-medium text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300">
+                    <IconCheck size={16} /> Applied
+                  </span>
+                ) : (
+                  <Link
+                    href={`/apply/${selectedJob._id}`}
+                    className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-2 text-sm font-medium text-white shadow-[0_4px_12px_rgba(255,107,0,0.15)] hover:opacity-90 transition-opacity cursor-pointer"
+                  >
+                    Apply Now
+                  </Link>
+                )}
               </div>
             </div>
 

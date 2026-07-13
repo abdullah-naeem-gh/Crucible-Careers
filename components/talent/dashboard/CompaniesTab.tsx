@@ -2,6 +2,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
+import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
 
 interface Company {
   id: string
@@ -29,6 +31,8 @@ export default function CompaniesTab() {
   const [companiesList, setCompaniesList] = useState<Company[]>([])
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [savedJobIds, setSavedJobIds] = useState<string[]>([])
+  const { appliedJobIds } = useAppliedJobIds()
 
   useEffect(() => {
     fetch('/api/talent/companies')
@@ -39,6 +43,49 @@ export default function CompaniesTab() {
       })
       .catch(err => console.error('Failed to load companies', err))
   }, [])
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('talent_saved_jobs')
+      const parsed = stored ? JSON.parse(stored) : []
+      setSavedJobIds(parsed.map((j: any) => j.id))
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
+
+  const isRoleSaved = (id: string) => savedJobIds.includes(id)
+
+  const toggleSaveRole = (role: { id: string; title: string; type: string; location: string; salary: string }, companyName: string) => {
+    try {
+      const stored = localStorage.getItem('talent_saved_jobs')
+      const parsed = stored ? JSON.parse(stored) : []
+      let updated
+      if (parsed.some((j: any) => j.id === role.id)) {
+        updated = parsed.filter((j: any) => j.id !== role.id)
+      } else {
+        const savedItem = {
+          id: role.id,
+          title: role.title,
+          company: companyName,
+          location: role.location || 'Remote',
+          type: role.type || 'Full-time',
+          salary: role.salary || undefined,
+          tags: [],
+          postedAt: 'Recently',
+          description: '',
+          matchScore: 0,
+          savedAt: new Date().toISOString().split('T')[0],
+        }
+        updated = [...parsed, savedItem]
+      }
+      localStorage.setItem('talent_saved_jobs', JSON.stringify(updated))
+      setSavedJobIds(updated.map((j: any) => j.id))
+      window.dispatchEvent(new Event('talent_saved_jobs_changed'))
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const filteredCompanies = useMemo(() => {
     return companiesList.filter(c => 
@@ -253,12 +300,32 @@ export default function CompaniesTab() {
                   <div key={role.id} className="bg-gray-50/50 border border-gray-200 rounded-xl p-3.5 hover:border-orange-200 transition-colors">
                     <div className="flex justify-between items-start gap-2">
                       <h4 className="text-xs font-semibold text-gray-900 leading-snug">{role.title}</h4>
-                      <Link 
-                        href={`/apply/${role.id}`}
-                        className="px-2.5 py-1 text-[9px] font-bold text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D] rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
-                      >
-                        Apply
-                      </Link>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleSaveRole(role, selectedCompany.name)}
+                          className="p-1 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white"
+                          title={isRoleSaved(role.id) ? 'Saved' : 'Save Job'}
+                        >
+                          {isRoleSaved(role.id) ? (
+                            <IconBookmarkFilled className="h-3 w-3 text-[#FF6B00]" />
+                          ) : (
+                            <IconBookmark className="h-3 w-3" />
+                          )}
+                        </button>
+                        {appliedJobIds.has(role.id) ? (
+                          <span className="flex items-center gap-1 px-2.5 py-1 text-[9px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg whitespace-nowrap">
+                            <IconCheck size={10} /> Applied
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/apply/${role.id}`}
+                            className="px-2.5 py-1 text-[9px] font-bold text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D] rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+                          >
+                            Apply
+                          </Link>
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2 text-[10px] text-gray-500 mt-2 font-medium">
                       <span>📍 {role.location}</span>

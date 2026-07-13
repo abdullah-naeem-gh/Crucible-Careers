@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import StartChatModal from '@/components/shared/chat/StartChatModal'
 
-type ApplicationStatus = 'Applied' | 'Shortlisted' | 'Interviewing' | 'Offered' | 'Hired' | 'Feedback' | 'Rejected'
+type ApplicationStatus = 'Applied' | 'Under Review' | 'Interview' | 'Offer' | 'Rejected'
 
 interface Application {
   id: string
@@ -31,171 +31,23 @@ interface ApplicationDetail {
   customAnswers?: any[]
 }
 
-<<<<<<< HEAD
 export default function ApplicationsTab() {
   const [selectedStatus, setSelectedStatus] = useState<string>('All')
   const [applicationsList, setApplicationsList] = useState<Application[]>([])
   const [appDetailsMap, setAppDetailsMap] = useState<Record<string, ApplicationDetail>>({})
   const [selectedAppId, setSelectedAppId] = useState<string>('')
-=======
-export const DEMO_APPLICATIONS: Application[] = [
-  {
-    id: '1',
-    jobTitle: 'Senior Frontend Engineer',
-    company: 'Salik Labs',
-    appliedAt: '2024-01-15',
-    status: 'Shortlisted',
-    matchScore: 86,
-    lastUpdated: '2 days ago'
-  },
-  {
-    id: '2',
-    jobTitle: 'Machine Learning Engineer',
-    company: 'Vyro',
-    appliedAt: '2024-01-10',
-    status: 'Interviewing',
-    matchScore: 73,
-    lastUpdated: '1 day ago'
-  },
-  {
-    id: '3',
-    jobTitle: 'Backend Engineer',
-    company: 'Systems Limited',
-    appliedAt: '2024-01-08',
-    status: 'Applied',
-    matchScore: 64,
-    lastUpdated: '5 days ago'
-  },
-  {
-    id: '4',
-    jobTitle: 'Product Designer',
-    company: 'Salik Labs',
-    appliedAt: '2024-01-05',
-    status: 'Rejected',
-    matchScore: 79,
-    lastUpdated: '1 week ago'
-  }
-]
-
-const DEMO_APP_DETAILS: Record<string, ApplicationDetail> = {
-  '1': {
-    id: '1',
-    jobTitle: 'Senior Frontend Engineer',
-    company: 'Salik Labs',
-    status: 'Shortlisted',
-    appliedAt: '2024-01-15',
-    matchScore: 86,
-    averageApplicantScore: 72,
-    totalApplicants: 145,
-    rank: 'Top 10%',
-    timeline: [
-      { step: 'Application Submitted', date: 'Jan 15, 2024', completed: true, current: false },
-      { step: 'Under Review', date: 'Jan 18, 2024', completed: true, current: true },
-      { step: 'Initial Interview', date: 'Pending', completed: false, current: false },
-      { step: 'Technical Assessment', date: 'Pending', completed: false, current: false },
-      { step: 'Final Offer', date: 'Pending', completed: false, current: false },
-    ],
-    insights: {
-      strengths: ['React.js Expertise', '5+ years experience matching requirement', 'Strong GitHub contribution graph'],
-      gaps: ['No explicit Next.js certification badge', 'Missing direct experience with WebGL (preferred)']
-    }
-  },
-  '2': {
-    id: '2',
-    jobTitle: 'Machine Learning Engineer',
-    company: 'Vyro',
-    status: 'Interviewing',
-    appliedAt: '2024-01-10',
-    matchScore: 73,
-    averageApplicantScore: 68,
-    totalApplicants: 98,
-    rank: 'Top 25%',
-    timeline: [
-      { step: 'Application Submitted', date: 'Jan 10, 2024', completed: true, current: false },
-      { step: 'Under Review', date: 'Jan 12, 2024', completed: true, current: false },
-      { step: 'Initial Interview', date: 'Jan 15, 2024', completed: true, current: true },
-      { step: 'Technical Assessment', date: 'Pending', completed: false, current: false },
-      { step: 'Final Offer', date: 'Pending', completed: false, current: false },
-    ],
-    insights: {
-      strengths: ['PyTorch proficiency', 'Experience with large language models', 'Strong mathematical background'],
-      gaps: ['No public MLOps project portfolio', 'Limited experience with cloud deployment pipelines']
-    }
-  },
-  '3': {
-    id: '3',
-    jobTitle: 'Backend Engineer',
-    company: 'Systems Limited',
-    status: 'Applied',
-    appliedAt: '2024-01-08',
-    matchScore: 64,
-    averageApplicantScore: 70,
-    totalApplicants: 230,
-    rank: 'Top 60%',
-    timeline: [
-      { step: 'Application Submitted', date: 'Jan 8, 2024', completed: true, current: true },
-      { step: 'Under Review', date: 'Pending', completed: false, current: false },
-      { step: 'Initial Interview', date: 'Pending', completed: false, current: false },
-      { step: 'Technical Assessment', date: 'Pending', completed: false, current: false },
-      { step: 'Final Offer', date: 'Pending', completed: false, current: false },
-    ],
-    insights: {
-      strengths: ['SQL database optimization experience', 'Strong Node.js knowledge'],
-      gaps: ['Fewer years of backend experience than requested', 'No experience with Go (highly preferred)']
-    }
-  },
-  '4': {
-    id: '4',
-    jobTitle: 'Product Designer',
-    company: 'Salik Labs',
-    status: 'Rejected',
-    appliedAt: '2024-01-05',
-    matchScore: 79,
-    averageApplicantScore: 81,
-    totalApplicants: 112,
-    rank: 'Top 40%',
-    timeline: [
-      { step: 'Application Submitted', date: 'Jan 5, 2024', completed: true, current: false },
-      { step: 'Under Review', date: 'Jan 7, 2024', completed: true, current: false },
-      { step: 'Portfolio Review', date: 'Jan 9, 2024', completed: true, current: false },
-      { step: 'Application Rejected', date: 'Jan 12, 2024', completed: true, current: true },
-    ],
-    insights: {
-      strengths: ['Beautiful visual design portfolio', 'Strong Figma component library experience'],
-      gaps: ['Fewer B2B SaaS dashboard designs', 'Missing interactive prototyping examples']
-    }
-  }
-}
-
-const mapStatus = (pipelineStage?: string, screeningStatus?: string): ApplicationStatus => {
-  const stage = pipelineStage ?? screeningStatus
-
-  if (stage === 'shortlisted') return 'Shortlisted'
-  if (stage === 'interviewing') return 'Interviewing'
-  if (stage === 'offered') return 'Offered'
-  if (stage === 'hired') return 'Hired'
-  if (stage === 'feedback') return 'Feedback'
-  if (stage === 'rejected') return 'Rejected'
-  return 'Applied'
-}
-
-export default function ApplicationsTab() {
-  const [selectedStatus, setSelectedStatus] = useState<string>('All')
-  const [applicationsList, setApplicationsList] = useState<Application[]>(DEMO_APPLICATIONS)
-  const [appDetailsMap, setAppDetailsMap] = useState<Record<string, ApplicationDetail>>(DEMO_APP_DETAILS)
-  const [selectedAppId, setSelectedAppId] = useState<string>(DEMO_APPLICATIONS[0].id)
   const [chatModal, setChatModal] = useState<{ appId: string; jobTitle: string; company: string } | null>(null)
->>>>>>> edd023f0945b1e7a74c663b0832281e8aebe56c2
 
-  const statuses = ['All', 'Applied', 'Shortlisted', 'Interviewing', 'Offered', 'Hired', 'Feedback', 'Rejected']
+  const statuses = ['All', 'Applied', 'Under Review', 'Interview', 'Offer', 'Rejected']
 
   useEffect(() => {
-<<<<<<< HEAD
     fetch('/api/talent/applications')
       .then(res => res.ok ? res.json() : [])
-      .then((list: Application[]) => {
-        setApplicationsList(list)
-        if (list.length > 0) setSelectedAppId(list[0].id)
+      .then((dbList: Application[]) => {
+        setApplicationsList(dbList)
+        if (dbList.length > 0) {
+          setSelectedAppId(prev => dbList.some(app => app.id === prev) ? prev : dbList[0].id)
+        }
       })
       .catch(err => console.error('Failed to load applications', err))
   }, [])
@@ -205,88 +57,12 @@ export default function ApplicationsTab() {
     fetch(`/api/talent/applications/${selectedAppId}`)
       .then(res => res.ok ? res.json() : null)
       .then((detail: ApplicationDetail | null) => {
-        if (detail) setAppDetailsMap(prev => ({ ...prev, [selectedAppId]: detail }))
-      })
-      .catch(err => console.error('Failed to load application detail', err))
-  }, [selectedAppId, appDetailsMap])
-
-=======
-    try {
-      const rawTalentApps = localStorage.getItem('talent_applications')
-      if (rawTalentApps) {
-        const parsedTalentApps = JSON.parse(rawTalentApps) as any[]
-
-        const updatedAppsList: Application[] = []
-        const updatedDetailsMap: Record<string, ApplicationDetail> = { ...DEMO_APP_DETAILS }
-
-        parsedTalentApps.forEach(app => {
-          let currentStatus = app.status
-          let timeline = [...app.timeline]
-
-          // Cross-reference recruiter dashboard
-          const recruiterApplicantsKey = `recruiter_job_${app.jobId}_applicants`
-          const rawRecruiterApplicants = localStorage.getItem(recruiterApplicantsKey)
-          if (rawRecruiterApplicants) {
-            const recruiterApplicants = JSON.parse(rawRecruiterApplicants) as any[]
-            const matchingRecruiterApp = recruiterApplicants.find(a => a.id === app.id)
-            if (matchingRecruiterApp) {
-              const mapped = mapStatus(matchingRecruiterApp.pipelineStage, matchingRecruiterApp.screeningStatus)
-              currentStatus = mapped
-
-              timeline = [
-                { step: 'Application Submitted', date: new Date(app.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), completed: true, current: mapped === 'Applied' },
-                { step: 'Shortlisted', date: mapped !== 'Applied' ? 'Completed' : 'Pending', completed: mapped !== 'Applied', current: mapped === 'Shortlisted' },
-                { step: 'Interviewing', date: ['Interviewing', 'Offered', 'Hired'].includes(mapped) ? 'Scheduled' : 'Pending', completed: ['Interviewing', 'Offered', 'Hired'].includes(mapped), current: mapped === 'Interviewing' },
-                { step: 'Feedback', date: mapped === 'Feedback' ? 'Requested' : ['Offered', 'Hired'].includes(mapped) ? 'Completed' : 'Pending', completed: ['Offered', 'Hired'].includes(mapped), current: mapped === 'Feedback' },
-                {
-                  step: mapped === 'Rejected' ? 'Application Rejected' : mapped === 'Hired' ? 'Hired' : 'Offer',
-                  date: mapped === 'Offered' ? 'Sent' : mapped === 'Hired' ? 'Accepted' : mapped === 'Rejected' ? 'Processed' : 'Pending',
-                  completed: ['Offered', 'Hired', 'Rejected'].includes(mapped),
-                  current: ['Offered', 'Hired', 'Rejected'].includes(mapped)
-                },
-              ]
-            }
-          }
-
-          updatedAppsList.push({
-            id: app.id,
-            jobTitle: app.jobTitle,
-            company: app.company,
-            appliedAt: app.appliedAt,
-            status: currentStatus,
-            matchScore: app.matchScore,
-            lastUpdated: app.lastUpdated
-          })
-
-          updatedDetailsMap[app.id] = {
-            id: app.id,
-            jobTitle: app.jobTitle,
-            company: app.company,
-            status: currentStatus,
-            appliedAt: app.appliedAt,
-            matchScore: app.matchScore,
-            averageApplicantScore: app.averageApplicantScore || 70,
-            totalApplicants: app.totalApplicants || 1,
-            rank: app.rank || 'Top 50%',
-            timeline,
-            insights: app.insights || { strengths: [], gaps: [] },
-            customAnswers: app.customAnswers || []
-          }
-        })
-
-        setApplicationsList([...updatedAppsList, ...DEMO_APPLICATIONS])
-        setAppDetailsMap(updatedDetailsMap)
-
-        if (updatedAppsList.length > 0) {
-          setSelectedAppId(updatedAppsList[0].id)
+        if (detail) {
+          setAppDetailsMap(prev => ({ ...prev, [selectedAppId]: detail }))
         }
-      }
-    } catch (e) {
-      console.error('Failed to load dynamic talent applications', e)
-    }
-  }, [])
-
->>>>>>> edd023f0945b1e7a74c663b0832281e8aebe56c2
+      })
+      .catch(err => console.error('Failed to load application detail from DB', err))
+  }, [selectedAppId, appDetailsMap])
   const filteredApplications = selectedStatus === 'All'
     ? applicationsList
     : applicationsList.filter(app => app.status === selectedStatus)

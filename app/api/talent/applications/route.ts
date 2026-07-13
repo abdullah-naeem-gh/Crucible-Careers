@@ -40,6 +40,7 @@ export async function GET() {
 
   const result = data.map((a: any) => ({
     id: a.id,
+    jobId: a.jobs?.id,
     jobTitle: a.jobs?.title || 'Unknown Role',
     company: companyById.get(a.jobs?.employer_id) || 'Unknown Company',
     appliedAt: new Date(a.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),

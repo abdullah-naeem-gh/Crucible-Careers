@@ -221,12 +221,9 @@ function TalentDashboardContent() {
               profileFirstName={profile?.firstName}
               profileLastName={profile?.lastName}
               profileEmail={profile?.email}
-<<<<<<< HEAD
               profilePhotoUrl={profile?.photoUrl}
-=======
               collapsed={isSidebarCollapsed}
               onCollapsedChange={setIsSidebarCollapsed}
->>>>>>> edd023f0945b1e7a74c663b0832281e8aebe56c2
             />
           </motion.div>
           <motion.div initial={false} animate={{ opacity: 1 }} transition={{ duration: 0.18, ease: "easeOut" }} className="min-h-[70vh] min-w-0 flex-1 lg:h-[92vh] lg:self-center">
