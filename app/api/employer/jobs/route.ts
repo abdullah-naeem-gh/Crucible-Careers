@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
 import type { EmployerJob } from '@/types/employer/job'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -10,16 +10,44 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const { searchParams } = new URL(request.url)
+  const pageParam = searchParams.get('page')
+  const isPaginated = pageParam !== null
+
   // Fetch jobs for this employer
-  const { data, error } = await supabase
+  let query = supabase
     .from('jobs')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('employer_id', user.id)
     .order('created_at', { ascending: false })
+
+  let page = 1
+  let limit = 10
+
+  if (isPaginated) {
+    page = Math.max(1, parseInt(pageParam, 10) || 1)
+    limit = Math.max(1, parseInt(searchParams.get('limit') ?? '10', 10) || 10)
+    const from = (page - 1) * limit
+    const to = from + limit - 1
+    query = query.range(from, to)
+  }
+
+  const { data, error, count } = await query
 
   if (error) {
     console.error('Error fetching jobs:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // Count real applications per job
+  const jobIds = data.map((job) => job.id)
+  const countByJob = new Map<string, number>()
+  if (jobIds.length > 0) {
+    const { data: apps } = await supabase
+      .from('applications')
+      .select('job_id')
+      .in('job_id', jobIds)
+    ;(apps ?? []).forEach((a) => countByJob.set(a.job_id, (countByJob.get(a.job_id) ?? 0) + 1))
   }
 
   // Format data to match EmployerJob interface
@@ -36,13 +64,24 @@ export async function GET() {
     responsibilities: job.responsibilities || [],
     requirements: job.requirements || [],
     postedAt: new Date(job.created_at).toLocaleDateString(),
-    applications: 0,
+    applications: countByJob.get(job.id) ?? 0,
     views: 0,
     matchScore: 0,
     formConfig: job.form_config,
   }))
 
-  return NextResponse.json(jobs)
+  if (!isPaginated) {
+    return NextResponse.json(jobs)
+  }
+
+  const total = count ?? jobs.length
+  return NextResponse.json({
+    jobs,
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  })
 }
 
 export async function POST(request: NextRequest) {

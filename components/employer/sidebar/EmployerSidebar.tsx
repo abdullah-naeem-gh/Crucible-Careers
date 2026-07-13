@@ -24,6 +24,7 @@ type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" 
 interface EmployerSidebarProps {
   activeTab: EmployerTab;
   company: string;
+  logoUrl?: string | null;
   jobCount: number;
   applicationCount: number;
   onTabChange: (tab: EmployerTab) => void;
@@ -53,6 +54,7 @@ const TAB_ICONS: Record<EmployerTab, React.ComponentType<any>> = {
 export default function EmployerSidebar({
   activeTab,
   company,
+  logoUrl,
   jobCount,
   applicationCount,
   onTabChange,
@@ -104,23 +106,19 @@ export default function EmployerSidebar({
       </button>
 
       <div className={`flex min-h-0 w-full flex-1 flex-col ${railMode ? "items-center" : "min-w-[232px]"}`}>
-        {expandedReady && (
-          <Link
-            href="/gateway"
-            title="Back"
-            className="mb-6 inline-flex items-center pr-14 text-sm text-white/50 transition-colors hover:text-white"
-          >
-            <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </Link>
-        )}
 
         <div className={railMode ? "mt-12 mb-5 flex flex-col items-center gap-2" : "mb-7 flex items-center gap-3"}>
-          <div className={railMode ? "grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-[11px] font-semibold text-white shadow-[0_8px_18px_rgba(255,107,0,0.2)]" : "grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]"}>
-            {company.charAt(0)}
-          </div>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={`${company} logo`}
+              className={railMode ? "h-8 w-8 shrink-0 rounded-full object-cover shadow-[0_8px_18px_rgba(255,107,0,0.2)]" : "h-11 w-11 shrink-0 rounded-full object-cover shadow-[0_8px_24px_rgba(255,107,0,0.24)]"}
+            />
+          ) : (
+            <div className={railMode ? "grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-[11px] font-semibold text-white shadow-[0_8px_18px_rgba(255,107,0,0.2)]" : "grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]"}>
+              {company.charAt(0)}
+            </div>
+          )}
           {expandedReady && (
             <div>
               <div className="font-semibold text-white">{company}</div>
@@ -132,10 +130,10 @@ export default function EmployerSidebar({
         <nav className={railMode ? "flex w-full flex-col items-center gap-1.5 text-sm" : "space-y-1.5 text-sm"}>
           {tabs.map((tab) => {
             const active = activeTab === tab.key;
-              const count = tab.key === "jobs" ? jobCount
-                : tab.key === "overview" || tab.key === "applicants" ? applicationCount
-                : tab.key === "messages" ? (chatUnread > 0 ? chatUnread : null)
-                : null;
+            const count = tab.key === "jobs" ? jobCount
+              : tab.key === "overview" || tab.key === "applicants" ? applicationCount
+              : tab.key === "messages" ? (chatUnread > 0 ? chatUnread : null)
+              : null;
             const IconComponent = TAB_ICONS[tab.key];
 
             return (

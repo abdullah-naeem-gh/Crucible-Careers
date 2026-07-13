@@ -304,6 +304,7 @@ function EmployerDashboardContent() {
             <EmployerSidebar
               activeTab={activeTab}
               company={company}
+              logoUrl={profile.logoUrl}
               jobCount={analytics.totalJobs}
               applicationCount={analytics.totalApplications}
               onTabChange={changeTab}

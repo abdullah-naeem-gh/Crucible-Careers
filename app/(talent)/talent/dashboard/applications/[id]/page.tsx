@@ -6,38 +6,6 @@ import Link from 'next/link'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { JOBS } from '@/lib/talent/data/jobs'
-import { DEMO_APPLICATIONS } from '@/components/talent/dashboard/ApplicationsTab'
-
-const DEMO_APP_DETAIL = {
-  id: '1',
-  jobTitle: 'Senior Frontend Engineer',
-  company: 'Salik Labs',
-  status: 'Under Review' as const,
-  appliedAt: '2024-01-15',
-  matchScore: 86,
-  averageApplicantScore: 72,
-  totalApplicants: 145,
-  rank: 'Top 10%',
-  timeline: [
-    { step: 'Application Submitted', date: 'Jan 15, 2024', completed: true, current: false },
-    { step: 'Under Review', date: 'Jan 18, 2024', completed: true, current: true },
-    { step: 'Initial Interview', date: 'Pending', completed: false, current: false },
-    { step: 'Technical Assessment', date: 'Pending', completed: false, current: false },
-    { step: 'Final Offer', date: 'Pending', completed: false, current: false },
-  ],
-  insights: {
-    strengths: ['React.js Expertise', '5+ years experience matching requirement', 'Strong GitHub contribution graph'],
-    gaps: ['No explicit Next.js certification badge', 'Missing direct experience with WebGL (preferred)']
-  }
-}
-
-const mapStatus = (recruiterStatus: string): 'Applied' | 'Under Review' | 'Interview' | 'Offer' | 'Rejected' => {
-  if (recruiterStatus === 'shortlisted') return 'Under Review';
-  if (recruiterStatus === 'interviewing') return 'Interview';
-  if (recruiterStatus === 'offered') return 'Offer';
-  if (recruiterStatus === 'rejected') return 'Rejected';
-  return 'Applied';
-}
 
 export default function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -46,100 +14,15 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [appDetail, setAppDetail] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [jobCount, setJobCount] = useState(JOBS.length)
-  const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
+  const [appCount, setAppCount] = useState(0)
   const [savedCount, setSavedCount] = useState(0)
 
   useEffect(() => {
-    try {
-      const rawTalentApps = localStorage.getItem('talent_applications')
-      let foundApp = null
-      
-      if (rawTalentApps) {
-        const parsedTalentApps = JSON.parse(rawTalentApps) as any[]
-        const app = parsedTalentApps.find(a => a.id === appId)
-        if (app) {
-          let currentStatus = app.status
-          let timeline = [...app.timeline]
-
-          // Cross-reference recruiter dashboard
-          const recruiterApplicantsKey = `recruiter_job_${app.jobId}_applicants`
-          const rawRecruiterApplicants = localStorage.getItem(recruiterApplicantsKey)
-          if (rawRecruiterApplicants) {
-            const recruiterApplicants = JSON.parse(rawRecruiterApplicants) as any[]
-            const matchingRecruiterApp = recruiterApplicants.find(a => a.id === app.id)
-            if (matchingRecruiterApp) {
-              const mapped = mapStatus(matchingRecruiterApp.screeningStatus)
-              currentStatus = mapped
-              
-              timeline = [
-                { step: 'Application Submitted', date: new Date(app.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), completed: true, current: mapped === 'Applied' },
-                { step: 'Under Review', date: mapped !== 'Applied' ? 'Completed' : 'Pending', completed: mapped !== 'Applied', current: mapped === 'Under Review' },
-                { step: 'Initial Interview', date: (mapped === 'Interview' || mapped === 'Offer') ? 'Scheduled' : 'Pending', completed: mapped === 'Interview' || mapped === 'Offer', current: mapped === 'Interview' },
-                { step: 'Technical Assessment', date: mapped === 'Offer' ? 'Passed' : 'Pending', completed: mapped === 'Offer', current: false },
-                { 
-                  step: mapped === 'Rejected' ? 'Application Rejected' : 'Final Offer', 
-                  date: mapped === 'Offer' ? 'Sent' : mapped === 'Rejected' ? 'Processed' : 'Pending', 
-                  completed: mapped === 'Offer' || mapped === 'Rejected', 
-                  current: mapped === 'Offer' || mapped === 'Rejected' 
-                },
-              ]
-            }
-          }
-
-          foundApp = {
-            id: app.id,
-            jobTitle: app.jobTitle,
-            company: app.company,
-            status: currentStatus,
-            appliedAt: app.appliedAt,
-            matchScore: app.matchScore,
-            averageApplicantScore: app.averageApplicantScore || 70,
-            totalApplicants: app.totalApplicants || 1,
-            rank: app.rank || 'Top 50%',
-            timeline,
-            insights: app.insights || { strengths: [], gaps: [] },
-            customAnswers: app.customAnswers || []
-          }
-        }
-      }
-
-      if (!foundApp) {
-        // Fall back to demo
-        if (appId === '1') foundApp = DEMO_APP_DETAIL
-        else if (appId === '2') {
-          foundApp = {
-            id: '2',
-            jobTitle: 'Machine Learning Engineer',
-            company: 'Vyro',
-            status: 'Interview' as const,
-            appliedAt: '2024-01-10',
-            matchScore: 73,
-            averageApplicantScore: 68,
-            totalApplicants: 98,
-            rank: 'Top 25%',
-            timeline: [
-              { step: 'Application Submitted', date: 'Jan 10, 2024', completed: true, current: false },
-              { step: 'Under Review', date: 'Jan 12, 2024', completed: true, current: false },
-              { step: 'Initial Interview', date: 'Jan 15, 2024', completed: true, current: true },
-              { step: 'Technical Assessment', date: 'Pending', completed: false, current: false },
-              { step: 'Final Offer', date: 'Pending', completed: false, current: false },
-            ],
-            insights: {
-              strengths: ['PyTorch proficiency', 'Experience with large language models', 'Strong mathematical background'],
-              gaps: ['No public MLOps project portfolio', 'Limited experience with cloud deployment pipelines']
-            }
-          }
-        } else {
-          foundApp = DEMO_APP_DETAIL
-        }
-      }
-
-      setAppDetail(foundApp)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
-    }
+    fetch(`/api/talent/applications/${appId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setAppDetail(data))
+      .catch(err => console.error('Failed to load application', err))
+      .finally(() => setLoading(false))
 
     // Load counts for sidebar
     try {
@@ -151,13 +34,10 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
       console.error(e)
     }
 
-    try {
-      const savedApps = localStorage.getItem('talent_applications')
-      const talentApps = savedApps ? JSON.parse(savedApps) : []
-      setAppCount(DEMO_APPLICATIONS.length + talentApps.length)
-    } catch (e) {
-      console.error(e)
-    }
+    fetch('/api/talent/applications')
+      .then(res => res.ok ? res.json() : [])
+      .then((list: any[]) => setAppCount(list.length))
+      .catch(err => console.error('Failed to load applications count', err))
 
     try {
       const savedBookmarked = localStorage.getItem('talent_saved_jobs')

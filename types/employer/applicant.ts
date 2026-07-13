@@ -66,6 +66,7 @@ export interface CandidateProfile {
   customAnswers?: CustomAnswer[];
   rating?: number;
   note?: string;
+  atsScore?: number;
   experience?: CandidateExperience[];
   educationList?: CandidateEducation[];
   projects?: CandidateProject[];

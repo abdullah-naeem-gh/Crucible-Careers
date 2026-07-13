@@ -1,6 +1,9 @@
 "use client";
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
+import { IconCheck } from '@tabler/icons-react'
+import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
 
 interface SavedJob {
   id: string
@@ -23,6 +26,7 @@ export default function SavedTab() {
   const [selectedType, setSelectedType] = useState<string>('All')
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([])
   const [selectedJobId, setSelectedJobId] = useState<string>('')
+  const { appliedJobIds } = useAppliedJobIds()
 
   useEffect(() => {
     const loadJobs = () => {
@@ -173,9 +177,18 @@ export default function SavedTab() {
 
             {/* Actions */}
             <div className="flex gap-2">
-              <button className="flex-1 py-2.5 rounded-xl text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-xs font-semibold hover:opacity-95 transition-opacity cursor-pointer">
-                Apply Now
-              </button>
+              {appliedJobIds.has(selectedJob.id) ? (
+                <span className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                  <IconCheck size={14} /> Applied
+                </span>
+              ) : (
+                <Link
+                  href={`/apply/${selectedJob.id}`}
+                  className="flex-1 py-2.5 rounded-xl text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-xs font-semibold hover:opacity-95 transition-opacity cursor-pointer text-center"
+                >
+                  Apply Now
+                </Link>
+              )}
             </div>
 
             {/* Match Metric */}

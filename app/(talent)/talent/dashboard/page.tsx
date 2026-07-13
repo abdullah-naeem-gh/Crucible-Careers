@@ -5,12 +5,12 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import JobBrowser from '@/components/talent/jobs/JobBrowser'
-import { JOBS } from '@/lib/talent/data/jobs'
+import type { ScrapedJob } from '@/types/talent/job'
 import { TalentProfile } from '@/types/talent/profile'
 import { loadTalentProfile, saveTalentProfile, calculateCompletionPercentage } from '@/lib/talent/services/profile.service'
 
 import CompaniesTab from '@/components/talent/dashboard/CompaniesTab'
-import ApplicationsTab, { DEMO_APPLICATIONS } from '@/components/talent/dashboard/ApplicationsTab'
+import ApplicationsTab from '@/components/talent/dashboard/ApplicationsTab'
 import SavedTab from '@/components/talent/dashboard/SavedTab'
 import ProfileTab from '@/components/talent/dashboard/ProfileTab'
 import ExamsTab from '@/components/talent/dashboard/ExamsTab'
@@ -52,8 +52,8 @@ function TalentDashboardContent() {
   ) ? (requestedTab as TalentTab) : 'profile'
 
   const [activeTab, setActiveTab] = useState<TalentTab>(initialTab)
-  const [jobs, setJobs] = useState<any[]>(JOBS)
-  const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
+  const [jobs, setJobs] = useState<ScrapedJob[]>([])
+  const [appCount, setAppCount] = useState(0)
   const [savedCount, setSavedCount] = useState(0)
   const [profile, setProfile] = useState<TalentProfile | null>(null)
   const [profileHydrated, setProfileHydrated] = useState(false)
@@ -102,40 +102,17 @@ function TalentDashboardContent() {
   }, [requestedTab])
 
   useEffect(() => {
-    // Load recruiter jobs
-    try {
-      const savedRecruiterJobs = localStorage.getItem('recruiter_jobs')
-      const recruiterJobs = savedRecruiterJobs ? JSON.parse(savedRecruiterJobs) : []
-      const activeRecruiterJobs = recruiterJobs.filter((j: any) => j.status === 'Active')
-      
-      const mappedRecruiter = activeRecruiterJobs.map((job: any) => ({
-        _id: job.id,
-        title: job.title,
-        company: job.company,
-        location: job.location,
-        type: job.type ? job.type.toLowerCase() : 'full-time',
-        salary: job.salary || null,
-        url: `/apply/${job.id}`,
-        source: 'Crucible',
-        description: job.description,
-        tags: job.tags || [],
-        posted_at: job.postedAt === 'Just now' ? new Date().toISOString() : job.postedAt || new Date().toISOString(),
-        isRecruiterJob: true
-      }))
-      
-      setJobs([...mappedRecruiter, ...JOBS])
-    } catch (e) {
-      console.error('Failed to load recruiter jobs', e)
-    }
+    // Load real jobs posted by employers, across all companies
+    fetch('/api/talent/jobs')
+      .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+      .then((data: ScrapedJob[]) => setJobs(data))
+      .catch(err => console.error('Failed to load jobs', err))
 
     // Load applications count
-    try {
-      const savedApps = localStorage.getItem('talent_applications')
-      const talentApps = savedApps ? JSON.parse(savedApps) : []
-      setAppCount(DEMO_APPLICATIONS.length + talentApps.length)
-    } catch (e) {
-      console.error('Failed to load talent applications count', e)
-    }
+    fetch('/api/talent/applications')
+      .then(res => res.ok ? res.json() : [])
+      .then((list: any[]) => setAppCount(list.length))
+      .catch(err => console.error('Failed to load talent applications count', err))
 
     // Load profile
     loadTalentProfile().then(loadedProfile => {
@@ -244,6 +221,7 @@ function TalentDashboardContent() {
               profileFirstName={profile?.firstName}
               profileLastName={profile?.lastName}
               profileEmail={profile?.email}
+              profilePhotoUrl={profile?.photoUrl}
               collapsed={isSidebarCollapsed}
               onCollapsedChange={setIsSidebarCollapsed}
             />
