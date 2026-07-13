@@ -25,6 +25,7 @@ import {
   IconSend,
   IconExternalLink,
   IconVideo,
+  IconLayoutKanban,
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
 import type { CandidateProfile, ScreeningStatus } from "@/types/employer/applicant";
@@ -46,6 +47,7 @@ interface JobApplicationsViewProps {
   jobId: string;
   jobs: EmployerJob[];
   onBack: () => void;
+  onOpenKanban?: (jobId: string) => void;
 }
 
 const getSortLabel = (val: string) => {
@@ -105,7 +107,7 @@ const emailTemplates: EmailTemplate[] = [
   },
 ];
 
-export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicationsViewProps) {
+export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban }: JobApplicationsViewProps) {
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -490,6 +492,14 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
               />
               <IconSearch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20" />
             </div>
+            <button
+              type="button"
+              onClick={() => onOpenKanban?.(jobId)}
+              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-orange-500/25 bg-orange-500/10 px-4 text-xs font-semibold text-[#FF914D] transition-all hover:bg-orange-500/15 hover:text-white cursor-pointer"
+            >
+              <IconLayoutKanban size={15} />
+              To Kanban View
+            </button>
             <button
               type="button"
               onClick={() => setShowAutoShortlist(true)}

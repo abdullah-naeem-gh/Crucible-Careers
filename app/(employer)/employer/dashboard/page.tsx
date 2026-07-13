@@ -8,17 +8,17 @@ import JobApplicationsView from "@/components/employer/jobs/JobApplicationsView"
 
 // Import modular tab components
 import OverviewTab, { EmployerJob, Analytics } from "@/components/employer/dashboard/OverviewTab";
+import { ApplicantPipelineStage } from "@/types/employer/applicant";
 import JobsTab from "@/components/employer/dashboard/JobsTab";
+import AllApplicantsKanbanTab from "@/components/employer/dashboard/AllApplicantsKanbanTab";
 import AnalyticsTab from "@/components/employer/dashboard/AnalyticsTab";
 import ProfileTab from "@/components/employer/dashboard/ProfileTab";
 import JobForm from "@/components/employer/dashboard/JobForm";
+import MessagesTab from "@/components/shared/chat/MessagesTab";
 import { getEmployerProfile, saveEmployerProfile } from "@/lib/employer/services/profile.service";
 import { CompanyProfile } from "@/types/employer/profile";
 
-type EmployerTab = "overview" | "jobs" | "analytics" | "profile";
-
-const PROFILE_STORAGE_KEY = "recruiter_profile";
-
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages";
 
 const DEFAULT_PROFILE: CompanyProfile = {
   name: "TechCorp",
@@ -46,9 +46,11 @@ function EmployerDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
+  const requestedJobId = searchParams.get("job");
+  const requestedStage = searchParams.get("stage") as ApplicantPipelineStage | null;
   const onboarded = searchParams.get("onboarded");
   const initialTab: EmployerTab =
-    requestedTab === "jobs" || requestedTab === "analytics" || requestedTab === "profile"
+    requestedTab === "jobs" || requestedTab === "applicants" || requestedTab === "analytics" || requestedTab === "profile" || requestedTab === "messages"
       ? (requestedTab as EmployerTab)
       : "overview";
 
@@ -61,7 +63,24 @@ function EmployerDashboardContent() {
   const [profile, setProfile] = useState<CompanyProfile>(DEFAULT_PROFILE);
   const [viewingJobApplicantsId, setViewingJobApplicantsId] = useState<string | null>(null);
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
+  const [expandedSidebarWidth, setExpandedSidebarWidth] = useState(360);
   const company = profile.name || "Your Company";
+
+  useEffect(() => {
+    const updateSidebarMetrics = () => {
+      const desktop = window.innerWidth >= 1024;
+      const availableWidth = Math.min(window.innerWidth - 32, 1720);
+
+      setIsDesktopLayout(desktop);
+      setExpandedSidebarWidth(Math.min(430, Math.max(280, Math.round(availableWidth * 0.25))));
+    };
+
+    updateSidebarMetrics();
+    window.addEventListener("resize", updateSidebarMetrics);
+    return () => window.removeEventListener("resize", updateSidebarMetrics);
+  }, []);
 
   useEffect(() => {
     const loadJobs = async () => {
@@ -78,7 +97,7 @@ function EmployerDashboardContent() {
         console.error("Failed to load jobs", err);
       }
     };
-    
+
     // Fetch profile from API
     const loadProfile = async () => {
       try {
@@ -95,7 +114,7 @@ function EmployerDashboardContent() {
         setHydrated(true);
       }
     };
-    
+
     loadJobs();
     loadProfile();
 
@@ -153,6 +172,7 @@ function EmployerDashboardContent() {
     };
   }, [jobs]);
 
+
   const changeTab = (tab: EmployerTab) => {
     setActiveTab(tab);
     setViewingJobApplicantsId(null);
@@ -160,6 +180,24 @@ function EmployerDashboardContent() {
       tab === "overview" ? "/employer/dashboard" : `/employer/dashboard?tab=${tab}`,
       { scroll: false },
     );
+  };
+
+  const openApplicantsKanban = (jobId?: string | null, stage?: ApplicantPipelineStage) => {
+    setActiveTab("applicants");
+    setViewingJobApplicantsId(null);
+    if (jobId) setSelectedJobId(jobId);
+    const params = new URLSearchParams({ tab: "applicants" });
+    if (jobId) params.set("job", jobId);
+    if (stage) params.set("stage", stage);
+    router.replace(
+      `/employer/dashboard?${params.toString()}`,
+      { scroll: false },
+    );
+  };
+
+  const openJob = (jobId?: string) => {
+    if (jobId) setSelectedJobId(jobId);
+    changeTab("jobs");
   };
 
   const saveJob = async (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "matchScore">) => {
@@ -173,16 +211,16 @@ function EmployerDashboardContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(job),
       });
-      
+
       if (res.ok) {
         const savedJob = await res.json();
-        
+
         if (isEditing) {
           setJobs((current) => current.map(j => j.id === savedJob.id ? savedJob : j));
         } else {
           setJobs((current) => [savedJob, ...current]);
         }
-        
+
         setSelectedJobId(savedJob.id);
         setIsFormOpen(false);
         setEditingJob(null);
@@ -197,7 +235,7 @@ function EmployerDashboardContent() {
 
   const updateJob = async (id: string, updates: Partial<EmployerJob>) => {
     setJobs((current) => current.map((job) => (job.id === id ? { ...job, ...updates } : job)));
-    
+
     try {
       const res = await fetch(`/api/employer/jobs/${id}`, {
         method: "PATCH",
@@ -215,7 +253,7 @@ function EmployerDashboardContent() {
   const removeJob = async (id: string) => {
     setJobs((current) => current.filter((job) => job.id !== id));
     if (selectedJobId === id) setSelectedJobId(null);
-    
+
     try {
       const res = await fetch(`/api/employer/jobs/${id}`, {
         method: "DELETE",
@@ -256,8 +294,13 @@ function EmployerDashboardContent() {
       </div>
 
       <section className="relative z-10 min-h-screen px-2 py-5 sm:px-4 lg:px-4 lg:h-screen lg:py-0">
-        <div className="mx-auto grid min-h-full max-w-[1720px] grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-7">
-          <div className="lg:col-span-3 lg:self-center">
+        <div className="mx-auto flex min-h-full max-w-[1720px] flex-col gap-5 lg:flex-row lg:gap-7">
+          <motion.div
+            initial={false}
+            animate={{ width: isDesktopLayout ? (isSidebarCollapsed ? 68 : expandedSidebarWidth) : "100%" }}
+            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+            className="min-w-0 shrink-0 overflow-visible lg:self-center"
+          >
             <EmployerSidebar
               activeTab={activeTab}
               company={company}
@@ -266,22 +309,25 @@ function EmployerDashboardContent() {
               applicationCount={analytics.totalApplications}
               onTabChange={changeTab}
               onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
+              collapsed={isSidebarCollapsed}
+              onCollapsedChange={setIsSidebarCollapsed}
             />
-          </div>
+          </motion.div>
 
-          <div className="min-h-[70vh] lg:col-span-9 lg:h-[92vh] lg:self-center">
+          <motion.div
+            initial={false}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="min-h-[70vh] min-w-0 flex-1 lg:h-[92vh] lg:self-center"
+          >
             <AnimatePresence initial={false} mode="wait">
               {activeTab === "overview" && (
                 <OverviewTab
                   key="overview"
                   jobs={jobs}
-                  analytics={analytics}
-                  onOpenJobs={() => changeTab("jobs")}
-                  onViewJobApplicants={(jobId) => {
-                    setViewingJobApplicantsId(jobId);
-                    changeTab("jobs");
-                  }}
-                  onTabChange={changeTab}
+                  company={company}
+                  onOpenJob={openJob}
+                  onOpenApplicants={openApplicantsKanban}
                   onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
                 />
               )}
@@ -292,6 +338,7 @@ function EmployerDashboardContent() {
                     jobId={viewingJobApplicantsId}
                     jobs={jobs}
                     onBack={() => setViewingJobApplicantsId(null)}
+                    onOpenKanban={(jobId) => openApplicantsKanban(jobId)}
                   />
                 ) : (
                   <JobsTab
@@ -307,14 +354,35 @@ function EmployerDashboardContent() {
                   />
                 )
               )}
+              {activeTab === "applicants" && (
+                <AllApplicantsKanbanTab
+                  key="applicants"
+                  jobs={jobs}
+                  initialJobId={requestedJobId}
+                  initialStage={requestedStage}
+                  onJobChange={(jobId) => {
+                    const stageParam = requestedStage ? `&stage=${requestedStage}` : "";
+                    router.replace(`/employer/dashboard?tab=applicants&job=${jobId}${stageParam}`, { scroll: false });
+                  }}
+                  onOpenMessages={() => changeTab("messages")}
+                />
+              )}
               {activeTab === "analytics" && (
                 <AnalyticsTab key="analytics" jobs={jobs} analytics={analytics} />
               )}
               {activeTab === "profile" && (
                 <ProfileTab key="profile" profile={profile} onChange={handleProfileChange} />
               )}
+              {activeTab === "messages" && (
+                <MessagesTab
+                  key="messages"
+                  role="employer"
+                  myDisplayName={company}
+                  isDark={true}
+                />
+              )}
             </AnimatePresence>
-          </div>
+          </motion.div>
         </div>
       </section>
 
