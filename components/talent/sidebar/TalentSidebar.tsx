@@ -35,6 +35,7 @@ interface TalentSidebarProps {
   profileFirstName?: string
   profileLastName?: string
   profileEmail?: string
+  profilePhotoUrl?: string | null
 }
 
 export default function TalentSidebar({
@@ -47,7 +48,8 @@ export default function TalentSidebar({
   profileCompletion = 0,
   profileFirstName,
   profileLastName,
-  profileEmail
+  profileEmail,
+  profilePhotoUrl
 }: TalentSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -130,9 +132,17 @@ export default function TalentSidebar({
         Back
       </Link>
       <div className="mb-7 flex items-center gap-3">
-        <div className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]">
-          {profileFirstName || profileLastName ? `${profileFirstName?.charAt(0) || ''}${profileLastName?.charAt(0) || ''}`.toUpperCase() : 'AJ'}
-        </div>
+        {profilePhotoUrl ? (
+          <img
+            src={profilePhotoUrl}
+            alt="Profile photo"
+            className="h-11 w-11 shrink-0 rounded-full object-cover shadow-[0_8px_24px_rgba(255,107,0,0.24)]"
+          />
+        ) : (
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]">
+            {profileFirstName || profileLastName ? `${profileFirstName?.charAt(0) || ''}${profileLastName?.charAt(0) || ''}`.toUpperCase() : 'AJ'}
+          </div>
+        )}
         <div className="min-w-0">
           <div className="font-semibold text-gray-900 dark:text-white truncate pr-2">{profileFirstName || profileLastName ? `${profileFirstName || ''} ${profileLastName || ''}`.trim() : 'Alex Johnson'}</div>
           <div className="text-xs text-gray-500 dark:text-white/40 truncate pr-2">{profileEmail || 'Talent account'}</div>

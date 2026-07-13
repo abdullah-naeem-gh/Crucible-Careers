@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { IconUsers, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
+import { IconUsers, IconChevronDown, IconChevronUp, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { EmployerJob } from "@/types/employer/job";
+
+const JOBS_PER_PAGE = 10;
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 const insetSurface = "rounded-2xl border border-white/[0.065] bg-[#141414] shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]";
@@ -71,6 +73,47 @@ export default function JobsTab({
 }: JobsTabProps) {
   const [isFormPreviewOpen, setIsFormPreviewOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageJobs, setPageJobs] = useState<EmployerJob[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoadingPage, setIsLoadingPage] = useState(true);
+
+  // Re-fetch this page from the backend whenever the page changes or the
+  // underlying job count changes (job created/deleted elsewhere in the dashboard).
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPage = async () => {
+      setIsLoadingPage(true);
+      try {
+        const res = await fetch(`/api/employer/jobs?page=${currentPage}&limit=${JOBS_PER_PAGE}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (currentPage > data.totalPages && data.totalPages > 0) {
+          setCurrentPage(data.totalPages);
+          return;
+        }
+
+        setPageJobs(data.jobs);
+        setTotalPages(data.totalPages);
+      } catch (err) {
+        console.error("Failed to load jobs page", err);
+      } finally {
+        if (!cancelled) setIsLoadingPage(false);
+      }
+    };
+
+    loadPage();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPage, jobs.length]);
+
+  // Prefer the parent's copy of each job so optimistic updates (pause/activate)
+  // show up immediately instead of waiting on the next page re-fetch.
+  const paginatedJobs = pageJobs.map((job) => jobs.find((j) => j.id === job.id) ?? job);
 
   return (
     <ViewMotion className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
@@ -93,7 +136,10 @@ export default function JobsTab({
         </div>
 
         <div className="min-h-0 flex-1 space-y-3 overflow-auto custom-scrollbar p-5">
-          {jobs.map((job) => (
+          {isLoadingPage && pageJobs.length === 0 ? (
+            <div className="grid h-full place-items-center text-sm text-white/30">Loading jobs...</div>
+          ) : (
+          paginatedJobs.map((job) => (
             <motion.div
               key={job.id}
               role="button"
@@ -142,8 +188,33 @@ export default function JobsTab({
                 </button>
               </div>
             </motion.div>
-          ))}
+          ))
+          )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-white/[0.07] px-5 py-3">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-white/55 cursor-pointer hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <IconChevronLeft size={16} />
+            </button>
+            <span className="text-xs text-white/35">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-white/55 cursor-pointer hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <IconChevronRight size={16} />
+            </button>
+          </div>
+        )}
       </section>
 
       <section className={`${surface} min-h-[38rem] overflow-auto custom-scrollbar p-6 lg:col-span-4 lg:min-h-0`}>

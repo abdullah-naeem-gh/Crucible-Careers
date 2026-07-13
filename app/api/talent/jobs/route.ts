@@ -1,5 +1,47 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
+import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
+import type { ScrapedJob } from '@/types/talent/job'
 
 export async function GET() {
-  return NextResponse.json({ message: 'Not implemented' }, { status: 501 });
+  const supabase = await createSupabaseServerClient()
+
+  const { data: jobs, error } = await supabase
+    .from('jobs')
+    .select('id, employer_id, title, location, type, salary_range, tags, description, created_at')
+    .eq('status', 'Active')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching talent jobs:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  const employerIds = Array.from(new Set(jobs.map((job) => job.employer_id)))
+
+  const { data: companies, error: companiesError } = await supabase
+    .from('employer_company_names')
+    .select('id, company')
+    .in('id', employerIds)
+
+  if (companiesError) {
+    console.error('Error fetching employer company names:', companiesError)
+  }
+
+  const companyById = new Map((companies ?? []).map((c) => [c.id, c.company]))
+
+  const result: ScrapedJob[] = jobs.map((job) => ({
+    _id: job.id,
+    title: job.title,
+    company: companyById.get(job.employer_id) || 'Unknown Company',
+    location: job.location,
+    type: job.type ? (job.type.toLowerCase() as ScrapedJob['type']) : null,
+    salary: job.salary_range,
+    url: `/apply/${job.id}`,
+    source: 'Crucible',
+    description: job.description,
+    tags: job.tags || [],
+    posted_at: job.created_at,
+  }))
+
+  return NextResponse.json(result)
 }

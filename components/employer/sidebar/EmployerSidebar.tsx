@@ -16,6 +16,7 @@ type EmployerTab = "overview" | "jobs" | "analytics" | "profile";
 interface EmployerSidebarProps {
   activeTab: EmployerTab;
   company: string;
+  logoUrl?: string | null;
   jobCount: number;
   applicationCount: number;
   onTabChange: (tab: EmployerTab) => void;
@@ -39,6 +40,7 @@ const TAB_ICONS: Record<EmployerTab, React.ComponentType<any>> = {
 export default function EmployerSidebar({
   activeTab,
   company,
+  logoUrl,
   jobCount,
   applicationCount,
   onTabChange,
@@ -63,9 +65,17 @@ export default function EmployerSidebar({
       </Link>
 
       <div className="mb-7 flex items-center gap-3">
-        <div className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]">
-          {company.charAt(0)}
-        </div>
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={`${company} logo`}
+            className="h-11 w-11 shrink-0 rounded-full object-cover shadow-[0_8px_24px_rgba(255,107,0,0.24)]"
+          />
+        ) : (
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]">
+            {company.charAt(0)}
+          </div>
+        )}
         <div>
           <div className="font-semibold text-white">{company}</div>
           <div className="text-xs text-white/40">Employer account</div>

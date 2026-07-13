@@ -43,6 +43,11 @@ export async function PATCH(
 
     if (error) throw error;
 
+    const { count: applicationCount } = await supabase
+      .from('applications')
+      .select('*', { count: 'exact', head: true })
+      .eq('job_id', id);
+
     const updatedJob: EmployerJob = {
       id: data.id,
       title: data.title,
@@ -56,7 +61,7 @@ export async function PATCH(
       responsibilities: data.responsibilities || [],
       requirements: data.requirements || [],
       postedAt: new Date(data.created_at).toLocaleDateString(),
-      applications: 0, // This should probably be fetched or kept as is by the frontend
+      applications: applicationCount ?? 0,
       views: 0,
       matchScore: 0,
       formConfig: data.form_config,

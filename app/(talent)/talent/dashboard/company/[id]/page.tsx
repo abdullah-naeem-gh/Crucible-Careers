@@ -5,169 +5,23 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import { JOBS } from '@/lib/talent/data/jobs'
-import { DEMO_APPLICATIONS } from '@/components/talent/dashboard/ApplicationsTab'
-
-const DEMO_COMPANIES_DETAILS: Record<string, { id: string; name: string; about: string; culture: string; location: string; website: string; logo: string; color: string; openRoles: { id: string; title: string; type: string; location: string; salary: string }[] }> = {
-  'salik-labs': {
-    id: 'salik-labs',
-    name: 'Salik Labs',
-    about: 'Salik Labs is a premier AI research and product company focused on building the next generation of intelligent tools for developers and creators. We are a fast-paced, product-driven team that values deep work and high-quality engineering.',
-    culture: 'We believe in shipping fast, staying lean, and working on hard problems. Our culture is built around autonomy, continuous learning, and a strong bias for action.',
-    location: 'Islamabad, Pakistan',
-    website: 'https://saliklabs.com',
-    logo: 'S',
-    color: 'from-[#FF6B00] to-[#FF914D]',
-    openRoles: [
-      { id: '1', title: 'Senior Frontend Engineer', type: 'Full-time', location: 'Remote', salary: '$120k - $150k' },
-      { id: '2', title: 'Machine Learning Engineer', type: 'Full-time', location: 'Islamabad', salary: '$130k - $160k' },
-      { id: '3', title: 'Product Designer', type: 'Contract', location: 'Remote', salary: '$80k - $100k' }
-    ]
-  },
-  'vyro': {
-    id: 'vyro',
-    name: 'Vyro',
-    about: 'Vyro is an AI-first company building creative mobile applications and tools. We reach millions of users globally with our state-of-the-art generative AI visual technologies.',
-    culture: 'We value creativity, technical excellence, and user-centricity. We work in small, cross-functional teams to experiment, ship features, and scale fast.',
-    location: 'Remote',
-    website: 'https://vyro.ai',
-    logo: 'V',
-    color: 'from-blue-500 to-blue-400',
-    openRoles: [
-      { id: '4', title: 'Generative AI Engineer', type: 'Full-time', location: 'Remote', salary: '$140k - $180k' },
-      { id: '5', title: 'React Native Developer', type: 'Full-time', location: 'Remote', salary: '$90k - $120k' }
-    ]
-  },
-  'systems-limited': {
-    id: 'systems-limited',
-    name: 'Systems Limited',
-    about: 'Systems Limited is a leading global technology company, providing IT consulting and services across multiple domains for over four decades.',
-    culture: 'We value professional growth, diversity, and delivering excellence at scale. We provide deep learning resources and mentorship.',
-    location: 'Lahore, Pakistan',
-    website: 'https://systemsltd.com',
-    logo: 'SL',
-    color: 'from-purple-600 to-purple-500',
-    openRoles: [
-      { id: '6', title: 'Senior Backend Engineer', type: 'Full-time', location: 'Lahore', salary: 'PKR 250k - 350k' }
-    ]
-  },
-  'devsinc': {
-    id: 'devsinc',
-    name: 'Devsinc',
-    about: 'Devsinc is a rapidly growing software development agency partnering with startups and enterprises globally to deliver custom technical solutions.',
-    culture: 'We believe in collaborative growth, high energy, and providing young talent with accelerated learning opportunities.',
-    location: 'Lahore, Pakistan',
-    website: 'https://devsinc.com',
-    logo: 'D',
-    color: 'from-green-500 to-green-400',
-    openRoles: [
-      { id: '7', title: 'Fullstack Rails Developer', type: 'Full-time', location: 'Lahore', salary: 'PKR 150k - 250k' }
-    ]
-  },
-  'arbisoft': {
-    id: 'arbisoft',
-    name: 'Arbisoft',
-    about: 'Arbisoft is a software development and consulting services firm known for its engineering quality, transparency, and long-term client relationships.',
-    culture: 'We have a strong emphasis on clean code, test-driven development, work-life balance, and continuous education.',
-    location: 'Lahore, Pakistan',
-    website: 'https://arbisoft.com',
-    logo: 'A',
-    color: 'from-red-500 to-red-400',
-    openRoles: [
-      { id: '8', title: 'Python Web Engineer', type: 'Full-time', location: 'Lahore', salary: 'PKR 180k - 280k' }
-    ]
-  },
-  '10pearls': {
-    id: '10pearls',
-    name: '10Pearls',
-    about: '10Pearls is an award-winning end-to-end digital technology agency helping companies design, build, and secure digital products.',
-    culture: 'We value social responsibility, security-first mindsets, and a friendly learning-rich work environment.',
-    location: 'Karachi, Pakistan',
-    website: 'https://10pearls.com',
-    logo: '10',
-    color: 'from-teal-500 to-teal-400',
-    openRoles: [
-      { id: '9', title: 'Lead QA Engineer', type: 'Full-time', location: 'Karachi', salary: 'PKR 220k - 320k' }
-    ]
-  }
-}
 
 export default function CompanyProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
-  const companyId = resolvedParams?.id || 'salik-labs'
+  const companyId = resolvedParams?.id || ''
 
   const [company, setCompany] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [jobCount, setJobCount] = useState(JOBS.length)
-  const [appCount, setAppCount] = useState(DEMO_APPLICATIONS.length)
+  const [appCount, setAppCount] = useState(0)
   const [savedCount, setSavedCount] = useState(0)
 
   useEffect(() => {
-    try {
-      const savedProfile = localStorage.getItem('recruiter_profile')
-      let matchedRecruiter = false
-      
-      if (savedProfile) {
-        const profile = JSON.parse(savedProfile)
-        const recruiterCompanyId = profile.name.toLowerCase().replace(/\s+/g, '-')
-        
-        if (companyId === recruiterCompanyId || companyId === 'recruiter-company') {
-          matchedRecruiter = true
-          
-          const savedJobs = localStorage.getItem('recruiter_jobs')
-          const recruiterJobs = savedJobs ? JSON.parse(savedJobs) : []
-          const activeJobs = recruiterJobs.filter((j: any) => j.status === 'Active')
-          
-          const openRoles = activeJobs.map((j: any) => ({
-            id: j.id,
-            title: j.title,
-            type: j.type,
-            location: j.location,
-            salary: j.salary || '—'
-          }))
-
-          setCompany({
-            id: recruiterCompanyId,
-            name: profile.name,
-            tagline: profile.tagline,
-            industry: profile.industry,
-            companySize: profile.companySize,
-            founded: profile.founded,
-            website: profile.website,
-            location: profile.headquarters || 'Remote',
-            about: profile.overview || '',
-            culture: profile.culture || '',
-            benefits: profile.benefits || '',
-            techStack: profile.techStack || '',
-            linkedin: profile.linkedin,
-            twitter: profile.twitter,
-            logoDataUrl: profile.logoDataUrl,
-            logo: profile.name.charAt(0).toUpperCase(),
-            color: 'from-[#FF6B00] to-[#FF914D]',
-            openRoles
-          })
-        }
-      }
-      
-      if (!matchedRecruiter) {
-        const demoDetails = DEMO_COMPANIES_DETAILS[companyId] || DEMO_COMPANIES_DETAILS['salik-labs']
-        setCompany({
-          ...demoDetails,
-          tagline: 'Building the future of technology',
-          industry: 'Software & Technology',
-          companySize: '51–200 employees',
-          founded: '2019',
-          benefits: 'Health insurance, flexible hours, remote options',
-          techStack: 'React, TypeScript, Node.js',
-          linkedin: '',
-          twitter: '',
-          logoDataUrl: null
-        })
-      }
-    } catch (e) {
-      console.error('Failed to load company details', e)
-    } finally {
-      setLoading(false)
-    }
+    fetch(`/api/talent/companies/${companyId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setCompany(data))
+      .catch(err => console.error('Failed to load company details', err))
+      .finally(() => setLoading(false))
 
     // Load counts for sidebar
     try {
@@ -179,13 +33,10 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
       console.error(e)
     }
 
-    try {
-      const savedApps = localStorage.getItem('talent_applications')
-      const talentApps = savedApps ? JSON.parse(savedApps) : []
-      setAppCount(DEMO_APPLICATIONS.length + talentApps.length)
-    } catch (e) {
-      console.error(e)
-    }
+    fetch('/api/talent/applications')
+      .then(res => res.ok ? res.json() : [])
+      .then((list: any[]) => setAppCount(list.length))
+      .catch(err => console.error('Failed to load talent applications count', err))
 
     try {
       const savedBookmarked = localStorage.getItem('talent_saved_jobs')

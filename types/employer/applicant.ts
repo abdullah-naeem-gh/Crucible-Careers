@@ -28,4 +28,30 @@ export interface CandidateProfile {
   customAnswers?: CustomAnswer[];
   rating?: number;
   note?: string;
+  atsScore?: number;
+  experience?: Array<{
+    id: string;
+    company: string;
+    role: string;
+    startDate: string;
+    endDate: string;
+    current?: boolean;
+    description?: string;
+  }>;
+  educationList?: Array<{
+    id: string;
+    school: string;
+    degree: string;
+    field: string;
+    startYear?: string;
+    endYear?: string;
+    description?: string;
+  }>;
+  projects?: Array<{
+    id: string;
+    title: string;
+    link?: string;
+    videoUrl?: string;
+    description?: string;
+  }>;
 }

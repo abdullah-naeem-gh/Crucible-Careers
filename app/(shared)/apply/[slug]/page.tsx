@@ -5,106 +5,104 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  IconArrowLeft,
-  IconBriefcase,
-  IconCalendar,
-  IconChevronRight,
   IconFileText,
-  IconMapPin,
-  IconPlus,
-  IconExternalLink,
-  IconVideo,
 } from '@tabler/icons-react'
 import { FormConfig, FormField, EmployerJob } from '@/types/employer/job'
 import { FORM_TEMPLATES } from '@/lib/shared/formTemplates'
+import { loadTalentProfile } from '@/lib/talent/services/profile.service'
+import { computeExperienceYears } from '@/lib/shared/experienceYears'
+import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
+import type { TalentProfile } from '@/types/talent/profile'
 
-const STANDARD_SEMANTIC_TYPES = [
-  'name', 'email', 'phone', 'location', 'experience_years', 'skills', 
-  'linkedin', 'github', 'portfolio', 'cover_letter', 'file'
-]
+function buildInitialValue(field: FormField, profile: TalentProfile | null): any {
+  if (field.type === 'multi-select') {
+    if (field.semanticType === 'skills' && profile?.skills?.length && field.options?.length) {
+      return profile.skills.filter((s) => field.options!.some((o) => o.toLowerCase() === s.toLowerCase()))
+    }
+    return []
+  }
+  if (field.type === 'checkbox') return false
+
+  switch (field.semanticType) {
+    case 'name':
+      return profile ? `${profile.firstName} ${profile.lastName}`.trim() : ''
+    case 'email':
+      return profile?.email || ''
+    case 'location':
+      return profile?.location || ''
+    case 'experience_years':
+      return profile?.experience?.length ? computeExperienceYears(profile.experience) : ''
+    case 'skills':
+      if (profile?.skills?.length) {
+        if (field.type === 'select' && field.options?.length) {
+          return field.options.find((o) => profile.skills.some((s) => s.toLowerCase() === o.toLowerCase())) || ''
+        }
+        return profile.skills.join(', ')
+      }
+      return ''
+    case 'linkedin':
+      return profile?.linkedin || ''
+    case 'github':
+      return profile?.github || ''
+    case 'portfolio':
+      return profile?.portfolio || ''
+    case 'cover_letter':
+      return profile?.overview || ''
+    default:
+      return ''
+  }
+}
 
 export default function ApplyFormPage() {
   const params = useParams()
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug
 
   const [job, setJob] = useState<EmployerJob | null>(null)
+  const [jobNotFound, setJobNotFound] = useState(false)
+  const [profile, setProfile] = useState<TalentProfile | null>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
   const [fieldsData, setFieldsData] = useState<Record<string, any>>({})
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-  // Crucible Careers Profile State
-  const [profiles, setProfiles] = useState<any[]>([])
-
-  // Load Crucible Profile
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('talent_profiles')
-      const parsed = saved ? JSON.parse(saved) : []
-      setProfiles(Array.isArray(parsed) ? parsed : [])
-    } catch (e) {
-      console.error('Failed to load profiles', e)
-    }
-  }, [])
-
-  const hasProfile = profiles.length > 0
-  const activeProfile = profiles[0] || null
-
-  // Load Job details from localStorage
+  // Load the real job (and its form_config) from the API
   useEffect(() => {
     if (!slug) return
-    try {
-      const raw = localStorage.getItem('recruiter_jobs')
-      if (raw) {
-        const parsed = JSON.parse(raw) as EmployerJob[]
-        const found = parsed.find(j => j.id === slug)
-        if (found) {
-          setJob(found)
-          // Initialize form fields with empty values
-          const initialData: Record<string, any> = {}
-          const config = found.formConfig || FORM_TEMPLATES.find(t => t.id === 'comprehensive') || FORM_TEMPLATES[0]
-          config.fields.forEach(f => {
-            initialData[f.id] = f.type === 'multi-select' ? [] : f.type === 'checkbox' ? false : ''
-          })
-          setFieldsData(initialData)
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load job details', e)
-    }
+    fetch(`/api/talent/jobs/${slug}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data: EmployerJob) => setJob(data))
+      .catch(() => setJobNotFound(true))
   }, [slug])
 
-  // Derive form config
+  // Load the real talent profile
+  useEffect(() => {
+    loadTalentProfile().then((p) => {
+      setProfile(p)
+      setProfileLoading(false)
+    })
+  }, [])
+
   const formConfig = useMemo<FormConfig>(() => {
     if (job?.formConfig) return job.formConfig
-    // Fallback template
-    return FORM_TEMPLATES.find(t => t.id === 'comprehensive') || FORM_TEMPLATES[0]
+    return FORM_TEMPLATES.find((t) => t.id === 'comprehensive') || FORM_TEMPLATES[0]
   }, [job])
 
-  // Extract job details for display
-  const jobInfo = useMemo(() => {
-    if (job) {
-      return {
-        title: job.title,
-        company: job.company,
-        location: job.location,
-        type: job.type,
-        salary: job.salary
-      }
-    }
-    // Fallback parsing from slug
-    if (!slug) return { title: 'Apply to this role', company: 'Hiring Company', location: '—', type: 'Full-time', salary: undefined }
-    const parts = slug.replace(/[-_]/g, ' ').split(' ')
-    const title = parts
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ')
-    return { title, company: 'Hiring Company', location: 'Remote', type: 'Full-time', salary: undefined }
-  }, [job, slug])
+  // Prefill form fields once the job and profile are both resolved
+  useEffect(() => {
+    if (!job || profileLoading) return
+    const initialData: Record<string, any> = {}
+    formConfig.fields.forEach((field) => {
+      initialData[field.id] = buildInitialValue(field, profile)
+    })
+    setFieldsData(initialData)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job, profileLoading])
 
   const handleChange = (fieldId: string, value: any) => {
     setFieldsData(prev => ({ ...prev, [fieldId]: value }))
-    // Clear validation error on change
     if (validationErrors[fieldId]) {
       setValidationErrors(prev => {
         const next = { ...prev }
@@ -125,30 +123,32 @@ export default function ApplyFormPage() {
     let isValid = true
 
     formConfig.fields.forEach(field => {
-      // If they have a profile, we ignore standard fields for validation
-      if (STANDARD_SEMANTIC_TYPES.includes(field.semanticType || '')) {
+      if (!field.required) return
+
+      if (field.type === 'file') {
+        if (!resumeFile && !profile?.resumeUrl) {
+          errors[field.id] = 'Resume is required.'
+          isValid = false
+        }
         return
       }
 
       const val = fieldsData[field.id]
 
-      // Check required
-      if (field.required) {
-        if (field.type === 'multi-select') {
-          if (!val || val.length === 0) {
-            errors[field.id] = `${field.label} is required.`
-            isValid = false
-          }
-        } else if (field.type === 'checkbox') {
-          if (!val) {
-            errors[field.id] = `You must agree to the ${field.label}.`
-            isValid = false
-          }
-        } else {
-          if (val === undefined || val === null || String(val).trim() === '') {
-            errors[field.id] = `${field.label} is required.`
-            isValid = false
-          }
+      if (field.type === 'multi-select') {
+        if (!val || val.length === 0) {
+          errors[field.id] = `${field.label} is required.`
+          isValid = false
+        }
+      } else if (field.type === 'checkbox') {
+        if (!val) {
+          errors[field.id] = `You must agree to the ${field.label}.`
+          isValid = false
+        }
+      } else {
+        if (val === undefined || val === null || String(val).trim() === '') {
+          errors[field.id] = `${field.label} is required.`
+          isValid = false
         }
       }
     })
@@ -157,181 +157,85 @@ export default function ApplyFormPage() {
     return isValid
   }
 
-  const autofillFromResume = () => {
-    if (!resumeFile) return
-    const nameGuess = resumeFile.name
-      .replace(/\.(pdf|docx?|txt)$/i, '')
-      .replace(/resume|cv|profile/gi, '')
-      .replace(/[_-]+/g, ' ')
-      .trim()
-
-    const fullName = nameGuess
-    const nameField = formConfig.fields.find(f => f.semanticType === 'name')
-    if (nameField) {
-      handleChange(nameField.id, fullName)
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError(null)
+    if (!job) return
     if (!validateForm()) return
-    if (!hasProfile) return
+    if (!profile) return
 
     setSubmitting(true)
 
-    // Simulate network delay
-    await new Promise(r => setTimeout(r, 1200))
-
     try {
-      const profileToUse = activeProfile
+      let resumeUrl: string | undefined
+      let resumeFilename: string | undefined
 
-      // 2. Gather all dynamic field responses (filtering custom ones)
+      if (resumeFile) {
+        const supabase = createBrowserSupabaseClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error('Not authenticated')
+
+        const ext = (resumeFile.name.includes('.') ? resumeFile.name.split('.').pop() : 'pdf') || 'pdf'
+        const filePath = `${user.id}/application-resume-${crypto.randomUUID()}.${ext}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('talent-assets')
+          .upload(filePath, resumeFile, { cacheControl: '3600', upsert: false })
+        if (uploadError) throw uploadError
+
+        const { data: { publicUrl } } = supabase.storage.from('talent-assets').getPublicUrl(filePath)
+        resumeUrl = publicUrl
+        resumeFilename = resumeFile.name
+      }
+
+      const findField = (semanticType: string) => formConfig.fields.find(f => f.semanticType === semanticType)
+      const valueOf = (field: FormField | undefined) => (field ? fieldsData[field.id] ?? '' : '')
+
+      const coverLetter = valueOf(findField('cover_letter'))
+
+      const skillsValue = valueOf(findField('skills'))
+      const skills = Array.isArray(skillsValue)
+        ? skillsValue
+        : (skillsValue ? String(skillsValue).split(',').map((s: string) => s.trim()).filter(Boolean) : [])
+
+      const standardAnswers = {
+        name: valueOf(findField('name')),
+        email: valueOf(findField('email')),
+        phone: valueOf(findField('phone')),
+        location: valueOf(findField('location')),
+        experienceYears: Number(valueOf(findField('experience_years'))) || 0,
+        skills,
+        linkedin: valueOf(findField('linkedin')),
+        github: valueOf(findField('github')),
+        portfolio: valueOf(findField('portfolio')),
+      }
+
       const customAnswers = formConfig.fields
-        .filter(field => !STANDARD_SEMANTIC_TYPES.includes(field.semanticType || ''))
-        .map(field => {
-          let value = fieldsData[field.id]
-          return {
-            fieldId: field.id,
-            label: field.label,
-            value,
-            semanticType: field.semanticType || ''
-          }
-        })
+        .filter(field => field.semanticType === 'custom')
+        .map(field => ({
+          fieldId: field.id,
+          label: field.label,
+          value: fieldsData[field.id],
+          semanticType: field.semanticType || 'custom',
+        }))
 
-      // 3. Extract standard candidate fields from Crucible Profile
-      let name = profileToUse ? profileToUse.name : 'Applicant'
-      let email = profileToUse ? profileToUse.email : 'applicant@example.com'
-      let phone = '—'
-      let location = profileToUse ? profileToUse.location : 'Remote'
-      let experienceYears = 0
-      let skills: string[] = profileToUse ? (profileToUse.skills || []) : []
-      let linkedin = profileToUse ? profileToUse.linkedin : ''
-      let github = profileToUse ? profileToUse.github : ''
-      let portfolio = profileToUse ? profileToUse.portfolio : ''
-      let coverLetter = profileToUse ? profileToUse.overview : ''
+      const res = await fetch('/api/talent/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: job.id, resumeUrl, resumeFilename, coverLetter, standardAnswers, customAnswers }),
+      })
 
-      if (profileToUse && profileToUse.experience && profileToUse.experience.length > 0) {
-        experienceYears = profileToUse.experience.reduce((sum: number, exp: any) => {
-          const start = parseInt(exp.startDate) || 0
-          const end = exp.current ? new Date().getFullYear() : (parseInt(exp.endDate) || 0)
-          if (start && end && end >= start) {
-            return sum + (end - start)
-          }
-          return sum + 1
-        }, 0)
-        if (experienceYears === 0) experienceYears = 1
+      if (res.status === 201) {
+        setSubmitted(true)
+      } else if (res.status === 409) {
+        const data = await res.json().catch(() => ({}))
+        setSubmitError(data.error || "You've already applied to this job.")
+      } else {
+        setSubmitError('Something went wrong submitting your application. Please try again.')
       }
-      
-      const educationStr = profileToUse && profileToUse.education && profileToUse.education.length > 0
-        ? `${profileToUse.education[0].degree} in ${profileToUse.education[0].field} from ${profileToUse.education[0].school}`
-        : 'Bachelor in Computer Science'
-
-      // 4. Dynamic match score calculation based on tags & template weights
-      let matchScore = 70 // Baseline
-      const jobTags = job?.tags || []
-      
-      // Skills evaluation
-      if (jobTags.length > 0 && skills.length > 0) {
-        const normalizedTags = jobTags.map(t => t.toLowerCase())
-        const matched = skills.filter(s => normalizedTags.includes(s.toLowerCase())).length
-        const skillsMatchPct = Math.round((matched / jobTags.length) * 100)
-        matchScore = Math.round((matchScore + skillsMatchPct) / 2)
-      }
-
-      // Cap score bounds
-      matchScore = Math.max(10, Math.min(100, matchScore))
-
-      // 5. Construct Candidate Profile object with full credentials lists
-      const newCandidate = {
-        id: `applicant_${Date.now()}`,
-        name,
-        title: job?.title || 'Applicant',
-        location,
-        appliedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        email,
-        phone,
-        bio: coverLetter || `Productive software enthusiast with ${experienceYears} years of experience.`,
-        experienceYears,
-        skills: skills.length > 0 ? skills : (job?.tags ? job.tags.slice(0, 3) : ['Development']),
-        education: educationStr,
-        linkedin: linkedin || undefined,
-        github: github || undefined,
-        portfolio: portfolio || undefined,
-        screeningStatus: 'unscreened',
-        customAnswers,
-        // Detailed credentials attached
-        experience: profileToUse ? (profileToUse.experience || []) : [],
-        educationList: profileToUse ? (profileToUse.education || []) : [],
-        projects: profileToUse ? (profileToUse.projects || []) : []
-      }
-
-      // 6. Prepend applicant details in localStorage
-      const storageKey = `recruiter_job_${slug}_applicants`
-      const rawApplicants = localStorage.getItem(storageKey)
-      let currentApplicants = []
-      if (rawApplicants) {
-        currentApplicants = JSON.parse(rawApplicants)
-      }
-      const updatedApplicants = [newCandidate, ...currentApplicants]
-      localStorage.setItem(storageKey, JSON.stringify(updatedApplicants))
-
-      // 7. Save application details to talent side
-      const talentApp = {
-        id: newCandidate.id,
-        jobId: slug,
-        jobTitle: jobInfo.title,
-        company: jobInfo.company,
-        appliedAt: new Date().toISOString().split('T')[0],
-        status: 'Applied',
-        matchScore,
-        lastUpdated: 'Just now',
-        averageApplicantScore: 70,
-        totalApplicants: updatedApplicants.length,
-        rank: matchScore >= 85 ? 'Top 10%' : matchScore >= 70 ? 'Top 25%' : 'Top 50%',
-        timeline: [
-          { step: 'Application Submitted', date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), completed: true, current: true },
-          { step: 'Under Review', date: 'Pending', completed: false, current: false },
-          { step: 'Initial Interview', date: 'Pending', completed: false, current: false },
-          { step: 'Technical Assessment', date: 'Pending', completed: false, current: false },
-          { step: 'Final Offer', date: 'Pending', completed: false, current: false },
-        ],
-        insights: {
-          strengths: skills.length > 0 ? skills.slice(0, 3).map(s => `${s} matching requirement`) : ['Applied with profile credentials'],
-          gaps: ['No direct certifications uploaded']
-        },
-        customAnswers
-      }
-
-      try {
-        const rawTalentApps = localStorage.getItem('talent_applications')
-        let talentApps = []
-        if (rawTalentApps) {
-          talentApps = JSON.parse(rawTalentApps)
-        }
-        localStorage.setItem('talent_applications', JSON.stringify([talentApp, ...talentApps]))
-      } catch (e) {
-        console.error('Failed to save to talent applications', e)
-      }
-
-      // 8. Update the job's application count in `recruiter_jobs`
-      const rawJobs = localStorage.getItem('recruiter_jobs')
-      if (rawJobs) {
-        const parsedJobs = JSON.parse(rawJobs) as EmployerJob[]
-        const updatedJobs = parsedJobs.map(j => {
-          if (j.id === slug) {
-            return {
-              ...j,
-              applications: updatedApplicants.length
-            }
-          }
-          return j
-        })
-        localStorage.setItem('recruiter_jobs', JSON.stringify(updatedJobs))
-      }
-
-      setSubmitted(true)
-    } catch (e) {
-      console.error('Failed to submit application', e)
+    } catch (err) {
+      console.error('Failed to submit application', err)
+      setSubmitError('Something went wrong submitting your application. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -441,9 +345,17 @@ export default function ApplyFormPage() {
       case 'file':
         return (
           <div className="mt-1.5 rounded-xl border-2 border-dashed border-gray-300 p-4 bg-gray-50/40">
+            {profile?.resumeUrl && !resumeFile && (
+              <div className="text-xs mb-3">
+                <p className="text-gray-700 font-medium">Using resume on file</p>
+                <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:text-orange-600 underline">
+                  {profile.resumeFilename || 'View resume'} ↗
+                </a>
+              </div>
+            )}
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs text-gray-700">Upload your PDF or Word document</p>
+                <p className="text-xs text-gray-700">{profile?.resumeUrl ? 'Replace for this application' : 'Upload your PDF or Word document'}</p>
                 <p className="text-[10px] text-gray-400">Max 5 MB file size</p>
               </div>
               <label className="btn-pill bg-[#FF6B00] text-white hover:bg-orange-600 text-xs px-3 py-1.5 rounded-lg cursor-pointer">
@@ -451,13 +363,7 @@ export default function ApplyFormPage() {
                   type="file"
                   accept=".pdf,.doc,.docx,.txt"
                   className="hidden"
-                  onChange={e => {
-                    const file = e.target.files?.[0] || null
-                    setResumeFile(file)
-                    if (file) {
-                      handleChange(field.id, file.name)
-                    }
-                  }}
+                  onChange={e => setResumeFile(e.target.files?.[0] || null)}
                 />
                 Choose file
               </label>
@@ -467,10 +373,10 @@ export default function ApplyFormPage() {
                 <span className="text-gray-600 font-medium truncate max-w-[60%]">{resumeFile.name}</span>
                 <button
                   type="button"
-                  className="text-orange-500 hover:text-orange-600 font-semibold"
-                  onClick={autofillFromResume}
+                  className="text-gray-400 hover:text-gray-600 font-semibold"
+                  onClick={() => setResumeFile(null)}
                 >
-                  Auto-fill from resume
+                  Remove
                 </button>
               </div>
             )}
@@ -479,6 +385,20 @@ export default function ApplyFormPage() {
       default:
         return null
     }
+  }
+
+  if (jobNotFound) {
+    return (
+      <div className="min-h-screen bg-white text-gray-900 grid place-items-center px-6 text-center">
+        <div>
+          <h1 className="text-2xl font-bold">Job not found</h1>
+          <p className="mt-2 text-sm text-gray-500">This role may have been closed or removed.</p>
+          <Link href="/talent/dashboard" className="mt-6 inline-block px-5 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white rounded-xl text-xs font-semibold">
+            Browse other jobs
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -498,7 +418,7 @@ export default function ApplyFormPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            {jobInfo.title}
+            {job?.title || 'Loading role...'}
           </motion.h1>
           <motion.p
             className="text-gray-600 mt-2 text-sm"
@@ -506,7 +426,7 @@ export default function ApplyFormPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.05 }}
           >
-            {jobInfo.company} · {jobInfo.location}
+            {job ? `${job.company} · ${job.location}` : ''}
           </motion.p>
         </div>
 
@@ -522,27 +442,27 @@ export default function ApplyFormPage() {
               className="grid grid-cols-1 lg:grid-cols-3 gap-8"
             >
               <section className="lg:col-span-2 space-y-6">
-                {/* 1. Has Profile: Show summary preview */}
-                {hasProfile && (
+                {/* Has profile: show summary preview */}
+                {profile && (
                   <div className="space-y-4 rounded-2xl border border-orange-500/10 bg-orange-50/15 p-5 shadow-sm">
                     <div className="flex items-center gap-3">
                       <div className="h-12 w-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-lg font-bold text-[#FF6B00]">
-                        {activeProfile.name ? activeProfile.name[0] : 'U'}
+                        {profile.firstName ? profile.firstName[0] : 'U'}
                       </div>
                       <div>
-                        <h3 className="font-bold text-gray-900">{activeProfile.name}</h3>
-                        <p className="text-xs text-gray-500">{activeProfile.headline}</p>
+                        <h3 className="font-bold text-gray-900">{`${profile.firstName} ${profile.lastName}`.trim()}</h3>
+                        <p className="text-xs text-gray-500">{profile.headline}</p>
                       </div>
                     </div>
-                    
+
                     <div className="border-t border-gray-100/50 pt-3 text-xs space-y-2 text-gray-600">
-                      <div><span className="font-semibold">Email:</span> {activeProfile.email}</div>
-                      {activeProfile.location && <div><span className="font-semibold">Location:</span> {activeProfile.location}</div>}
-                      {activeProfile.skills && activeProfile.skills.length > 0 && (
+                      <div><span className="font-semibold">Email:</span> {profile.email}</div>
+                      {profile.location && <div><span className="font-semibold">Location:</span> {profile.location}</div>}
+                      {profile.skills && profile.skills.length > 0 && (
                         <div>
                           <span className="font-semibold block mb-1">Skills:</span>
                           <div className="flex flex-wrap gap-1">
-                            {activeProfile.skills.map((s: string) => (
+                            {profile.skills.map((s: string) => (
                               <span key={s} className="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">
                                 {s}
                               </span>
@@ -552,13 +472,13 @@ export default function ApplyFormPage() {
                       )}
                     </div>
                     <div className="text-[11px] text-[#FF6B00] font-medium bg-orange-500/5 p-2.5 rounded-lg border border-orange-500/10">
-                      ✓ Crucible Profile attached. We will submit your complete credentials automatically.
+                      ✓ Crucible Profile attached. Fields below are pre-filled from your profile — review and edit anything before submitting.
                     </div>
                   </div>
                 )}
 
-                {/* 2. No Profile: Show Crucible Profile Required Warning */}
-                {!hasProfile && (
+                {/* No profile: show Crucible Profile Required warning */}
+                {!profileLoading && !profile && (
                   <div className="space-y-5 rounded-2xl border border-red-200 bg-red-500/[0.03] p-8 text-center shadow-sm">
                     <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-red-500/10 text-red-500">
                       <IconFileText size={28} />
@@ -570,7 +490,7 @@ export default function ApplyFormPage() {
                       </p>
                     </div>
                     <div className="pt-3">
-                      <Link 
+                      <Link
                         href="/talent/dashboard?tab=profile"
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
                       >
@@ -580,34 +500,32 @@ export default function ApplyFormPage() {
                   </div>
                 )}
 
-                {/* 4. Screening Questions: Show custom/non-standard questions */}
-                {hasProfile && formConfig.fields.some(field => !STANDARD_SEMANTIC_TYPES.includes(field.semanticType || '')) && (
+                {/* Application fields */}
+                {profile && (
                   <div className="space-y-4 bg-gray-50/20 rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm">
-                    <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2.5">Screening Questions</h2>
+                    <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2.5">Application Details</h2>
                     <div className="space-y-4">
-                      {formConfig.fields
-                        .filter(field => !STANDARD_SEMANTIC_TYPES.includes(field.semanticType || ''))
-                        .map(field => {
-                          const error = validationErrors[field.id]
-                          if (field.type === 'checkbox') {
-                            return (
-                              <div key={field.id} className="pt-2">
-                                {renderFieldInput(field)}
-                                {error && <span className="text-[10px] text-red-500 font-semibold block mt-1">{error}</span>}
-                              </div>
-                            )
-                          }
+                      {formConfig.fields.map(field => {
+                        const error = validationErrors[field.id]
+                        if (field.type === 'checkbox') {
                           return (
-                            <div key={field.id} className="space-y-1">
-                              <label className="block text-xs font-semibold text-gray-700">
-                                {field.label}
-                                {field.required && <span className="text-orange-500 ml-0.5">*</span>}
-                              </label>
+                            <div key={field.id} className="pt-2">
                               {renderFieldInput(field)}
                               {error && <span className="text-[10px] text-red-500 font-semibold block mt-1">{error}</span>}
                             </div>
                           )
-                        })}
+                        }
+                        return (
+                          <div key={field.id} className="space-y-1">
+                            <label className="block text-xs font-semibold text-gray-700">
+                              {field.label}
+                              {field.required && <span className="text-orange-500 ml-0.5">*</span>}
+                            </label>
+                            {renderFieldInput(field)}
+                            {error && <span className="text-[10px] text-red-500 font-semibold block mt-1">{error}</span>}
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
@@ -617,14 +535,20 @@ export default function ApplyFormPage() {
                 <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                   <h3 className="font-bold text-base text-gray-900 mb-2">Submit application</h3>
                   <p className="text-xs text-gray-500 mb-4">Make sure you have completed all mandatory questions marked with *.</p>
-                  
+
+                  {submitError && (
+                    <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                      {submitError}
+                    </div>
+                  )}
+
                   <motion.button
                     type="submit"
                     className="w-full rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-3 text-sm font-semibold text-white cursor-pointer shadow-[0_8px_20px_rgba(255,107,0,0.15)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     whileTap={{ scale: 0.98 }}
-                    disabled={submitting || !hasProfile}
+                    disabled={submitting || !job || !profile}
                   >
-                    {submitting ? 'Submitting…' : !hasProfile ? 'Profile Required' : 'Apply now'}
+                    {submitting ? 'Submitting…' : !profile ? 'Profile Required' : 'Apply now'}
                   </motion.button>
                   <p className="text-[10px] text-gray-400 text-center mt-3">By applying you agree to our Terms and Privacy Policy.</p>
                 </div>
@@ -632,10 +556,10 @@ export default function ApplyFormPage() {
                 <div className="rounded-2xl border border-gray-200 bg-gray-50/45 p-5">
                   <h3 className="font-bold text-sm text-gray-900 mb-3">About this role</h3>
                   <ul className="text-xs text-gray-600 list-disc pl-4 space-y-2">
-                    <li>Company: {jobInfo.company}</li>
-                    <li>Location: {jobInfo.location}</li>
-                    <li>Type: {jobInfo.type}</li>
-                    {jobInfo.salary && <li>Salary: {jobInfo.salary}</li>}
+                    <li>Company: {job?.company}</li>
+                    <li>Location: {job?.location}</li>
+                    <li>Type: {job?.type}</li>
+                    {job?.salary && <li>Salary: {job.salary}</li>}
                   </ul>
                 </div>
               </aside>
@@ -661,11 +585,11 @@ export default function ApplyFormPage() {
               </motion.div>
               <h2 className="text-2xl font-bold text-gray-900">Application submitted!</h2>
               <p className="text-gray-600 mt-2 text-sm leading-relaxed">
-                Thank you for applying. Your application containing your custom response data has been saved and is currently being processed by the hiring team.
+                Thank you for applying. Your application has been saved and is currently being processed by the hiring team.
               </p>
               <div className="flex items-center justify-center gap-3 mt-8">
-                <Link href="/talent/login" className="px-5 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white rounded-xl text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity">
-                  Login to track
+                <Link href="/talent/dashboard?tab=applications" className="px-5 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white rounded-xl text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity">
+                  Track application
                 </Link>
                 <Link href="/" className="px-5 py-2.5 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                   Back to home

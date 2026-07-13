@@ -27,8 +27,8 @@ import {
   IconVideo,
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
+import type { CandidateProfile, ScreeningStatus } from "@/types/employer/applicant";
 
-type ScreeningStatus = "unscreened" | "shortlisted" | "rejected";
 type EmailAudience = "all" | "shortlisted" | "rejected" | "manual";
 
 interface EmailTemplate {
@@ -39,299 +39,8 @@ interface EmailTemplate {
   custom?: boolean;
 }
 
-interface CandidateProfile {
-  id: string;
-  name: string;
-  title: string;
-  location: string;
-  appliedDate: string;
-  email: string;
-  phone: string;
-  bio: string;
-  experienceYears: number;
-  skills: string[];
-  education: string;
-  linkedin?: string;
-  github?: string;
-  portfolio?: string;
-  screeningStatus?: ScreeningStatus;
-  customAnswers?: Array<{
-    fieldId: string;
-    label: string;
-    value: any;
-    semanticType: string;
-  }>;
-  rating?: number;
-  note?: string;
-  experience?: Array<{
-    id: string;
-    company: string;
-    role: string;
-    startDate: string;
-    endDate: string;
-    current?: boolean;
-    description?: string;
-  }>;
-  educationList?: Array<{
-    id: string;
-    school: string;
-    degree: string;
-    field: string;
-    startYear?: string;
-    endYear?: string;
-    description?: string;
-  }>;
-  projects?: Array<{
-    id: string;
-    title: string;
-    link?: string;
-    videoUrl?: string;
-    description?: string;
-  }>;
-}
-
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 const insetSurface = "rounded-2xl border border-white/[0.065] bg-[#141414] shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]";
-
-// Master mock candidate bank
-const MOCK_CANDIDATES_BANK: Record<string, Omit<CandidateProfile, "appliedDate">[]> = {
-  // AI Engineer candidates
-  "AI Engineer": [
-    {
-      id: "c1",
-      name: "Matthew Brown",
-      title: "AI Researcher & Engineer",
-      location: "New York, NY",
-      email: "matthew.brown@ai-labs.io",
-      phone: "+1 (555) 234-5678",
-      bio: "Passionate AI engineer specializing in building, training, and deploying large language models and NLP pipelines. Deep experience in Python, PyTorch, and transformer architectures. Love working at the intersection of product and ML research.",
-      experienceYears: 4,
-      skills: ["Python", "PyTorch", "NLP", "Machine Learning", "Transformers", "Docker"],
-      education: "M.S. in Artificial Intelligence, Columbia University",
-      linkedin: "linkedin.com/in/matthew-brown-ai",
-      github: "github.com/mbrown-ai",
-      portfolio: "mbrown.ai"
-    },
-    {
-      id: "c2",
-      name: "Melissa Salazar",
-      title: "Machine Learning Engineer",
-      location: "San Francisco, CA",
-      email: "melissa.salazar@techcorp.com",
-      phone: "+1 (555) 987-6543",
-      bio: "ML Engineer with a focus on computer vision and neural network optimization. Proficient in TensorFlow, Python, and cloud deployments. Committed to clean code and scalable model pipelines.",
-      experienceYears: 3,
-      skills: ["Python", "TensorFlow", "Computer Vision", "Machine Learning", "AWS", "SQL"],
-      education: "B.S. in Computer Science, UC Berkeley",
-      linkedin: "linkedin.com/in/melissa-salazar",
-      github: "github.com/msalazar"
-    },
-    {
-      id: "c3",
-      name: "Emily Morgan",
-      title: "Senior AI Engineer",
-      location: "London, UK",
-      email: "emily.morgan@quant.ai",
-      phone: "+44 20 7946 0958",
-      bio: "Over 6 years of experience developing deep learning architectures and deploying ML models at scale. Experienced team leader and tech strategist. Focus on NLP and generative AI systems.",
-      experienceYears: 6,
-      skills: ["Python", "PyTorch", "NLP", "Machine Learning", "TensorFlow", "Kubernetes", "Generative AI"],
-      education: "Ph.D. in Computer Science (Deep Learning focus), University of Oxford",
-      linkedin: "linkedin.com/in/emily-morgan-ai",
-      github: "github.com/emily-m-ai",
-      portfolio: "emilymorgan.dev"
-    },
-    {
-      id: "c4",
-      name: "Paul Rodgers",
-      title: "Junior Data Scientist",
-      location: "Boston, MA",
-      email: "paul.rodgers@data-science.net",
-      phone: "+1 (555) 456-7890",
-      bio: "Recent graduate passionate about data science, regression models, and exploratory data analysis. Solid foundation in Python, NumPy, and statistics. Eager to learn and grow in an AI engineering role.",
-      experienceYears: 1,
-      skills: ["Python", "Machine Learning", "Data Analysis", "SQL", "Git"],
-      education: "B.S. in Statistics, Boston University",
-      github: "github.com/prodgers-data"
-    }
-  ],
-  // Senior Frontend Engineer candidates
-  "Senior Frontend Engineer": [
-    {
-      id: "c5",
-      name: "Sarah Jenkins",
-      title: "Senior Frontend Engineer",
-      location: "Austin, TX",
-      email: "sarah.jenkins@webdev.co",
-      phone: "+1 (555) 789-0123",
-      bio: "Frontend Specialist with 7+ years of experience crafting pixel-perfect, highly accessible user interfaces. Expert in React, TypeScript, Next.js, and CSS performance optimization. Devoted to design systems and user-centric workflows.",
-      experienceYears: 7,
-      skills: ["React", "TypeScript", "Next.js", "Tailwind CSS", "GraphQL", "Web Accessibility", "Sass"],
-      education: "B.F.A. in Interaction Design, UT Austin",
-      linkedin: "linkedin.com/in/sarah-jenkins-dev",
-      github: "github.com/sjenk-dev",
-      portfolio: "sarahj.dev"
-    },
-    {
-      id: "c6",
-      name: "Alex Rivera",
-      title: "Frontend Engineer",
-      location: "Miami, FL",
-      email: "alex.rivera@coders.io",
-      phone: "+1 (555) 890-1234",
-      bio: "TypeScript enthusiast and React developer. 4 years of professional experience building SaaS frontends. Skilled in state management, testing, and modern build tooling.",
-      experienceYears: 4,
-      skills: ["React", "TypeScript", "Node.js", "Zustand", "Webpack", "Tailwind CSS"],
-      education: "B.S. in Software Engineering, FIU",
-      linkedin: "linkedin.com/in/alex-rivera-code",
-      github: "github.com/arivera"
-    },
-    {
-      id: "c7",
-      name: "David Chen",
-      title: "Full Stack Developer",
-      location: "Seattle, WA",
-      email: "david.chen@stack.net",
-      phone: "+1 (555) 345-6789",
-      bio: "Full stack engineer with a strong frontend leaning. 5 years of experience deploying React apps on AWS and integrating REST/GraphQL APIs with Node.js backends. Passionate about serverless architectures.",
-      experienceYears: 5,
-      skills: ["React", "TypeScript", "Node.js", "AWS", "Docker", "PostgreSQL", "Next.js"],
-      education: "B.S. in Computer Science, University of Washington",
-      linkedin: "linkedin.com/in/davidchen-dev",
-      github: "github.com/dchen-stack"
-    }
-  ],
-  // Product Manager candidates
-  "Product Manager": [
-    {
-      id: "c8",
-      name: "James Patel",
-      title: "Product Manager",
-      location: "San Francisco, CA",
-      email: "james.patel@productlabs.io",
-      phone: "+1 (555) 567-8901",
-      bio: "Product leader with 4 years of experience driving roadmap execution for B2B SaaS platforms. Data-driven decision maker skilled in product analytics, user research, agile methodologies, and cross-functional alignment.",
-      experienceYears: 4,
-      skills: ["Product Management", "Agile", "Analytics", "Mixpanel", "Jira", "SQL", "B2B"],
-      education: "B.A. in Economics & Cognitive Science, UC Berkeley",
-      linkedin: "linkedin.com/in/james-patel-pm"
-    },
-    {
-      id: "c9",
-      name: "Karen White",
-      title: "Technical Product Manager",
-      location: "Seattle, WA",
-      email: "karen.white@techpm.com",
-      phone: "+1 (555) 678-9012",
-      bio: "Former software engineer turned Product Manager. Specializes in cloud developer tools, API platforms, and backend services. Bridge the gap between engineering complexity and user value.",
-      experienceYears: 5,
-      skills: ["Product Management", "Agile", "API Design", "Cloud Infrastructure", "Analytics", "System Design"],
-      education: "B.S. in Computer Science, Georgia Tech",
-      linkedin: "linkedin.com/in/karen-white-techpm",
-      github: "github.com/kwhite-dev"
-    }
-  ]
-};
-
-function calculateAtsScore(candidateSkills: string[], jobTags: string[]): number {
-  if (!jobTags.length) return 75;
-  const matches = candidateSkills.filter(s =>
-    jobTags.some(t => t.toLowerCase() === s.toLowerCase())
-  ).length;
-  const percentage = Math.round((matches / Math.max(jobTags.length, 1)) * 100);
-  // Scale between 60% and 97% based on alignment
-  return Math.min(Math.max(60 + Math.round(percentage * 0.38), 65), 97);
-}
-
-function getJobApplicants(job: EmployerJob): CandidateProfile[] {
-  const mockExp = [
-    {
-      id: "mexp-1",
-      company: "InnovateTech Corp",
-      role: "Software Developer",
-      startDate: "2023",
-      endDate: "2026",
-      current: true,
-      description: "Led development of various features and optimized system architecture."
-    },
-    {
-      id: "mexp-2",
-      company: "CodeBase LLC",
-      role: "Junior Developer",
-      startDate: "2021",
-      endDate: "2023",
-      current: false,
-      description: "Maintained legacy codebases and wrote integration tests."
-    }
-  ];
-
-  const mockEdu = [
-    {
-      id: "medu-1",
-      school: "State University of Technology",
-      degree: "B.S. Computer Science",
-      field: "Computer Science",
-      startYear: "2017",
-      endYear: "2021",
-      description: ""
-    }
-  ];
-
-  const mockProj = [
-    {
-      id: "mproj-1",
-      title: "Real-time Chat App",
-      link: "github.com/example/chat",
-      videoUrl: "youtube.com/watch?v=demo",
-      description: "A fast chat app with WebSockets, room system and message history."
-    }
-  ];
-
-  // If we have hardcoded candidates for this specific title
-  const candidatesForTitle = MOCK_CANDIDATES_BANK[job.title];
-  if (candidatesForTitle) {
-    return candidatesForTitle.map((c, index) => ({
-      ...c,
-      appliedDate: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      experience: c.experience || mockExp,
-      educationList: c.educationList || mockEdu,
-      projects: c.projects || mockProj
-    }));
-  }
-
-  // Fallback: generate dynamic candidates based on the job requirements/tags
-  const names = [
-    { name: "Sarah Jenkins", title: `Lead ${job.title}`, location: "Austin, TX" },
-    { name: "Marcus Johnson", title: job.title, location: job.location === "Remote" ? "Chicago, IL" : job.location },
-    { name: "Elena Rostova", title: `Junior ${job.title}`, location: "Remote" }
-  ];
-
-  return names.map((gn, index) => {
-    // Distribute matching skills
-    const matchingSkills = job.tags.slice(0, index === 0 ? 4 : index === 1 ? 2 : 1);
-    const genericSkills = ["Git", "GitHub", "REST APIs", "Agile", "Communication"];
-    const allSkills = [...new Set([...matchingSkills, ...genericSkills])];
-
-    return {
-      id: `gen-${job.id}-${index}`,
-      name: gn.name,
-      title: gn.title,
-      location: gn.location,
-      appliedDate: new Date(Date.now() - (index + 2) * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      email: `${gn.name.toLowerCase().replace(" ", ".")}@example.com`,
-      phone: `+1 (555) 321-432${index}`,
-      bio: `Experienced specialist in ${job.title.toLowerCase()}. I enjoy collaborating with cross-functional teams and building high-quality, scalable solutions. Passionate about learning new technologies and applying them to solve business needs.`,
-      experienceYears: 6 - index * 2,
-      skills: allSkills,
-      education: index === 0 ? "M.S. in Computer Science, MIT" : "B.S. in Computer Science, University of Illinois",
-      linkedin: `linkedin.com/in/${gn.name.toLowerCase().replace(" ", "-")}`,
-      github: `github.com/${gn.name.toLowerCase().replace(" ", "")}`,
-      experience: mockExp,
-      educationList: mockEdu,
-      projects: mockProj
-    };
-  });
-}
 
 interface JobApplicationsViewProps {
   jobId: string;
@@ -453,70 +162,52 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
   // Load applicants
   useEffect(() => {
     if (!job) return;
-    const key = `recruiter_job_${jobId}_applicants`;
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setApplicants(parsed);
-          setSelectedApplicant(parsed[0]);
-        } else {
-          const initial = getJobApplicants(job);
-          setApplicants(initial);
-          setSelectedApplicant(initial[0] || null);
-          localStorage.setItem(key, JSON.stringify(initial));
-        }
-      } catch {
-        const initial = getJobApplicants(job);
-        setApplicants(initial);
-        setSelectedApplicant(initial[0] || null);
-        localStorage.setItem(key, JSON.stringify(initial));
-      }
-    } else {
-      const initial = getJobApplicants(job);
-      setApplicants(initial);
-      setSelectedApplicant(initial[0] || null);
-      localStorage.setItem(key, JSON.stringify(initial));
-    }
+    fetch(`/api/employer/jobs/${jobId}/applicants`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: CandidateProfile[]) => {
+        setApplicants(data);
+        setSelectedApplicant(data[0] || null);
+      })
+      .catch((err) => console.error("Failed to load applicants", err));
   }, [jobId, job]);
 
-  const persistApplicants = (nextApplicants: CandidateProfile[]) => {
-    setApplicants(nextApplicants);
-    localStorage.setItem(`recruiter_job_${jobId}_applicants`, JSON.stringify(nextApplicants));
+  const patchApplicant = async (applicantId: string, patch: { status?: string; rating?: number | null; note?: string | null }) => {
+    try {
+      await fetch(`/api/employer/applicants/${applicantId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+    } catch (err) {
+      console.error("Failed to update applicant", err);
+    }
   };
 
+  const screeningStatusToDbStatus = (status?: ScreeningStatus): string =>
+    status === "shortlisted" ? "Under Review" : status === "rejected" ? "Rejected" : "Applied";
+
   const handleSaveRating = (applicantId: string, rating: number) => {
-    const nextApplicants = applicants.map((app) => {
-      if (app.id !== applicantId) return app;
-      return { ...app, rating };
-    });
-    persistApplicants(nextApplicants);
+    setApplicants((current) => current.map((app) => (app.id === applicantId ? { ...app, rating } : app)));
     setSelectedApplicant((curr) => (curr?.id === applicantId ? { ...curr, rating } : curr));
+    patchApplicant(applicantId, { rating });
   };
 
   const handleSaveNote = (applicantId: string, note: string) => {
-    const nextApplicants = applicants.map((app) => {
-      if (app.id !== applicantId) return app;
-      return { ...app, note };
-    });
-    persistApplicants(nextApplicants);
+    setApplicants((current) => current.map((app) => (app.id === applicantId ? { ...app, note } : app)));
     setSelectedApplicant((curr) => (curr?.id === applicantId ? { ...curr, note } : curr));
+    patchApplicant(applicantId, { note });
   };
 
   const setApplicantStatus = (applicantId: string, status: ScreeningStatus) => {
-    const nextApplicants = applicants.map((applicant) => {
-      if (applicant.id !== applicantId) return applicant;
-      const nextStatus = (applicant.screeningStatus || "unscreened") === status ? undefined : status;
-      return { ...applicant, screeningStatus: nextStatus };
-    });
+    const current = applicants.find((a) => a.id === applicantId);
+    const nextStatus = (current?.screeningStatus || "unscreened") === status ? undefined : status;
 
-    persistApplicants(nextApplicants);
-    setSelectedApplicant((current) => {
-      if (current?.id !== applicantId) return current;
-      const nextStatus = (current.screeningStatus || "unscreened") === status ? undefined : status;
-      return { ...current, screeningStatus: nextStatus };
-    });
+    setApplicants((prev) =>
+      prev.map((applicant) => (applicant.id === applicantId ? { ...applicant, screeningStatus: nextStatus } : applicant))
+    );
+    setSelectedApplicant((curr) => (curr?.id === applicantId ? { ...curr, screeningStatus: nextStatus } : curr));
+
+    patchApplicant(applicantId, { status: screeningStatusToDbStatus(nextStatus) });
   };
 
   const toggleStatusFilter = (status: ScreeningStatus) => {
@@ -582,7 +273,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
 
     const semanticNeedles = semanticTerms.map((term) => term.trim().toLowerCase()).filter(Boolean);
     const nextApplicants = applicants.map((applicant) => {
-      const score = calculateAtsScore(applicant.skills, job.tags);
+      const score = applicant.atsScore ?? 0;
       const matchedSkills = applicant.skills.filter((skill) =>
         job.tags.some((tag) => tag.toLowerCase() === skill.toLowerCase())
       ).length;
@@ -604,11 +295,17 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
       return passesCriteria ? { ...applicant, screeningStatus: "shortlisted" as ScreeningStatus } : applicant;
     });
 
-    persistApplicants(nextApplicants);
+    const newlyShortlisted = nextApplicants.filter((applicant, index) =>
+      applicant.screeningStatus === "shortlisted" && applicants[index]?.screeningStatus !== "shortlisted"
+    );
+
+    setApplicants(nextApplicants);
     setSelectedApplicant((current) =>
       current ? nextApplicants.find((applicant) => applicant.id === current.id) || current : current
     );
     setShowAutoShortlist(false);
+
+    newlyShortlisted.forEach((applicant) => patchApplicant(applicant.id, { status: "Under Review" }));
   };
 
   // Compute unique locations for the filter
@@ -642,7 +339,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
         else if (expFilter === "senior") matchesExp = a.experienceYears >= 6;
 
         // ATS Match filter
-        const score = calculateAtsScore(a.skills, job.tags);
+        const score = a.atsScore ?? 0;
         let matchesAts = true;
         if (atsFilter === "excellent") matchesAts = score >= 85;
         else if (atsFilter === "good") matchesAts = score >= 70 && score < 85;
@@ -676,8 +373,8 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
         return matchesQuery && matchesExp && matchesAts && matchesLocation && matchesStatus && matchesRating;
       })
       .sort((a, b) => {
-        const scoreA = calculateAtsScore(a.skills, job.tags);
-        const scoreB = calculateAtsScore(b.skills, job.tags);
+        const scoreA = a.atsScore ?? 0;
+        const scoreB = b.atsScore ?? 0;
 
         switch (sortBy) {
           case "ats-desc":
@@ -1031,7 +728,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
         <div className="min-h-0 flex-1 space-y-3 overflow-auto p-5 custom-scrollbar">
           {filteredApplicants.length > 0 ? (
             filteredApplicants.map((applicant) => {
-              const score = calculateAtsScore(applicant.skills, job.tags);
+              const score = applicant.atsScore ?? 0;
               const isSelected = selectedApplicant?.id === applicant.id;
               const currentStatus = applicant.screeningStatus || "unscreened";
 
@@ -1183,13 +880,13 @@ export default function JobApplicationsView({ jobId, jobs, onBack }: JobApplicat
                 <p className="truncate text-sm text-white/55">{selectedApplicant.title}</p>
                 <div className="mt-2">
                   <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-xs font-semibold ${
-                    calculateAtsScore(selectedApplicant.skills, job.tags) >= 85
+                    (selectedApplicant.atsScore ?? 0) >= 85
                       ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
-                      : calculateAtsScore(selectedApplicant.skills, job.tags) >= 70
+                      : (selectedApplicant.atsScore ?? 0) >= 70
                       ? "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300"
                       : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300"
                   }`}>
-                    ATS Match: {calculateAtsScore(selectedApplicant.skills, job.tags)}%
+                    ATS Match: {selectedApplicant.atsScore ?? 0}%
                   </span>
                 </div>
               </div>
