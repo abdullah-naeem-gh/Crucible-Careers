@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import StartChatModal from '@/components/shared/chat/StartChatModal'
+
+type ApplicationStatus = 'Applied' | 'Shortlisted' | 'Interviewing' | 'Offered' | 'Hired' | 'Feedback' | 'Rejected'
 
 interface Application {
   id: string
   jobTitle: string
   company: string
   appliedAt: string
-  status: 'Applied' | 'Under Review' | 'Interview' | 'Offer' | 'Rejected'
+  status: ApplicationStatus
   matchScore: number
   lastUpdated: string
 }
@@ -17,7 +20,7 @@ interface ApplicationDetail {
   id: string
   jobTitle: string
   company: string
-  status: 'Applied' | 'Under Review' | 'Interview' | 'Offer' | 'Rejected'
+  status: ApplicationStatus
   appliedAt: string
   matchScore: number
   averageApplicantScore: number
@@ -34,7 +37,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     jobTitle: 'Senior Frontend Engineer',
     company: 'Salik Labs',
     appliedAt: '2024-01-15',
-    status: 'Under Review',
+    status: 'Shortlisted',
     matchScore: 86,
     lastUpdated: '2 days ago'
   },
@@ -43,7 +46,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     jobTitle: 'Machine Learning Engineer',
     company: 'Vyro',
     appliedAt: '2024-01-10',
-    status: 'Interview',
+    status: 'Interviewing',
     matchScore: 73,
     lastUpdated: '1 day ago'
   },
@@ -72,7 +75,7 @@ const DEMO_APP_DETAILS: Record<string, ApplicationDetail> = {
     id: '1',
     jobTitle: 'Senior Frontend Engineer',
     company: 'Salik Labs',
-    status: 'Under Review',
+    status: 'Shortlisted',
     appliedAt: '2024-01-15',
     matchScore: 86,
     averageApplicantScore: 72,
@@ -94,7 +97,7 @@ const DEMO_APP_DETAILS: Record<string, ApplicationDetail> = {
     id: '2',
     jobTitle: 'Machine Learning Engineer',
     company: 'Vyro',
-    status: 'Interview',
+    status: 'Interviewing',
     appliedAt: '2024-01-10',
     matchScore: 73,
     averageApplicantScore: 68,
@@ -157,12 +160,16 @@ const DEMO_APP_DETAILS: Record<string, ApplicationDetail> = {
   }
 }
 
-const mapStatus = (recruiterStatus: string): 'Applied' | 'Under Review' | 'Interview' | 'Offer' | 'Rejected' => {
-  if (recruiterStatus === 'shortlisted') return 'Under Review';
-  if (recruiterStatus === 'interviewing') return 'Interview';
-  if (recruiterStatus === 'offered') return 'Offer';
-  if (recruiterStatus === 'rejected') return 'Rejected';
-  return 'Applied';
+const mapStatus = (pipelineStage?: string, screeningStatus?: string): ApplicationStatus => {
+  const stage = pipelineStage ?? screeningStatus
+
+  if (stage === 'shortlisted') return 'Shortlisted'
+  if (stage === 'interviewing') return 'Interviewing'
+  if (stage === 'offered') return 'Offered'
+  if (stage === 'hired') return 'Hired'
+  if (stage === 'feedback') return 'Feedback'
+  if (stage === 'rejected') return 'Rejected'
+  return 'Applied'
 }
 
 export default function ApplicationsTab() {
@@ -170,15 +177,16 @@ export default function ApplicationsTab() {
   const [applicationsList, setApplicationsList] = useState<Application[]>(DEMO_APPLICATIONS)
   const [appDetailsMap, setAppDetailsMap] = useState<Record<string, ApplicationDetail>>(DEMO_APP_DETAILS)
   const [selectedAppId, setSelectedAppId] = useState<string>(DEMO_APPLICATIONS[0].id)
+  const [chatModal, setChatModal] = useState<{ appId: string; jobTitle: string; company: string } | null>(null)
 
-  const statuses = ['All', 'Applied', 'Under Review', 'Interview', 'Offer', 'Rejected']
+  const statuses = ['All', 'Applied', 'Shortlisted', 'Interviewing', 'Offered', 'Hired', 'Feedback', 'Rejected']
 
   useEffect(() => {
     try {
       const rawTalentApps = localStorage.getItem('talent_applications')
       if (rawTalentApps) {
         const parsedTalentApps = JSON.parse(rawTalentApps) as any[]
-        
+
         const updatedAppsList: Application[] = []
         const updatedDetailsMap: Record<string, ApplicationDetail> = { ...DEMO_APP_DETAILS }
 
@@ -193,19 +201,19 @@ export default function ApplicationsTab() {
             const recruiterApplicants = JSON.parse(rawRecruiterApplicants) as any[]
             const matchingRecruiterApp = recruiterApplicants.find(a => a.id === app.id)
             if (matchingRecruiterApp) {
-              const mapped = mapStatus(matchingRecruiterApp.screeningStatus)
+              const mapped = mapStatus(matchingRecruiterApp.pipelineStage, matchingRecruiterApp.screeningStatus)
               currentStatus = mapped
-              
+
               timeline = [
                 { step: 'Application Submitted', date: new Date(app.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), completed: true, current: mapped === 'Applied' },
-                { step: 'Under Review', date: mapped !== 'Applied' ? 'Completed' : 'Pending', completed: mapped !== 'Applied', current: mapped === 'Under Review' },
-                { step: 'Initial Interview', date: (mapped === 'Interview' || mapped === 'Offer') ? 'Scheduled' : 'Pending', completed: mapped === 'Interview' || mapped === 'Offer', current: mapped === 'Interview' },
-                { step: 'Technical Assessment', date: mapped === 'Offer' ? 'Passed' : 'Pending', completed: mapped === 'Offer', current: false },
-                { 
-                  step: mapped === 'Rejected' ? 'Application Rejected' : 'Final Offer', 
-                  date: mapped === 'Offer' ? 'Sent' : mapped === 'Rejected' ? 'Processed' : 'Pending', 
-                  completed: mapped === 'Offer' || mapped === 'Rejected', 
-                  current: mapped === 'Offer' || mapped === 'Rejected' 
+                { step: 'Shortlisted', date: mapped !== 'Applied' ? 'Completed' : 'Pending', completed: mapped !== 'Applied', current: mapped === 'Shortlisted' },
+                { step: 'Interviewing', date: ['Interviewing', 'Offered', 'Hired'].includes(mapped) ? 'Scheduled' : 'Pending', completed: ['Interviewing', 'Offered', 'Hired'].includes(mapped), current: mapped === 'Interviewing' },
+                { step: 'Feedback', date: mapped === 'Feedback' ? 'Requested' : ['Offered', 'Hired'].includes(mapped) ? 'Completed' : 'Pending', completed: ['Offered', 'Hired'].includes(mapped), current: mapped === 'Feedback' },
+                {
+                  step: mapped === 'Rejected' ? 'Application Rejected' : mapped === 'Hired' ? 'Hired' : 'Offer',
+                  date: mapped === 'Offered' ? 'Sent' : mapped === 'Hired' ? 'Accepted' : mapped === 'Rejected' ? 'Processed' : 'Pending',
+                  completed: ['Offered', 'Hired', 'Rejected'].includes(mapped),
+                  current: ['Offered', 'Hired', 'Rejected'].includes(mapped)
                 },
               ]
             }
@@ -239,7 +247,7 @@ export default function ApplicationsTab() {
 
         setApplicationsList([...updatedAppsList, ...DEMO_APPLICATIONS])
         setAppDetailsMap(updatedDetailsMap)
-        
+
         if (updatedAppsList.length > 0) {
           setSelectedAppId(updatedAppsList[0].id)
         }
@@ -248,14 +256,15 @@ export default function ApplicationsTab() {
       console.error('Failed to load dynamic talent applications', e)
     }
   }, [])
-  
-  const filteredApplications = selectedStatus === 'All' 
-    ? applicationsList 
+
+  const filteredApplications = selectedStatus === 'All'
+    ? applicationsList
     : applicationsList.filter(app => app.status === selectedStatus)
 
   const selectedAppDetail = appDetailsMap[selectedAppId] ?? null
 
   return (
+    <>
     <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
       {/* Left Column: Applications List (col-span-5) */}
       <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] flex flex-col overflow-hidden lg:col-span-5">
@@ -341,10 +350,16 @@ export default function ApplicationsTab() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Link href={`/talent/dashboard/applications/${selectedAppDetail.id}`} className="flex-1 text-center py-2.5 rounded-xl border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 text-xs font-semibold transition-colors">
                 Detailed Page
               </Link>
+              <button
+                onClick={() => setChatModal({ appId: selectedAppDetail.id, jobTitle: selectedAppDetail.jobTitle, company: selectedAppDetail.company })}
+                className="flex-1 py-2.5 rounded-xl border border-[#FF6B00]/30 text-[#FF6B00] bg-[#FF6B00]/5 text-xs font-semibold hover:bg-[#FF6B00]/10 transition-colors"
+              >
+                Message Company
+              </button>
               <button className="flex-1 py-2.5 rounded-xl text-white bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-xs font-semibold hover:opacity-95 transition-opacity">
                 Follow Up
               </button>
@@ -369,11 +384,11 @@ export default function ApplicationsTab() {
               </div>
               <div className="relative pt-4 pb-2">
                 <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden flex relative">
-                  <div 
+                  <div
                     className="h-full bg-gray-300 rounded-full"
                     style={{ width: `${selectedAppDetail.averageApplicantScore}%` }}
                   />
-                  <div 
+                  <div
                     className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] rounded-full"
                     style={{ width: `${selectedAppDetail.matchScore}%`, opacity: 0.85 }}
                   />
@@ -428,10 +443,10 @@ export default function ApplicationsTab() {
                     <div key={idx} className="text-xs">
                       <div className="text-gray-500 font-medium mb-1">{ans.label}</div>
                       <div className="text-gray-900 font-semibold leading-relaxed">
-                        {Array.isArray(ans.value) 
-                          ? ans.value.join(', ') 
-                          : typeof ans.value === 'boolean' 
-                            ? (ans.value ? 'Yes' : 'No') 
+                        {Array.isArray(ans.value)
+                          ? ans.value.join(', ')
+                          : typeof ans.value === 'boolean'
+                            ? (ans.value ? 'Yes' : 'No')
                             : String(ans.value || '—')
                         }
                       </div>
@@ -460,5 +475,21 @@ export default function ApplicationsTab() {
         )}
       </section>
     </div>
+    {chatModal && (
+      <StartChatModal
+        isOpen={true}
+        onClose={() => setChatModal(null)}
+        onSuccess={() => setChatModal(null)}
+        applicationId={chatModal.appId}
+        jobId={chatModal.appId}
+        jobTitle={chatModal.jobTitle}
+        companyName={chatModal.company}
+        talentName="You"
+        talentEmail=""
+        initiatedBy="talent"
+        isDark={false}
+      />
+    )}
+    </>
   )
 }
