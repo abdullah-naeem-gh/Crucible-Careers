@@ -15,7 +15,7 @@ import { calculateAtsScore, getPipelineStage } from "@/lib/employer/services/app
 import { ApplicantPipelineStage, CandidateProfile } from "@/types/employer/applicant";
 import { EmployerJob } from "@/types/employer/job";
 
-export type { EmployerJob } from "@/types/employer/job";
+export type { EmployerJob };
 
 export interface Analytics {
   totalJobs: number;

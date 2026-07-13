@@ -238,7 +238,7 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
           applicationId={chatModal.applicant.id}
           jobId={chatModal.job.id}
           jobTitle={chatModal.job.title}
-          companyName={chatModal.job.company}
+          companyName={chatModal.job.company || "Your Company"}
           talentName={chatModal.applicant.name}
           talentEmail={chatModal.applicant.email}
           initiatedBy="employer"

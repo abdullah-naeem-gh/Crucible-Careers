@@ -6,7 +6,8 @@ import FormBuilder from "./FormBuilder";
 import { FORM_TEMPLATES } from "@/lib/shared/formTemplates";
 
 interface JobFormProps {
-  defaultCompany: string;
+  defaultCompany?: string;
+  initialData?: EmployerJob | null;
   onSubmit: (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "matchScore">) => void;
 }
 
@@ -19,44 +20,47 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-export default function JobForm({ defaultCompany, onSubmit }: JobFormProps) {
+export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFormProps) {
   // Navigation steps
   const [activeStep, setActiveStep] = useState<"details" | "form">("details");
 
   // Step 1 states: Role Details
-  const [title, setTitle] = useState("");
-  const [company, setCompany] = useState(defaultCompany);
-  const [location, setLocation] = useState("Remote");
-  const [type, setType] = useState<JobType>("Full-time");
-  const [status, setStatus] = useState<JobStatus>("Draft");
-  const [currency, setCurrency] = useState("PKR");
-  const [salary, setSalary] = useState("");
-  const [tags, setTags] = useState("");
-  const [description, setDescription] = useState("");
-  const [responsibilities, setResponsibilities] = useState("");
-  const [requirements, setRequirements] = useState("");
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [location, setLocation] = useState(initialData?.location || "");
+  const [locationType, setLocationType] = useState<"On-Site" | "Remote" | "Hybrid">(initialData?.locationType || "On-Site");
+  const [type, setType] = useState<JobType>(initialData?.type || "Full-time");
+  const [status, setStatus] = useState<JobStatus>(initialData?.status || "Draft");
+  
+  const parsedSalary = initialData?.salary ? initialData.salary.split(" ") : [];
+  const [currency, setCurrency] = useState(parsedSalary.length > 1 ? parsedSalary[0] : "PKR");
+  const [salary, setSalary] = useState(parsedSalary.length > 1 ? parsedSalary.slice(1).join(" ") : (initialData?.salary || ""));
+  
+  const [tags, setTags] = useState(initialData?.tags?.join(", ") || "");
+  const [description, setDescription] = useState(initialData?.description || "");
+  const [responsibilities, setResponsibilities] = useState(initialData?.responsibilities?.join("\n") || "");
+  const [requirements, setRequirements] = useState(initialData?.requirements?.join("\n") || "");
 
   // Step 2 states: Form Builder config
   const [formConfig, setFormConfig] = useState<FormConfig>(
-    FORM_TEMPLATES.find((t) => t.id === "engineering") || FORM_TEMPLATES[0]
+    initialData?.formConfig || FORM_TEMPLATES.find((t) => t.id === "engineering") || FORM_TEMPLATES[0]
   );
 
   const fieldClass = "w-full rounded-xl border border-white/[0.08] bg-[#121212] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-orange-500/45 focus:ring-2 focus:ring-orange-500/10";
   const labelClass = "mb-1.5 block text-xs font-medium text-white/50";
 
   const reset = () => {
-    setTitle("");
-    setCompany(defaultCompany);
-    setLocation("Remote");
-    setType("Full-time");
-    setStatus("Draft");
-    setCurrency("PKR");
-    setSalary("");
-    setTags("");
-    setDescription("");
-    setResponsibilities("");
-    setRequirements("");
-    setFormConfig(FORM_TEMPLATES.find((t) => t.id === "engineering") || FORM_TEMPLATES[0]);
+    setTitle(initialData?.title || "");
+    setLocation(initialData?.location || "");
+    setLocationType(initialData?.locationType || "On-Site");
+    setType(initialData?.type || "Full-time");
+    setStatus(initialData?.status || "Draft");
+    setCurrency(parsedSalary.length > 1 ? parsedSalary[0] : "PKR");
+    setSalary(parsedSalary.length > 1 ? parsedSalary.slice(1).join(" ") : (initialData?.salary || ""));
+    setTags(initialData?.tags?.join(", ") || "");
+    setDescription(initialData?.description || "");
+    setResponsibilities(initialData?.responsibilities?.join("\n") || "");
+    setRequirements(initialData?.requirements?.join("\n") || "");
+    setFormConfig(initialData?.formConfig || FORM_TEMPLATES.find((t) => t.id === "engineering") || FORM_TEMPLATES[0]);
     setActiveStep("details");
   };
 
@@ -72,8 +76,8 @@ export default function JobForm({ defaultCompany, onSubmit }: JobFormProps) {
     // Submit full job payload
     onSubmit({
       title,
-      company,
       location,
+      locationType,
       type,
       status,
       salary: salary ? `${currency} ${salary}` : undefined,
@@ -123,8 +127,12 @@ export default function JobForm({ defaultCompany, onSubmit }: JobFormProps) {
               <label className={labelClass}>Job title</label>
               <input required value={title} onChange={(event) => setTitle(event.target.value)} className={fieldClass} placeholder="e.g., Senior Frontend Engineer" />
             </div>
-            <FormField label="Company"><input value={company} onChange={(event) => setCompany(event.target.value)} className={fieldClass} /></FormField>
-            <FormField label="Location"><input value={location} onChange={(event) => setLocation(event.target.value)} className={fieldClass} placeholder="Remote / City, Country" /></FormField>
+            <FormField label="Location"><input value={location} onChange={(event) => setLocation(event.target.value)} className={fieldClass} placeholder="e.g., Lahore" /></FormField>
+            <FormField label="Location Type">
+              <select value={locationType} onChange={(event) => setLocationType(event.target.value as "On-Site" | "Remote" | "Hybrid")} className={`${fieldClass} cursor-pointer`}>
+                {(["On-Site", "Remote", "Hybrid"] as const).map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </FormField>
             <FormField label="Type">
               <select value={type} onChange={(event) => setType(event.target.value as JobType)} className={`${fieldClass} cursor-pointer`}>
                 {(["Full-time", "Part-time", "Contract", "Internship"] as JobType[]).map((item) => <option key={item}>{item}</option>)}
@@ -184,7 +192,7 @@ export default function JobForm({ defaultCompany, onSubmit }: JobFormProps) {
                   type="submit"
                   className="rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-2.5 text-xs font-semibold text-white cursor-pointer"
                 >
-                  {status === "Draft" ? "Save Draft Job" : "Publish Job Listing"}
+                  {status === "Draft" ? "Save Draft Job" : (initialData ? "Update Job Listing" : "Publish Job Listing")}
                 </button>
               </div>
             </div>
