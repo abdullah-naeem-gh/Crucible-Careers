@@ -30,21 +30,11 @@ interface TalentSidebarProps {
 export default function TalentSidebar({ activeTab, onTabChange, jobCount = 4, applicationCount = 12, savedCount = 5, profileNeedsSetup = false, profileCompletion = 0, profileFirstName, profileLastName, profileEmail, collapsed = false, onCollapsedChange, unreadMessages = 0 }: TalentSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [showExpandedDetails, setShowExpandedDetails] = useState(!collapsed)
   const [chatUnread, setChatUnread] = useState(unreadMessages)
-  const expandedReady = !collapsed && showExpandedDetails
-  const railMode = !expandedReady
+  const expandedReady = !collapsed
+  const railMode = collapsed
   const initials = profileFirstName || profileLastName ? `${profileFirstName?.charAt(0) || ''}${profileLastName?.charAt(0) || ''}`.toUpperCase() : 'AJ'
   const name = profileFirstName || profileLastName ? `${profileFirstName || ''} ${profileLastName || ''}`.trim() : 'Alex Johnson'
-
-  useEffect(() => {
-    if (collapsed) {
-      setShowExpandedDetails(false)
-      return
-    }
-    const revealExpandedDetails = window.setTimeout(() => setShowExpandedDetails(true), 240)
-    return () => window.clearTimeout(revealExpandedDetails)
-  }, [collapsed])
 
   useEffect(() => {
     const refresh = () => setChatUnread(getTotalUnread('talent'))
@@ -82,7 +72,7 @@ export default function TalentSidebar({ activeTab, onTabChange, jobCount = 4, ap
       </div>
     )}
     <button type="button" onClick={() => onCollapsedChange?.(!collapsed)} className={railMode ? 'absolute left-1/2 top-3 grid h-8 w-8 -translate-x-1/2 place-items-center rounded-full text-gray-400 transition-colors hover:text-gray-900 dark:text-white/45 dark:hover:text-white cursor-pointer' : 'absolute right-24 top-4 grid h-9 w-9 place-items-center rounded-full text-gray-400 transition-colors hover:text-gray-900 dark:text-white/45 dark:hover:text-white cursor-pointer sm:right-24 sm:top-5'} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>{collapsed ? <IconChevronRight size={17} /> : <IconChevronLeft size={17} />}</button>
-    <div className={`flex min-h-0 w-full flex-1 flex-col ${railMode ? 'items-center' : ''}`}>
+    <div className={`flex min-h-0 w-full flex-1 flex-col ${railMode ? 'items-center' : 'min-w-[232px]'}`}>
       {expandedReady && <Link href="/gateway" title="Back" className="mb-6 inline-flex items-center pr-14 text-sm text-gray-600 transition-colors hover:text-gray-900 dark:text-white/50 dark:hover:text-white"><svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 19l-7-7 7-7" /></svg>Back</Link>}
       <div className={railMode ? 'mt-12 mb-5 flex flex-col items-center gap-2' : 'mb-7 flex items-center gap-3'}><div className={railMode ? 'grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-[11px] font-semibold text-white shadow-[0_8px_18px_rgba(255,107,0,0.2)]' : 'grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-sm font-semibold text-white shadow-[0_8px_24px_rgba(255,107,0,0.24)]'}>{initials}</div>{expandedReady && <div className="min-w-0"><div className="truncate pr-2 font-semibold text-gray-900 dark:text-white">{name}</div><div className="truncate pr-2 text-xs text-gray-500 dark:text-white/40">{profileEmail || 'Talent account'}</div></div>}</div>
       <nav className={railMode ? 'flex w-full flex-col items-center gap-1.5 text-sm' : 'space-y-1.5 text-sm'}>{renderTab('profile', 'Profile', undefined, profileNeedsSetup ? 'Set-up Now' : undefined)}{renderTab('jobs', 'Jobs', jobCount)}{renderTab('companies', 'Companies')}{renderTab('applications', 'Applications', applicationCount)}{renderTab('saved', 'Saved', savedCount)}{renderTab('exams', 'Exams & Badges')}{renderTab('messages', 'Messages', chatUnread > 0 ? chatUnread : undefined)}{renderTab('settings', 'Settings')}</nav>

@@ -60,27 +60,16 @@ export default function EmployerSidebar({
   collapsed = false,
   onCollapsedChange,
 }: EmployerSidebarProps) {
-  const [showExpandedDetails, setShowExpandedDetails] = useState(!collapsed);
   const [showNoJobsPrompt, setShowNoJobsPrompt] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
-  const expandedReady = !collapsed && showExpandedDetails;
-  const railMode = !expandedReady;
+  const expandedReady = !collapsed;
+  const railMode = collapsed;
 
   useEffect(() => {
     const refresh = () => setChatUnread(getTotalUnread('employer'))
     refresh()
     return subscribeChatChanges(refresh)
   }, []);
-
-  useEffect(() => {
-    if (collapsed) {
-      setShowExpandedDetails(false);
-      return;
-    }
-
-    const revealExpandedDetails = window.setTimeout(() => setShowExpandedDetails(true), 240);
-    return () => window.clearTimeout(revealExpandedDetails);
-  }, [collapsed]);
 
   useEffect(() => {
     if (!expandedReady || jobCount > 0) {
@@ -114,7 +103,7 @@ export default function EmployerSidebar({
         {collapsed ? <IconChevronRight size={17} /> : <IconChevronLeft size={17} />}
       </button>
 
-      <div className={`flex min-h-0 w-full flex-1 flex-col ${railMode ? "items-center" : ""}`}>
+      <div className={`flex min-h-0 w-full flex-1 flex-col ${railMode ? "items-center" : "min-w-[232px]"}`}>
         {expandedReady && (
           <Link
             href="/gateway"

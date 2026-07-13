@@ -223,7 +223,7 @@ export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants
   const summary = [
     { label: "Active roles", value: viewModel.activeRoles, helper: "View job listings", icon: IconBriefcase, onClick: () => onOpenJob() },
     { label: "Needs review", value: viewModel.needsReview, helper: "Open new applicants", icon: IconClipboardCheck, onClick: () => onOpenApplicants(reviewDestination, "applied") },
-    { label: "In interviews", value: viewModel.interviewing, helper: "Open interview stage", icon: IconUsers, onClick: () => onOpenApplicants(interviewDestination, "interviewing") },
+    { label: "In interviews", value: viewModel.interviewing, helper: "Open hiring pipeline", icon: IconUsers, onClick: () => onOpenApplicants(interviewDestination) },
   ];
 
   return (
