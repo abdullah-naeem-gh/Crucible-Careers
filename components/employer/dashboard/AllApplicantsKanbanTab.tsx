@@ -51,15 +51,18 @@ const DEFAULT_VISIBLE_STAGES: ApplicantPipelineStage[] = ["applied", "shortliste
 interface AllApplicantsKanbanTabProps {
   jobs: EmployerJob[];
   initialJobId?: string | null;
+  initialStage?: ApplicantPipelineStage | null;
   onJobChange?: (jobId: string) => void;
   /** Called when user wants to navigate to Messages tab after starting a chat */
   onOpenMessages?: () => void;
 }
 
-export default function AllApplicantsKanbanTab({ jobs, initialJobId, onJobChange, onOpenMessages }: AllApplicantsKanbanTabProps) {
+export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStage, onJobChange, onOpenMessages }: AllApplicantsKanbanTabProps) {
   const firstJobId = jobs[0]?.id ?? "";
   const [selectedJobId, setSelectedJobId] = useState(initialJobId && jobs.some((job) => job.id === initialJobId) ? initialJobId : firstJobId);
-  const [visibleStages, setVisibleStages] = useState<ApplicantPipelineStage[]>(DEFAULT_VISIBLE_STAGES);
+  const [visibleStages, setVisibleStages] = useState<ApplicantPipelineStage[]>(
+    initialStage && STAGES.some((stage) => stage.key === initialStage) ? [initialStage] : DEFAULT_VISIBLE_STAGES,
+  );
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
   const [chatModal, setChatModal] = useState<{ applicant: CandidateProfile; job: EmployerJob } | null>(null);
@@ -73,6 +76,10 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, onJobChange
   useEffect(() => {
     if (initialJobId && jobs.some((job) => job.id === initialJobId)) setSelectedJobId(initialJobId);
   }, [initialJobId, jobs]);
+
+  useEffect(() => {
+    if (initialStage && STAGES.some((stage) => stage.key === initialStage)) setVisibleStages([initialStage]);
+  }, [initialStage]);
 
   useEffect(() => {
     if (!selectedJob) {
