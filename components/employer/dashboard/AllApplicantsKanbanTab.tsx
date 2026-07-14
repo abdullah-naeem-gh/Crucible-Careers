@@ -180,9 +180,9 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
               <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">All Applicants</h1>
               <p className="mt-2 max-w-2xl text-sm text-white/45">Move candidates from first application to hire with a focused Kanban board for each role.</p>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
               {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
+                Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="kanban-stat rounded-2xl border px-3 py-2.5 text-right shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2)]">
                     <Skeleton className="ml-auto h-5 w-8 rounded" />
                     <Skeleton className="mt-1.5 ml-auto h-2.5 w-12 rounded" />
@@ -194,6 +194,8 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
                   <MiniStat label="Active" value={applicants.length - (stageCounts.rejected ?? 0)} />
                   <MiniStat label="Offers" value={stageCounts.offered ?? 0} />
                   <MiniStat label="Hired" value={stageCounts.hired ?? 0} />
+                  <MiniStat label="Views" value={selectedJob?.views ?? 0} />
+                  <MiniStat label="Conversion" value={`${selectedJob?.views ? Math.round((applicants.length / selectedJob.views) * 100) : 0}%`} />
                 </>
               )}
             </div>
@@ -287,7 +289,7 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function MiniStat({ label, value }: { label: string; value: string | number }) {
   return <div className="kanban-stat rounded-2xl border px-3 py-2.5 text-right shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2)]"><div className="text-base font-bold text-white">{value}</div><div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/35">{label}</div></div>;
 }
 

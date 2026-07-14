@@ -50,6 +50,16 @@ export async function GET(request: NextRequest) {
     ;(apps ?? []).forEach((a) => countByJob.set(a.job_id, (countByJob.get(a.job_id) ?? 0) + 1))
   }
 
+  // Count real views per job (deduped per talent at the job_views table level)
+  const viewsByJob = new Map<string, number>()
+  if (jobIds.length > 0) {
+    const { data: views } = await supabase
+      .from('job_views')
+      .select('job_id')
+      .in('job_id', jobIds)
+    ;(views ?? []).forEach((v) => viewsByJob.set(v.job_id, (viewsByJob.get(v.job_id) ?? 0) + 1))
+  }
+
   // Format data to match EmployerJob interface
   const jobs: EmployerJob[] = data.map((job) => ({
     id: job.id,
@@ -65,7 +75,7 @@ export async function GET(request: NextRequest) {
     requirements: job.requirements || [],
     postedAt: new Date(job.created_at).toLocaleDateString(),
     applications: countByJob.get(job.id) ?? 0,
-    views: 0,
+    views: viewsByJob.get(job.id) ?? 0,
     matchScore: 0,
     formConfig: job.form_config,
   }))
