@@ -49,6 +49,24 @@ export async function login(email: string, password: string) {
 }
 
 /**
+ * Start a Google OAuth sign-in/sign-up flow for the given portal.
+ * Google never supplies a `role`, so we carry the intended role through
+ * as `portal` on the callback redirect — /auth/verified reads it and
+ * assigns the role (or catches a portal mismatch for existing accounts).
+ */
+export async function signInWithGoogle(portal: UserRole) {
+  const supabase = createBrowserSupabaseClient()
+  const next = encodeURIComponent(`/auth/verified?portal=${portal}`)
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/api/auth/callback?next=${next}`,
+    },
+  })
+  if (error) throw error
+}
+
+/**
  * Sign out the current user and clear their session.
  */
 export async function logout() {
@@ -70,7 +88,7 @@ export async function getCurrentUser() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, first_name, last_name, company')
+    .select('role, first_name, last_name, company, avatar_url')
     .eq('id', user.id)
     .single()
 

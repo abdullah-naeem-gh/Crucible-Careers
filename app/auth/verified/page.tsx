@@ -1,44 +1,71 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { getCurrentUser } from '@/lib/shared/auth/actions'
+import { getCurrentUser, logout } from '@/lib/shared/auth/actions'
+import { loadTalentProfile } from '@/lib/talent/services/profile.service'
+import { getEmployerProfile } from '@/lib/employer/services/profile.service'
+import type { UserRole } from '@/types/shared/auth'
 
-export default function VerifiedPage() {
+function VerifiedContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [error, setError] = useState(false)
 
   useEffect(() => {
     const redirectUser = async () => {
       try {
+        const portalParam = searchParams.get('portal')
+        const portal: UserRole | null = portalParam === 'talent' || portalParam === 'employer' ? portalParam : null
+
         const userWithProfile = await getCurrentUser()
-        const role = userWithProfile?.profile?.role || userWithProfile?.user_metadata?.role
-        
-        if (role) {
-          setTimeout(() => {
-            if (role === 'employer') {
-              router.push('/employer/dashboard')
-            } else {
-              router.push('/talent/dashboard')
-            }
-          }, 3000)
-        } else {
-          // If no role or profile found, fallback to gateway
-          setTimeout(() => {
-            router.push('/gateway')
-          }, 3000)
-        }
-      } catch (err) {
-        console.error('Failed to get user role:', err)
-        setError(true)
-        setTimeout(() => {
+        if (!userWithProfile) {
           router.push('/gateway')
-        }, 3000)
+          return
+        }
+
+        let role: UserRole | undefined = userWithProfile.profile?.role
+        let firstName = userWithProfile.profile?.first_name || ''
+
+        if (!role && portal) {
+          // Brand-new Google sign-up — assign the role for the portal they signed up through.
+          const res = await fetch('/api/auth/set-role', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: portal }),
+          })
+          const { profile } = await res.json()
+          role = profile?.role
+          firstName = profile?.first_name || firstName
+        }
+
+        if (!role) {
+          router.push('/auth/select-role')
+          return
+        }
+
+        if (portal && role !== portal) {
+          await logout()
+          router.push(`/${portal}/login?error=wrong_portal`)
+          return
+        }
+
+        const roleProfile = role === 'employer' ? await getEmployerProfile() : await loadTalentProfile()
+        const nextPath = roleProfile
+          ? `/${role}/dashboard`
+          : `/${role}/onboarding?name=${encodeURIComponent(firstName)}`
+
+        setTimeout(() => router.push(nextPath), 1500)
+      } catch (err) {
+        console.error('Failed to complete sign-in:', err)
+        setError(true)
+        setTimeout(() => router.push('/gateway'), 3000)
       }
     }
 
     redirectUser()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
   return (
@@ -51,7 +78,7 @@ export default function VerifiedPage() {
         </div>
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
@@ -59,7 +86,7 @@ export default function VerifiedPage() {
       >
         {!error ? (
           <>
-            <motion.div 
+            <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 20 }}
@@ -69,12 +96,12 @@ export default function VerifiedPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </motion.div>
-            
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Email Verified!</h1>
+
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">You're In!</h1>
             <p className="text-gray-600 mb-8">
-              Your email has been successfully verified. We are redirecting you to your dashboard...
+              We're setting up your account. Redirecting you now...
             </p>
-            
+
             <div className="flex justify-center">
               <div className="flex gap-2">
                 <motion.div className="w-3 h-3 bg-[#FF6B00] rounded-full" animate={{ y: [-5, 5, -5] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} />
@@ -85,7 +112,7 @@ export default function VerifiedPage() {
           </>
         ) : (
           <>
-            <motion.div 
+            <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 20 }}
@@ -95,7 +122,7 @@ export default function VerifiedPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </motion.div>
-            
+
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Verification Error</h1>
             <p className="text-gray-600 mb-8">
               We couldn't verify your account details. Redirecting you to the gateway...
@@ -104,5 +131,13 @@ export default function VerifiedPage() {
         )}
       </motion.div>
     </main>
+  )
+}
+
+export default function VerifiedPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerifiedContent />
+    </Suspense>
   )
 }
