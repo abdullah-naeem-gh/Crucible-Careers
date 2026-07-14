@@ -27,6 +27,7 @@ import {
   IconVideo,
   IconLayoutKanban,
   IconMessage,
+  IconFileText,
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
 import type { CandidateProfile, ScreeningStatus } from "@/types/employer/applicant";
@@ -1022,6 +1023,25 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                   );
                 })}
               </div>
+            </div>
+
+            {/* Resume */}
+            <div>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Resume</h3>
+              {selectedApplicant.resumeUrl ? (
+                <a
+                  href={selectedApplicant.resumeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 rounded-xl border border-orange-500/20 bg-orange-500/[0.06] px-3.5 py-2.5 text-sm text-white/80 hover:bg-orange-500/10 hover:text-white transition-all"
+                >
+                  <IconFileText size={16} className="shrink-0 text-[#FF914D]" />
+                  <span className="truncate">{selectedApplicant.resumeFilename || "View resume"}</span>
+                  <IconExternalLink size={13} className="ml-auto shrink-0 text-white/30" />
+                </a>
+              ) : (
+                <p className="text-sm text-white/30">No resume uploaded.</p>
+              )}
             </div>
 
             {/* Social profiles */}

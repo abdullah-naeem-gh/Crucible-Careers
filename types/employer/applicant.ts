@@ -61,6 +61,8 @@ export interface CandidateProfile {
   linkedin?: string;
   github?: string;
   portfolio?: string;
+  resumeUrl?: string;
+  resumeFilename?: string;
   screeningStatus?: ScreeningStatus;
   pipelineStage?: ApplicantPipelineStage;
   customAnswers?: CustomAnswer[];
