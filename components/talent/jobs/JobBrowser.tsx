@@ -77,6 +77,11 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
   }, [selectedJobId])
 
   useEffect(() => {
+    if (!selectedJobId) return
+    fetch(`/api/talent/jobs/${selectedJobId}/view`, { method: 'POST' }).catch(() => {})
+  }, [selectedJobId])
+
+  useEffect(() => {
     const el = detailPanelRef.current
     if (!el) return
     const handleScroll = () => {

@@ -75,6 +75,7 @@ export default function ApplyFormPage() {
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data: EmployerJob) => setJob(data))
       .catch(() => setJobNotFound(true))
+    fetch(`/api/talent/jobs/${slug}/view`, { method: 'POST' }).catch(() => {})
   }, [slug])
 
   // Load the real talent profile
