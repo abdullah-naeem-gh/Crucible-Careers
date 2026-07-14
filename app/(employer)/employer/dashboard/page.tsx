@@ -56,6 +56,7 @@ function EmployerDashboardContent() {
 
   const [activeTab, setActiveTab] = useState<EmployerTab>(initialTab);
   const [jobs, setJobs] = useState<EmployerJob[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<EmployerJob | null>(null);
@@ -95,18 +96,25 @@ function EmployerDashboardContent() {
         }
       } catch (err) {
         console.error("Failed to load jobs", err);
+      } finally {
+        setJobsLoading(false);
       }
     };
 
     // Fetch profile from API
     const loadProfile = async () => {
       try {
-        const dbProfile = await getEmployerProfile();
+        const { profile: dbProfile, name } = await getEmployerProfile();
         if (dbProfile) {
           setProfile(dbProfile);
-        } else if (!onboarded) {
-          // First visit with no profile → redirect to onboarding
-          router.replace("/employer/onboarding");
+        } else {
+          // No employer_profiles row yet, but the company name was already
+          // captured at signup — show it instead of the "TechCorp" placeholder.
+          if (name) setProfile((prev) => ({ ...prev, name }));
+          if (!onboarded) {
+            // First visit with no profile → redirect to onboarding
+            router.replace("/employer/onboarding");
+          }
         }
       } catch (err) {
         console.error("Failed to fetch employer profile", err);
@@ -311,6 +319,7 @@ function EmployerDashboardContent() {
               onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
               collapsed={isSidebarCollapsed}
               onCollapsedChange={setIsSidebarCollapsed}
+              isLoading={!hydrated}
             />
           </motion.div>
 
@@ -329,6 +338,7 @@ function EmployerDashboardContent() {
                   onOpenJob={openJob}
                   onOpenApplicants={openApplicantsKanban}
                   onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
+                  jobsLoading={jobsLoading}
                 />
               )}
               {activeTab === "jobs" && (
@@ -366,13 +376,14 @@ function EmployerDashboardContent() {
                     router.replace(`/employer/dashboard?tab=applicants&job=${jobId}${stageParam}`, { scroll: false });
                   }}
                   onOpenMessages={() => changeTab("messages")}
+                  jobsLoading={jobsLoading}
                 />
               )}
               {activeTab === "analytics" && (
-                <AnalyticsTab key="analytics" jobs={jobs} analytics={analytics} />
+                <AnalyticsTab key="analytics" jobs={jobs} analytics={analytics} jobsLoading={jobsLoading} />
               )}
               {activeTab === "profile" && (
-                <ProfileTab key="profile" profile={profile} onChange={handleProfileChange} />
+                <ProfileTab key="profile" profile={profile} onChange={handleProfileChange} isLoading={!hydrated} />
               )}
               {activeTab === "messages" && (
                 <MessagesTab

@@ -53,10 +53,14 @@ function TalentDashboardContent() {
 
   const [activeTab, setActiveTab] = useState<TalentTab>(initialTab)
   const [jobs, setJobs] = useState<ScrapedJob[]>([])
+  const [jobsLoading, setJobsLoading] = useState(true)
   const [appCount, setAppCount] = useState(0)
+  const [appCountLoading, setAppCountLoading] = useState(true)
   const [savedCount, setSavedCount] = useState(0)
+  const [savedCountLoading, setSavedCountLoading] = useState(true)
   const [profile, setProfile] = useState<TalentProfile | null>(null)
   const [profileHydrated, setProfileHydrated] = useState(false)
+  const [signupName, setSignupName] = useState({ firstName: '', lastName: '' })
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(isOnboarded)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isDesktopLayout, setIsDesktopLayout] = useState(false)
@@ -76,7 +80,9 @@ function TalentDashboardContent() {
     return () => window.removeEventListener('resize', updateSidebarMetrics)
   }, [])
 
-  const onboardedName = searchParams.get('name') || profile?.firstName || ''
+  const displayFirstName = profile?.firstName || signupName.firstName
+  const displayLastName = profile?.lastName || signupName.lastName
+  const onboardedName = searchParams.get('name') || displayFirstName || ''
 
   const profileCompletion = useMemo(() => {
     return profile ? calculateCompletionPercentage(profile) : 0
@@ -107,21 +113,24 @@ function TalentDashboardContent() {
       .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
       .then((data: ScrapedJob[]) => setJobs(data))
       .catch(err => console.error('Failed to load jobs', err))
+      .finally(() => setJobsLoading(false))
 
     // Load applications count
     fetch('/api/talent/applications')
       .then(res => res.ok ? res.json() : [])
       .then((list: any[]) => setAppCount(list.length))
       .catch(err => console.error('Failed to load talent applications count', err))
+      .finally(() => setAppCountLoading(false))
 
     // Load profile — first visit with no profile → redirect to onboarding,
     // mirroring the employer dashboard's forced-onboarding behavior.
-    loadTalentProfile().then(loadedProfile => {
+    loadTalentProfile().then(({ profile: loadedProfile, firstName, lastName }) => {
       if (!loadedProfile && !isOnboarded) {
         router.replace('/talent/onboarding')
         return
       }
       setProfile(loadedProfile)
+      setSignupName({ firstName, lastName })
       setProfileHydrated(true)
     }).catch(err => {
       console.error('Failed to load profile:', err)
@@ -136,6 +145,7 @@ function TalentDashboardContent() {
       .then(res => res.ok ? res.json() : [])
       .then((list: any[]) => setSavedCount(list.length))
       .catch(err => console.error('Failed to load saved jobs count', err))
+      .finally(() => setSavedCountLoading(false))
   }, [])
 
   useEffect(() => {
@@ -216,19 +226,23 @@ function TalentDashboardContent() {
               savedCount={savedCount}
               profileNeedsSetup={profileHydrated && !profile}
               profileCompletion={profileCompletion}
-              profileFirstName={profile?.firstName}
-              profileLastName={profile?.lastName}
+              profileFirstName={displayFirstName}
+              profileLastName={displayLastName}
               profileEmail={profile?.email}
               profilePhotoUrl={profile?.photoUrl}
               collapsed={isSidebarCollapsed}
               onCollapsedChange={setIsSidebarCollapsed}
+              isLoading={!profileHydrated}
+              jobCountLoading={jobsLoading}
+              applicationCountLoading={appCountLoading}
+              savedCountLoading={savedCountLoading}
             />
           </motion.div>
           <motion.div initial={false} animate={{ opacity: 1 }} transition={{ duration: 0.18, ease: "easeOut" }} className="min-h-[70vh] min-w-0 flex-1 lg:h-[92vh] lg:self-center">
             <AnimatePresence initial={false} mode="wait">
               {activeTab === 'jobs' && (
                 <ViewMotion key="jobs">
-                  <JobBrowser jobs={jobs} />
+                  <JobBrowser jobs={jobs} isLoading={jobsLoading} />
                 </ViewMotion>
               )}
               {activeTab === 'companies' && (
@@ -248,7 +262,7 @@ function TalentDashboardContent() {
               )}
               {activeTab === 'profile' && (
                 <ViewMotion key="profile">
-                  <ProfileTab profile={profile} onProfileChange={setProfile} />
+                  <ProfileTab profile={profile} onProfileChange={setProfile} isLoading={!profileHydrated} />
                 </ViewMotion>
               )}
               {activeTab === 'exams' && (
@@ -265,7 +279,7 @@ function TalentDashboardContent() {
                 <ViewMotion key="messages">
                   <MessagesTab
                     role="talent"
-                    myDisplayName={profile?.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : 'Alex Johnson'}
+                    myDisplayName={displayFirstName ? `${displayFirstName} ${displayLastName}`.trim() : 'Alex Johnson'}
                     isDark={false}
                   />
                 </ViewMotion>

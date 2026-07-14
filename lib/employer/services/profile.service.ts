@@ -20,16 +20,22 @@ export function createBlankCompanyProfile(): CompanyProfile {
   }
 }
 
-export async function getEmployerProfile(): Promise<CompanyProfile | null> {
+export interface EmployerProfileLoadResult {
+  profile: CompanyProfile | null
+  /** Real company name captured at signup — populated even before the employer has completed onboarding. */
+  name: string
+}
+
+export async function getEmployerProfile(): Promise<EmployerProfileLoadResult> {
   const supabase = createBrowserSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  if (!user) return { profile: null, name: '' }
 
   const response = await fetch('/api/employer/profile')
-  if (!response.ok) return null
+  if (!response.ok) return { profile: null, name: '' }
 
   const data = await response.json()
-  return data.profile
+  return { profile: data.profile ?? null, name: data.name || data.profile?.name || '' }
 }
 
 export async function saveEmployerProfile(profile: CompanyProfile): Promise<void> {

@@ -8,9 +8,31 @@ import Link from 'next/link'
 import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
 import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 interface Props {
   jobs: ScrapedJob[]
+  isLoading?: boolean
+}
+
+function JobCardSkeleton() {
+  return (
+    <div className="w-full p-4 rounded-xl border border-white/[0.065] bg-white">
+      <div className="flex items-start gap-4">
+        <Skeleton className="h-12 w-12 shrink-0 rounded-xl" />
+        <div className="min-w-0 flex-1">
+          <Skeleton className="h-4 w-3/5 rounded" />
+          <Skeleton className="mt-2 h-3.5 w-2/5 rounded" />
+          <Skeleton className="mt-2 h-3 w-1/3 rounded" />
+          <div className="mt-2.5 flex gap-1.5">
+            <Skeleton className="h-5 w-14 rounded-md" />
+            <Skeleton className="h-5 w-16 rounded-md" />
+            <Skeleton className="h-5 w-12 rounded-md" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 const JOB_TYPES = ['full-time', 'part-time', 'contract', 'remote']
@@ -32,7 +54,7 @@ function getMatchScore(jobId: string): number {
   return 65 + (Math.abs(hash) % 34)
 }
 
-export default function JobBrowser({ jobs }: Props) {
+export default function JobBrowser({ jobs, isLoading = false }: Props) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(jobs[0]?._id ?? null)
   const selectedJob = jobs.find(j => j._id === selectedJobId) ?? jobs[0] ?? null
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -174,7 +196,11 @@ export default function JobBrowser({ jobs }: Props) {
         </div>
 
         <div ref={listRef} className="flex-1 overflow-auto px-5 py-4">
-          {paginated.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => <JobCardSkeleton key={i} />)}
+            </div>
+          ) : paginated.length === 0 ? (
             <div className="h-full flex items-center justify-center text-gray-400 text-sm">
               No jobs match your search
             </div>

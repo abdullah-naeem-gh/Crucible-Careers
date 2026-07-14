@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
 import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 interface Company {
   id: string
@@ -30,6 +31,7 @@ interface Company {
 
 export default function CompaniesTab() {
   const [companiesList, setCompaniesList] = useState<Company[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
   const { appliedJobIds } = useAppliedJobIds()
@@ -43,6 +45,7 @@ export default function CompaniesTab() {
         if (data.length > 0) setSelectedCompanyId(data[0].id)
       })
       .catch(err => console.error('Failed to load companies', err))
+      .finally(() => setIsLoading(false))
   }, [])
 
   const filteredCompanies = useMemo(() => {
@@ -86,7 +89,20 @@ export default function CompaniesTab() {
 
         {/* Scrollable list */}
         <div className="flex-1 overflow-auto p-5 space-y-3">
-          {filteredCompanies.map(c => (
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="w-full p-4 rounded-xl border border-gray-200 bg-white/50">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-11 h-11 shrink-0 rounded-xl" />
+                  <div className="min-w-0 flex-1">
+                    <Skeleton className="h-3.5 w-2/5 rounded" />
+                    <Skeleton className="mt-2 h-3 w-1/3 rounded" />
+                  </div>
+                  <Skeleton className="h-4 w-14 shrink-0 rounded" />
+                </div>
+              </div>
+            ))
+          ) : filteredCompanies.map(c => (
             <motion.button
               key={c.id}
               onClick={() => setSelectedCompanyId(c.id)}
@@ -115,7 +131,7 @@ export default function CompaniesTab() {
               </div>
             </motion.button>
           ))}
-          {filteredCompanies.length === 0 && (
+          {!isLoading && filteredCompanies.length === 0 && (
             <div className="text-center py-12 text-gray-400 text-sm">
               No companies match your search.
             </div>
@@ -125,7 +141,20 @@ export default function CompaniesTab() {
 
       {/* Right Column: Company Details Profile (col-span-4) */}
       <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
-        {!selectedCompany ? (
+        {isLoading ? (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-14 h-14 shrink-0 rounded-2xl" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-4 w-2/5 rounded" />
+                <Skeleton className="mt-2 h-3 w-1/3 rounded" />
+              </div>
+            </div>
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+          </div>
+        ) : !selectedCompany ? (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">
             Select a company to view profile
           </div>
