@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
+import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 interface Company {
   id: string
@@ -29,10 +31,11 @@ interface Company {
 
 export default function CompaniesTab() {
   const [companiesList, setCompaniesList] = useState<Company[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [savedJobIds, setSavedJobIds] = useState<string[]>([])
   const { appliedJobIds } = useAppliedJobIds()
+  const { isSaved: isRoleSaved, toggleSave: toggleSaveRole } = useSavedJobs()
 
   useEffect(() => {
     fetch('/api/talent/companies')
@@ -42,50 +45,8 @@ export default function CompaniesTab() {
         if (data.length > 0) setSelectedCompanyId(data[0].id)
       })
       .catch(err => console.error('Failed to load companies', err))
+      .finally(() => setIsLoading(false))
   }, [])
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      setSavedJobIds(parsed.map((j: any) => j.id))
-    } catch (e) {
-      console.error(e)
-    }
-  }, [])
-
-  const isRoleSaved = (id: string) => savedJobIds.includes(id)
-
-  const toggleSaveRole = (role: { id: string; title: string; type: string; location: string; salary: string }, companyName: string) => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      let updated
-      if (parsed.some((j: any) => j.id === role.id)) {
-        updated = parsed.filter((j: any) => j.id !== role.id)
-      } else {
-        const savedItem = {
-          id: role.id,
-          title: role.title,
-          company: companyName,
-          location: role.location || 'Remote',
-          type: role.type || 'Full-time',
-          salary: role.salary || undefined,
-          tags: [],
-          postedAt: 'Recently',
-          description: '',
-          matchScore: 0,
-          savedAt: new Date().toISOString().split('T')[0],
-        }
-        updated = [...parsed, savedItem]
-      }
-      localStorage.setItem('talent_saved_jobs', JSON.stringify(updated))
-      setSavedJobIds(updated.map((j: any) => j.id))
-      window.dispatchEvent(new Event('talent_saved_jobs_changed'))
-    } catch (e) {
-      console.error(e)
-    }
-  }
 
   const filteredCompanies = useMemo(() => {
     return companiesList.filter(c => 
@@ -128,7 +89,20 @@ export default function CompaniesTab() {
 
         {/* Scrollable list */}
         <div className="flex-1 overflow-auto p-5 space-y-3">
-          {filteredCompanies.map(c => (
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="w-full p-4 rounded-xl border border-gray-200 bg-white/50">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-11 h-11 shrink-0 rounded-xl" />
+                  <div className="min-w-0 flex-1">
+                    <Skeleton className="h-3.5 w-2/5 rounded" />
+                    <Skeleton className="mt-2 h-3 w-1/3 rounded" />
+                  </div>
+                  <Skeleton className="h-4 w-14 shrink-0 rounded" />
+                </div>
+              </div>
+            ))
+          ) : filteredCompanies.map(c => (
             <motion.button
               key={c.id}
               onClick={() => setSelectedCompanyId(c.id)}
@@ -157,7 +131,7 @@ export default function CompaniesTab() {
               </div>
             </motion.button>
           ))}
-          {filteredCompanies.length === 0 && (
+          {!isLoading && filteredCompanies.length === 0 && (
             <div className="text-center py-12 text-gray-400 text-sm">
               No companies match your search.
             </div>
@@ -167,7 +141,20 @@ export default function CompaniesTab() {
 
       {/* Right Column: Company Details Profile (col-span-4) */}
       <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
-        {!selectedCompany ? (
+        {isLoading ? (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-14 h-14 shrink-0 rounded-2xl" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-4 w-2/5 rounded" />
+                <Skeleton className="mt-2 h-3 w-1/3 rounded" />
+              </div>
+            </div>
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+          </div>
+        ) : !selectedCompany ? (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">
             Select a company to view profile
           </div>
@@ -303,7 +290,7 @@ export default function CompaniesTab() {
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
-                          onClick={() => toggleSaveRole(role, selectedCompany.name)}
+                          onClick={() => toggleSaveRole(role.id)}
                           className="p-1 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white"
                           title={isRoleSaved(role.id) ? 'Saved' : 'Save Job'}
                         >

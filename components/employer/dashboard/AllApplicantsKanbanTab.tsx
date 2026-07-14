@@ -20,6 +20,7 @@ import {
   IconVideo,
   IconWorld,
   IconX,
+  IconFileText,
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/types/employer/job";
 import { ApplicantPipelineStage, CandidateProfile } from "@/types/employer/applicant";
@@ -32,6 +33,7 @@ import {
   updateApplicantRating,
 } from "@/lib/employer/services/applicants.service";
 import StartChatModal from "@/components/shared/chat/StartChatModal";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 const insetSurface = "rounded-2xl border border-white/[0.065] bg-[#141414] shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]";
@@ -55,15 +57,18 @@ interface AllApplicantsKanbanTabProps {
   onJobChange?: (jobId: string) => void;
   /** Called when user wants to navigate to Messages tab after starting a chat */
   onOpenMessages?: () => void;
+  jobsLoading?: boolean;
 }
 
-export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStage, onJobChange, onOpenMessages }: AllApplicantsKanbanTabProps) {
+export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStage, onJobChange, onOpenMessages, jobsLoading = false }: AllApplicantsKanbanTabProps) {
   const firstJobId = jobs[0]?.id ?? "";
   const [selectedJobId, setSelectedJobId] = useState(initialJobId && jobs.some((job) => job.id === initialJobId) ? initialJobId : firstJobId);
   const [visibleStages, setVisibleStages] = useState<ApplicantPipelineStage[]>(
     initialStage && STAGES.some((stage) => stage.key === initialStage) ? [initialStage] : DEFAULT_VISIBLE_STAGES,
   );
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
+  const [isLoadingApplicants, setIsLoadingApplicants] = useState(true);
+  const isLoading = jobsLoading || isLoadingApplicants;
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
   const [chatModal, setChatModal] = useState<{ applicant: CandidateProfile; job: EmployerJob } | null>(null);
   const [draggedApplicantId, setDraggedApplicantId] = useState<string | null>(null);
@@ -84,9 +89,19 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
   useEffect(() => {
     if (!selectedJob) {
       setApplicants([]);
+      setIsLoadingApplicants(false);
       return;
     }
-    setApplicants(getApplicantsForJob(selectedJob));
+    let cancelled = false;
+    setIsLoadingApplicants(true);
+    getApplicantsForJob(selectedJob).then((data) => {
+      if (!cancelled) setApplicants(data);
+    }).finally(() => {
+      if (!cancelled) setIsLoadingApplicants(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedJob]);
 
   useEffect(() => setNoteText(selectedApplicant?.note ?? ""), [selectedApplicant]);
@@ -144,7 +159,7 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
     });
   };
 
-  if (!jobs.length) {
+  if (!jobsLoading && !jobs.length) {
     return (
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={`${surface} grid h-full place-items-center p-8 text-center`}>
         <div>
@@ -166,11 +181,24 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
               <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">All Applicants</h1>
               <p className="mt-2 max-w-2xl text-sm text-white/45">Move candidates from first application to hire with a focused Kanban board for each role.</p>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <MiniStat label="Applicants" value={applicants.length} />
-              <MiniStat label="Active" value={applicants.length - (stageCounts.rejected ?? 0)} />
-              <MiniStat label="Offers" value={stageCounts.offered ?? 0} />
-              <MiniStat label="Hired" value={stageCounts.hired ?? 0} />
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="kanban-stat rounded-2xl border px-3 py-2.5 text-right shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2)]">
+                    <Skeleton className="ml-auto h-5 w-8 rounded" />
+                    <Skeleton className="mt-1.5 ml-auto h-2.5 w-12 rounded" />
+                  </div>
+                ))
+              ) : (
+                <>
+                  <MiniStat label="Applicants" value={applicants.length} />
+                  <MiniStat label="Active" value={applicants.length - (stageCounts.rejected ?? 0)} />
+                  <MiniStat label="Offers" value={stageCounts.offered ?? 0} />
+                  <MiniStat label="Hired" value={stageCounts.hired ?? 0} />
+                  <MiniStat label="Views" value={selectedJob?.views ?? 0} />
+                  <MiniStat label="Conversion" value={`${selectedJob?.views ? Math.round((applicants.length / selectedJob.views) * 100) : 0}%`} />
+                </>
+              )}
             </div>
           </div>
 
@@ -216,7 +244,20 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
                     <span className="rounded-full border border-white/[0.07] bg-white/[0.035] px-2 py-0.5 text-xs font-semibold text-white/45">{candidates.length}</span>
                   </div>
                   <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-1 py-1 custom-scrollbar">
-                    {candidates.length ? candidates.map((candidate) => (
+                    {isLoading ? (
+                      Array.from({ length: 2 }).map((_, i) => (
+                        <div key={i} className="kanban-card w-full rounded-2xl border p-3">
+                          <div className="flex items-start gap-2.5">
+                            <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
+                            <div className="min-w-0 flex-1">
+                              <Skeleton className="h-3.5 w-3/5 rounded" />
+                              <Skeleton className="mt-1.5 h-3 w-2/5 rounded" />
+                            </div>
+                          </div>
+                          <Skeleton className="mt-2.5 h-5 w-full rounded-lg" />
+                        </div>
+                      ))
+                    ) : candidates.length ? candidates.map((candidate) => (
                       <ApplicantKanbanCard key={candidate.id} candidate={candidate} job={selectedJob} onOpen={() => setSelectedApplicant(candidate)} onDragStart={(event) => { setDraggedApplicantId(candidate.id); event.dataTransfer.setData("text/plain", candidate.id); }} onDragEnd={() => { setDraggedApplicantId(null); setDragOverStage(null); }} />
                     )) : (
                       <div className="kanban-empty grid min-h-[9rem] place-items-center rounded-2xl border border-dashed p-3 text-center"><div><div className="mx-auto mb-2 grid h-9 w-9 place-items-center rounded-full bg-white/[0.035] text-white/20"><IconUsers size={17} /></div><p className="text-xs font-medium text-white/45">No candidates</p><p className="mt-1 text-[10px] text-white/25">Drop a card here or move from the slide-over.</p></div></div>
@@ -249,12 +290,12 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function MiniStat({ label, value }: { label: string; value: string | number }) {
   return <div className="kanban-stat rounded-2xl border px-3 py-2.5 text-right shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2)]"><div className="text-base font-bold text-white">{value}</div><div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/35">{label}</div></div>;
 }
 
 function ApplicantKanbanCard({ candidate, job, onOpen, onDragStart, onDragEnd }: { candidate: CandidateProfile; job: EmployerJob | null; onOpen: () => void; onDragStart: (event: React.DragEvent<HTMLButtonElement>) => void; onDragEnd: () => void; }) {
-  const score = job ? calculateAtsScore(candidate.skills, job.tags) : 75;
+  const score = candidate.atsScore ?? (job ? calculateAtsScore(candidate.skills, job.tags) : 75);
   return (
     <button type="button" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={onOpen} className="kanban-card group w-full rounded-2xl border p-3 text-left outline-none transition-all hover:-translate-y-px hover:border-orange-500/30 hover:shadow-[0_10px_24px_rgba(255,107,0,0.10)] focus:border-orange-500/45 cursor-pointer">
       <div className="flex items-start justify-between gap-3">
@@ -274,7 +315,7 @@ function ApplicantKanbanCard({ candidate, job, onOpen, onDragStart, onDragEnd }:
 
 function CandidateSlideOver({ candidate, job, visibleStages, noteText, onClose, onMove, onNoteTextChange, onSaveNote, onSaveRating, onMessageApplicant }: { candidate: CandidateProfile; job: EmployerJob; visibleStages: ApplicantPipelineStage[]; noteText: string; onClose: () => void; onMove: (applicantId: string, stage: ApplicantPipelineStage) => void; onNoteTextChange: (value: string) => void; onSaveNote: (applicantId: string, note: string) => void; onSaveRating: (applicantId: string, rating: number) => void; onMessageApplicant: (applicant: CandidateProfile, job: EmployerJob) => void }) {
   const currentStage = getPipelineStage(candidate);
-  const score = calculateAtsScore(candidate.skills, job.tags);
+  const score = candidate.atsScore ?? calculateAtsScore(candidate.skills, job.tags);
   const stageOptions = STAGES.filter((stage) => visibleStages.includes(stage.key) || stage.key === currentStage || stage.key === "feedback" || stage.key === "rejected");
   const isActive = currentStage !== 'rejected';
   return (
@@ -312,6 +353,7 @@ function ProfileSections({ candidate, job }: { candidate: CandidateProfile; job:
     <div className="space-y-6">
       <section><h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Candidate Bio</h3><p className="text-sm leading-relaxed text-white/60">{candidate.bio}</p></section>
       <section><h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Skills & Competency</h3><div className="flex flex-wrap gap-2">{candidate.skills.map((skill) => { const isMatching = job.tags.some((tag) => tag.toLowerCase() === skill.toLowerCase()); return <span key={skill} className={`rounded-lg border px-2.5 py-1 text-xs ${isMatching ? "border-emerald-500/20 bg-emerald-500/10 font-medium text-emerald-300" : "border-white/[0.07] bg-white/[0.025] text-white/45"}`}>{skill} {isMatching && "✓"}</span>; })}</div></section>
+      <section><h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Resume</h3>{candidate.resumeUrl ? <ProfileLink href={candidate.resumeUrl} label={candidate.resumeFilename || "View resume"} icon={<IconFileText size={14} />} className="text-[#FF914D]" /> : <p className="text-sm text-white/30">No resume uploaded.</p>}</section>
       <section><h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Professional Links</h3><div className="flex flex-wrap gap-2">{candidate.linkedin && <ProfileLink href={candidate.linkedin} label="LinkedIn" icon={<IconBrandLinkedin size={14} />} className="text-sky-400" />}{candidate.github && <ProfileLink href={candidate.github} label="GitHub" icon={<IconBrandGithub size={14} />} className="text-white/60" />}{candidate.portfolio && <ProfileLink href={candidate.portfolio} label="Portfolio" icon={<IconWorld size={14} />} className="text-[#FF914D]" />}<a href={`mailto:${candidate.email}`} className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-emerald-300 hover:bg-white/[0.05] transition-all"><IconMail size={14} /> Email</a></div></section>
       {candidate.customAnswers && candidate.customAnswers.length > 0 && <section className="border-t border-white/[0.07] pt-5"><h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Questionnaire Answers</h3><div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{candidate.customAnswers.map((answer) => <div key={answer.fieldId} className={`${insetSurface} p-4 sm:col-span-2`}><div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/35">{answer.label}</div><div className="whitespace-pre-line text-sm font-medium text-white/80">{Array.isArray(answer.value) ? answer.value.join(", ") : String(answer.value || "-")}</div></div>)}</div></section>}
       {candidate.experience && candidate.experience.length > 0 && <TimelineSection title="Work Experience" items={candidate.experience.map((item) => ({ id: item.id, title: item.role, meta: item.company, range: `${item.startDate} - ${item.current ? "Present" : item.endDate}`, description: item.description }))} />}

@@ -20,11 +20,8 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  if (!data) {
-    return NextResponse.json({ profile: null })
-  }
-
-  // Fetch company name from profiles table (source of truth)
+  // Fetch company name from profiles table (source of truth) — populated at
+  // signup, so it must be available even before employer_profiles exists.
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
     .select('company')
@@ -33,6 +30,10 @@ export async function GET() {
 
   if (profileError) {
     console.error('Error fetching company from profiles:', profileError)
+  }
+
+  if (!data) {
+    return NextResponse.json({ profile: null, name: profileData?.company || '' })
   }
 
   // Avoid verbose logging of profile data in server logs

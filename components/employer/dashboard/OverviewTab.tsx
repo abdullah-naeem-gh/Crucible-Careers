@@ -11,10 +11,10 @@ import {
   IconPlus,
   IconUsers,
 } from "@tabler/icons-react";
-import { calculateAtsScore, getPipelineStage } from "@/lib/employer/services/applicants.service";
+import { calculateAtsScore, getApplicantsByJob, getPipelineStage } from "@/lib/employer/services/applicants.service";
 import { ApplicantPipelineStage, CandidateProfile } from "@/types/employer/applicant";
 import { EmployerJob } from "@/types/employer/job";
-import EmployerCalendar, { CalendarCandidate } from "@/components/employer/dashboard/EmployerCalendar";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export type { EmployerJob };
 
@@ -33,6 +33,7 @@ interface OverviewTabProps {
   onOpenJob: (jobId?: string) => void;
   onOpenApplicants: (jobId?: string, stage?: ApplicantPipelineStage) => void;
   onNewJob: () => void;
+  jobsLoading?: boolean;
 }
 
 interface ApplicantWithJob {
@@ -65,17 +66,6 @@ const stageLabels: Record<ApplicantPipelineStage, string> = {
   rejected: "Rejected",
 };
 
-function readStoredApplicants(jobId: string): CandidateProfile[] {
-  try {
-    const stored = localStorage.getItem(`recruiter_job_${jobId}_applicants`);
-    if (!stored) return [];
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
 function formatAppliedDate(value: string) {
   const timestamp = Date.parse(value);
   if (Number.isNaN(timestamp)) return value || "Date unavailable";
@@ -101,14 +91,21 @@ function OverviewMotion({ children }: { children: ReactNode }) {
   );
 }
 
-export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants, onNewJob }: OverviewTabProps) {
+export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants, onNewJob, jobsLoading = false }: OverviewTabProps) {
   const [applicantsByJob, setApplicantsByJob] = useState<Record<string, CandidateProfile[]>>({});
+  const [isLoadingApplicants, setIsLoadingApplicants] = useState(true);
+  const isLoading = jobsLoading || isLoadingApplicants;
 
   useEffect(() => {
-    setApplicantsByJob(jobs.reduce<Record<string, CandidateProfile[]>>((records, job) => {
-      records[job.id] = readStoredApplicants(job.id);
-      return records;
-    }, {}));
+    let cancelled = false;
+    getApplicantsByJob(jobs).then((data) => {
+      if (!cancelled) setApplicantsByJob(data);
+    }).finally(() => {
+      if (!cancelled) setIsLoadingApplicants(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [jobs]);
 
   const viewModel = useMemo(() => {
@@ -118,7 +115,7 @@ export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants
         candidate,
         job,
         stage: getPipelineStage(candidate),
-        fitScore: calculateAtsScore(candidate.skills ?? [], job.tags ?? []),
+        fitScore: candidate.atsScore ?? calculateAtsScore(candidate.skills ?? [], job.tags ?? []),
         originalIndex: originalIndex++,
       })),
     );
@@ -263,7 +260,11 @@ export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">{item.label}</span>
                     <Icon size={16} className="shrink-0 text-white/25 transition-colors group-hover:text-[#FF914D]" />
                   </div>
-                  <div className="mt-2 text-2xl font-semibold tracking-tight text-white">{item.value}</div>
+                  {isLoading ? (
+                    <Skeleton className="mt-2 h-7 w-10 rounded" />
+                  ) : (
+                    <div className="mt-2 text-2xl font-semibold tracking-tight text-white">{item.value}</div>
+                  )}
                   <div className="mt-1 truncate text-[11px] text-white/30">{item.helper}</div>
                 </motion.button>
               );
@@ -278,19 +279,33 @@ export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants
               </div>
 
               <div className="space-y-2.5">
-                {queue.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.id} className={`${rowSurface} flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center`}>
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.04] text-[#FF914D]"><Icon size={18} /></div>
-                      <div className="min-w-0 flex-1"><h3 className="text-sm font-medium text-white/90">{item.title}</h3><p className="mt-1 text-xs leading-relaxed text-white/38">{item.description}</p></div>
-                      <button type="button" onClick={item.onClick} className="overview-action-button inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-2 py-1.5 text-xs font-semibold text-[#FF914D] transition-colors hover:bg-orange-500/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] sm:self-center cursor-pointer">{item.actionLabel}<IconArrowRight size={14} /></button>
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className={`${rowSurface} flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center`}>
+                      <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+                      <div className="min-w-0 flex-1">
+                        <Skeleton className="h-3.5 w-2/5 rounded" />
+                        <Skeleton className="mt-2 h-3 w-3/5 rounded" />
+                      </div>
                     </div>
-                  );
-                })}
+                  ))
+                ) : (
+                  <>
+                    {queue.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={item.id} className={`${rowSurface} flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center`}>
+                          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.04] text-[#FF914D]"><Icon size={18} /></div>
+                          <div className="min-w-0 flex-1"><h3 className="text-sm font-medium text-white/90">{item.title}</h3><p className="mt-1 text-xs leading-relaxed text-white/38">{item.description}</p></div>
+                          <button type="button" onClick={item.onClick} className="overview-action-button inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-2 py-1.5 text-xs font-semibold text-[#FF914D] transition-colors hover:bg-orange-500/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] sm:self-center cursor-pointer">{item.actionLabel}<IconArrowRight size={14} /></button>
+                        </div>
+                      );
+                    })}
 
-                {!queue.length && (
-                  <div className={`${rowSurface} px-5 py-8 text-center`}><IconClipboardCheck size={22} className="mx-auto text-emerald-400/70" /><h3 className="mt-3 text-sm font-medium text-white/80">Nothing needs attention right now</h3><p className="mt-1.5 text-xs text-white/35">New applicants and role tasks will appear here when action is needed.</p></div>
+                    {!queue.length && (
+                      <div className={`${rowSurface} px-5 py-8 text-center`}><IconClipboardCheck size={22} className="mx-auto text-emerald-400/70" /><h3 className="mt-3 text-sm font-medium text-white/80">Nothing needs attention right now</h3><p className="mt-1.5 text-xs text-white/35">New applicants and role tasks will appear here when action is needed.</p></div>
+                    )}
+                  </>
                 )}
               </div>
             </section>
@@ -298,7 +313,19 @@ export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants
             <section className="lg:col-span-5">
               <div className="mb-3"><h2 className="text-sm font-semibold text-white">Recent applicants</h2><p className="mt-1 text-xs text-white/35">The latest candidates across all roles.</p></div>
               <div className={`${rowSurface} overflow-hidden`}>
-                {viewModel.recent.length > 0 ? viewModel.recent.map((item, index) => (
+                {isLoading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className={`p-3.5 ${i > 0 ? "border-t border-white/[0.055]" : ""}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <Skeleton className="h-3.5 w-2/5 rounded" />
+                          <Skeleton className="mt-2 h-3 w-1/3 rounded" />
+                        </div>
+                        <Skeleton className="h-4 w-12 shrink-0 rounded" />
+                      </div>
+                    </div>
+                  ))
+                ) : viewModel.recent.length > 0 ? viewModel.recent.map((item, index) => (
                   <button key={`${item.job.id}-${item.candidate.id}`} type="button" onClick={() => onOpenApplicants(item.job.id, item.stage)} className={`overview-applicant-row group block w-full p-3.5 text-left transition-colors hover:bg-white/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF6B00] cursor-pointer ${index > 0 ? "border-t border-white/[0.055]" : ""}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0"><div className="truncate text-sm font-medium text-white/85 group-hover:text-white">{item.candidate.name}</div><div className="mt-0.5 truncate text-xs text-white/38">{item.job.title}</div></div>

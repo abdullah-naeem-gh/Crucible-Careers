@@ -1,11 +1,13 @@
 "use client";
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import GoogleAuthButton from './GoogleAuthButton'
 
 interface SignUpFormProps {
   userType: 'talent' | 'employer'
   onSubmit: (formData: SignUpFormData) => void
   isLoading?: boolean
+  onGoogleError?: (message: string) => void
 }
 
 export interface SignUpFormData {
@@ -20,7 +22,7 @@ export interface SignUpFormData {
   confirmPassword: string
 }
 
-export default function SignUpForm({ userType, onSubmit, isLoading = false }: SignUpFormProps) {
+export default function SignUpForm({ userType, onSubmit, isLoading = false, onGoogleError }: SignUpFormProps) {
   const [formData, setFormData] = useState<SignUpFormData>({
     firstName: '',
     lastName: '',
@@ -326,6 +328,8 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false }: Si
           <a href="#" className="text-orange-600 hover:underline">Privacy Policy</a>
         </p>
       </form>
+
+      <GoogleAuthButton portal={userType} isDarkTheme={isDarkTheme} onError={onGoogleError} />
     </motion.div>
   )
 }

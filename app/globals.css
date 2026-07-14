@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* DashboardThemeProvider toggles a `.dark` class on <html> — without this,
+   Tailwind v4's `dark:` variant defaults to `prefers-color-scheme`, so it
+   would follow the OS theme instead of the in-app light/dark toggle. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --orange-500: #FF6B00;
   --orange-400: #FF914D;

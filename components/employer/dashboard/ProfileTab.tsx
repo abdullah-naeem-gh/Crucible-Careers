@@ -7,6 +7,7 @@ import ImageCropModal from "@/components/ui/ImageCropModal";
 
 import { createBrowserSupabaseClient } from "@/lib/shared/supabase/client";
 import { CompanyProfile } from "@/types/employer/profile";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 const insetSurface = "rounded-2xl border border-white/[0.065] bg-[#141414] shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]";
@@ -214,9 +215,38 @@ function ProfilePreview({ profile }: { profile: CompanyProfile }) {
 interface ProfileTabProps {
   profile: CompanyProfile;
   onChange: (updated: CompanyProfile) => void;
+  isLoading?: boolean;
 }
 
-export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
+function ProfileSkeleton() {
+  return (
+    <div className="grid lg:h-full lg:min-h-0 grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
+      <section className={`${surface} flex flex-col overflow-hidden p-5 lg:col-span-5 lg:h-full lg:min-h-0`}>
+        <div className="flex items-center gap-4 border-b border-white/[0.07] pb-5">
+          <Skeleton className="h-16 w-16 shrink-0 rounded-2xl" />
+          <div className="min-w-0 flex-1">
+            <Skeleton className="h-3 w-24 rounded" />
+            <Skeleton className="mt-2 h-5 w-40 rounded" />
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i}>
+              <Skeleton className="h-3 w-20 rounded" />
+              <Skeleton className="mt-2 h-10 w-full rounded-xl" />
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className={`${surface} p-5 lg:col-span-4 lg:h-full lg:min-h-0`}>
+        <Skeleton className="h-4 w-32 rounded" />
+        <Skeleton className="mt-4 h-48 w-full rounded-xl" />
+      </section>
+    </div>
+  );
+}
+
+export default function ProfileTab({ profile, onChange, isLoading = false }: ProfileTabProps) {
   const [saved, setSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formState, setFormState] = useState<CompanyProfile>(profile);
@@ -279,6 +309,8 @@ export default function ProfileTab({ profile, onChange }: ProfileTabProps) {
   const fieldClass =
     "w-full rounded-xl border border-white/[0.08] bg-[#121212] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-orange-500/45 focus:ring-2 focus:ring-orange-500/10";
   const labelClass = "mb-1.5 block text-xs font-medium text-white/50";
+
+  if (isLoading) return <ProfileSkeleton />;
 
   return (
     <ViewMotion className="grid lg:h-full lg:min-h-0 grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">

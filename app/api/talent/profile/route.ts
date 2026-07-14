@@ -27,11 +27,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 })
     }
 
-    if (!profile) {
-      return NextResponse.json({ profile: null }, { status: 200 })
-    }
-
-    // Fetch base name from profiles table (source of truth)
+    // Fetch base name from profiles table (source of truth) — populated at
+    // signup, so it must be available even before talent_profiles exists.
     const { data: baseProfile, error: baseError } = await supabase
       .from('profiles')
       .select('first_name, last_name')
@@ -40,6 +37,14 @@ export async function GET(request: NextRequest) {
 
     if (baseError) {
       console.error('Error fetching names from profiles:', baseError)
+    }
+
+    if (!profile) {
+      return NextResponse.json({
+        profile: null,
+        firstName: baseProfile?.first_name || '',
+        lastName: baseProfile?.last_name || '',
+      }, { status: 200 })
     }
 
     // Map database relations back to TalentProfile interface

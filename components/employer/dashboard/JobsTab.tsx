@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { IconUsers, IconChevronDown, IconChevronUp, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { EmployerJob } from "@/types/employer/job";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const JOBS_PER_PAGE = 10;
 
@@ -137,7 +138,27 @@ export default function JobsTab({
 
         <div className="min-h-0 flex-1 space-y-3 overflow-auto custom-scrollbar p-5">
           {isLoadingPage && pageJobs.length === 0 ? (
-            <div className="grid h-full place-items-center text-sm text-white/30">Loading jobs...</div>
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="w-full rounded-2xl border border-white/[0.065] bg-[#141414] p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <Skeleton className="h-3 w-2/5 rounded" />
+                      <Skeleton className="mt-2 h-4 w-3/5 rounded" />
+                    </div>
+                    <div className="text-right">
+                      <Skeleton className="ml-auto h-3 w-14 rounded" />
+                      <Skeleton className="mt-2 ml-auto h-5 w-16 rounded" />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Skeleton className="h-5 w-14 rounded-lg" />
+                    <Skeleton className="h-5 w-16 rounded-lg" />
+                    <Skeleton className="h-5 w-12 rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
           paginatedJobs.map((job) => (
             <motion.div

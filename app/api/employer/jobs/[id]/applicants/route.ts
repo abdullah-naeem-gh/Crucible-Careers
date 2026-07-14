@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
-import type { CandidateProfile, ScreeningStatus } from '@/types/employer/applicant'
+import type { ApplicantPipelineStage, CandidateProfile, ScreeningStatus } from '@/types/employer/applicant'
+
+function toScreeningStatus(stage: ApplicantPipelineStage): ScreeningStatus | undefined {
+  if (stage === 'applied') return undefined
+  if (stage === 'rejected') return 'rejected'
+  return 'shortlisted'
+}
 
 export async function GET(
   _request: NextRequest,
@@ -38,10 +44,7 @@ export async function GET(
 
   const result: CandidateProfile[] = applications.map((a) => {
     const snap: any = a.profile_snapshot || {}
-
-    let screeningStatus: ScreeningStatus | undefined
-    if (a.status === 'Under Review') screeningStatus = 'shortlisted'
-    else if (a.status === 'Rejected') screeningStatus = 'rejected'
+    const pipelineStage = a.status as ApplicantPipelineStage
 
     return {
       id: a.id,
@@ -58,7 +61,10 @@ export async function GET(
       linkedin: snap.linkedin || undefined,
       github: snap.github || undefined,
       portfolio: snap.portfolio || undefined,
-      screeningStatus,
+      resumeUrl: a.resume_url || undefined,
+      resumeFilename: a.resume_filename || undefined,
+      screeningStatus: toScreeningStatus(pipelineStage),
+      pipelineStage,
       customAnswers: a.custom_answers || [],
       rating: a.rating ?? undefined,
       note: a.note ?? undefined,

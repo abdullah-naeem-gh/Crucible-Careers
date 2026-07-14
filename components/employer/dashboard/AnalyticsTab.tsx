@@ -24,6 +24,8 @@ import {
 
 import { EmployerJob, JobType, JobStatus } from "@/types/employer/job";
 import { FORM_TEMPLATES } from "@/lib/shared/formTemplates";
+import { calculateAtsScore, getApplicantsByJob } from "@/lib/employer/services/applicants.service";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
 type AnalyticsView = "overview" | "roles" | "candidates" | "sources";
@@ -142,6 +144,34 @@ function InsightCard({ insight }: { insight: EmployerAnalyticsInsight }) {
           <p className="mt-1 text-xs leading-relaxed text-white/45">{insight.body}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AnalyticsSkeleton() {
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-5 overflow-y-auto pr-1 pb-1 custom-scrollbar">
+      <section className={`${surface} shrink-0 p-5`}>
+        <Skeleton className="h-3 w-40 rounded" />
+        <Skeleton className="mt-2 h-6 w-56 rounded" />
+        <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-xl" />
+          ))}
+        </div>
+      </section>
+      <section className={`${surface} grid grid-cols-2 gap-3 p-5 sm:grid-cols-4`}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className={`${insetSurface} p-4`}>
+            <Skeleton className="h-3 w-16 rounded" />
+            <Skeleton className="mt-2.5 h-6 w-12 rounded" />
+          </div>
+        ))}
+      </section>
+      <section className={`${surface} p-5`}>
+        <Skeleton className="h-4 w-32 rounded" />
+        <Skeleton className="mt-4 h-40 w-full rounded-xl" />
+      </section>
     </div>
   );
 }
@@ -535,32 +565,40 @@ function SourcesView({ snapshot }: { snapshot: EmployerAnalyticsSnapshot }) {
 interface AnalyticsTabProps {
   jobs: EmployerJob[];
   analytics: Analytics;
+  jobsLoading?: boolean;
 }
 
-export default function AnalyticsTab({ jobs }: AnalyticsTabProps) {
+export default function AnalyticsTab({ jobs, jobsLoading = false }: AnalyticsTabProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [activeView, setActiveView] = useState<AnalyticsView>("overview");
   const [applicantGroups, setApplicantGroups] = useState<EmployerApplicantGroups>({});
+  const [isLoadingApplicants, setIsLoadingApplicants] = useState(true);
+  const isLoading = jobsLoading || isLoadingApplicants;
 
   useEffect(() => {
-    const nextGroups: EmployerApplicantGroups = {};
-
-    jobs.forEach((job) => {
-      try {
-        const saved = localStorage.getItem(`recruiter_job_${job.id}_applicants`);
-        const parsed = saved ? JSON.parse(saved) : null;
-        if (Array.isArray(parsed)) nextGroups[job.id] = parsed;
-      } catch {
-        nextGroups[job.id] = [];
+    let cancelled = false;
+    getApplicantsByJob(jobs).then((data) => {
+      if (cancelled) return;
+      const mapped: EmployerApplicantGroups = {};
+      for (const job of jobs) {
+        mapped[job.id] = (data[job.id] ?? []).map((candidate) => ({
+          ...candidate,
+          matchScore: candidate.atsScore ?? calculateAtsScore(candidate.skills ?? [], job.tags ?? []),
+        }));
       }
+      setApplicantGroups(mapped);
+    }).finally(() => {
+      if (!cancelled) setIsLoadingApplicants(false);
     });
-
-    setApplicantGroups(nextGroups);
+    return () => {
+      cancelled = true;
+    };
   }, [jobs]);
 
   const snapshot = useMemo(() => buildEmployerAnalytics(jobs, applicantGroups), [jobs, applicantGroups]);
   const rangeLabel = timeRanges.find((range) => range.key === timeRange)?.label || "30D";
 
+  if (isLoading) return <AnalyticsSkeleton />;
   if (!jobs.length) return <EmptyState />;
 
   return (

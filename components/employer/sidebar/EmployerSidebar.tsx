@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { DashboardThemeSwitcher } from "@/components/shared/theme/DashboardThemeProvider";
 import ChatNotificationBell from "@/components/shared/chat/ChatNotificationBell";
 import { subscribeChatChanges, getTotalUnread } from "@/lib/shared/chat/chat.service";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 import {
   IconLayoutDashboard,
@@ -32,6 +33,7 @@ interface EmployerSidebarProps {
   onNewJob: () => void;
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  isLoading?: boolean;
 }
 
 const tabs: Array<{ key: EmployerTab; label: string }> = [
@@ -64,6 +66,7 @@ export default function EmployerSidebar({
   onNewJob,
   collapsed = false,
   onCollapsedChange,
+  isLoading = false,
 }: EmployerSidebarProps) {
   const [showNoJobsPrompt, setShowNoJobsPrompt] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
@@ -71,7 +74,7 @@ export default function EmployerSidebar({
   const railMode = collapsed;
 
   useEffect(() => {
-    const refresh = () => setChatUnread(getTotalUnread('employer'))
+    const refresh = () => { getTotalUnread('employer').then(setChatUnread) }
     refresh()
     return subscribeChatChanges(refresh)
   }, []);
@@ -111,7 +114,9 @@ export default function EmployerSidebar({
       <div className={`flex min-h-0 w-full flex-1 flex-col ${railMode ? "items-center" : "min-w-[232px]"}`}>
 
         <div className={railMode ? "mt-12 mb-5 flex flex-col items-center gap-2" : "mb-7 flex items-center gap-3"}>
-          {logoUrl ? (
+          {isLoading ? (
+            <Skeleton className={railMode ? "h-8 w-8 shrink-0 rounded-full" : "h-11 w-11 shrink-0 rounded-full"} />
+          ) : logoUrl ? (
             <img
               src={logoUrl}
               alt={`${company} logo`}
@@ -124,8 +129,17 @@ export default function EmployerSidebar({
           )}
           {expandedReady && (
             <div>
-              <div className="font-semibold text-white">{company}</div>
-              <div className="text-xs text-white/40">Employer account</div>
+              {isLoading ? (
+                <>
+                  <Skeleton className="mb-1.5 h-3.5 w-24 rounded" />
+                  <Skeleton className="h-3 w-20 rounded" />
+                </>
+              ) : (
+                <>
+                  <div className="font-semibold text-white">{company}</div>
+                  <div className="text-xs text-white/40">Employer account</div>
+                </>
+              )}
             </div>
           )}
         </div>

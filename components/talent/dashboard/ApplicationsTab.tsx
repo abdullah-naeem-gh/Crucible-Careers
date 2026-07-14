@@ -3,8 +3,9 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import StartChatModal from '@/components/shared/chat/StartChatModal'
+import { Skeleton } from '@/components/ui/Skeleton'
 
-type ApplicationStatus = 'Applied' | 'Under Review' | 'Interview' | 'Offer' | 'Rejected'
+type ApplicationStatus = 'Applied' | 'Shortlisted' | 'Interviewing' | 'Offered' | 'Hired' | 'Feedback' | 'Rejected'
 
 interface Application {
   id: string
@@ -34,11 +35,12 @@ interface ApplicationDetail {
 export default function ApplicationsTab() {
   const [selectedStatus, setSelectedStatus] = useState<string>('All')
   const [applicationsList, setApplicationsList] = useState<Application[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [appDetailsMap, setAppDetailsMap] = useState<Record<string, ApplicationDetail>>({})
   const [selectedAppId, setSelectedAppId] = useState<string>('')
   const [chatModal, setChatModal] = useState<{ appId: string; jobTitle: string; company: string } | null>(null)
 
-  const statuses = ['All', 'Applied', 'Under Review', 'Interview', 'Offer', 'Rejected']
+  const statuses = ['All', 'Applied', 'Shortlisted', 'Interviewing', 'Offered', 'Hired', 'Feedback', 'Rejected']
 
   useEffect(() => {
     fetch('/api/talent/applications')
@@ -50,6 +52,7 @@ export default function ApplicationsTab() {
         }
       })
       .catch(err => console.error('Failed to load applications', err))
+      .finally(() => setIsLoading(false))
   }, [])
 
   useEffect(() => {
@@ -106,7 +109,23 @@ export default function ApplicationsTab() {
 
         {/* Scrollable list */}
         <div className="flex-1 overflow-auto p-5 space-y-3">
-          {filteredApplications.map(app => (
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="w-full p-4 rounded-xl border border-gray-200 bg-white/50">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <Skeleton className="h-3 w-1/2 rounded" />
+                    <Skeleton className="mt-2 h-4 w-3/5 rounded" />
+                  </div>
+                  <Skeleton className="h-4 w-16 rounded" />
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <Skeleton className="h-3 w-24 rounded" />
+                  <Skeleton className="h-3 w-16 rounded" />
+                </div>
+              </div>
+            ))
+          ) : filteredApplications.map(app => (
             <motion.button
               key={app.id}
               onClick={() => setSelectedAppId(app.id)}
@@ -130,7 +149,7 @@ export default function ApplicationsTab() {
               </div>
             </motion.button>
           ))}
-          {filteredApplications.length === 0 && (
+          {!isLoading && filteredApplications.length === 0 && (
             <div className="text-center py-12 text-gray-400 text-sm">
               No applications found.
             </div>
@@ -140,9 +159,18 @@ export default function ApplicationsTab() {
 
       {/* Right Column: Application Details (col-span-4) */}
       <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
-        {!selectedAppDetail ? (
+        {isLoading || (selectedAppId && !selectedAppDetail) ? (
+          <div className="space-y-6">
+            <div>
+              <Skeleton className="h-3 w-1/3 rounded" />
+              <Skeleton className="mt-2 h-5 w-2/3 rounded" />
+            </div>
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+          </div>
+        ) : !selectedAppDetail ? (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-            {selectedAppId ? 'Loading application...' : 'Select an application to view details'}
+            Select an application to view details
           </div>
         ) : (
           <motion.div key={selectedAppDetail.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">

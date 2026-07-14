@@ -35,12 +35,30 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  const isProtected =
+  const isTalentProtected =
     pathname.startsWith('/talent/dashboard') ||
-    pathname.startsWith('/employer/dashboard')
+    pathname.startsWith('/talent/onboarding')
+  const isEmployerProtected =
+    pathname.startsWith('/employer/dashboard') ||
+    pathname.startsWith('/employer/onboarding')
 
-  if (isProtected && !user) {
-    return NextResponse.redirect(new URL('/gateway', request.url))
+  if (isTalentProtected && !user) {
+    return NextResponse.redirect(new URL('/talent/login', request.url))
+  }
+  if (isEmployerProtected && !user) {
+    return NextResponse.redirect(new URL('/employer/login', request.url))
+  }
+
+  // Role set at signup (`signUp()` passes it as user_metadata.role, copied by
+  // the handle_new_user() trigger into profiles.role) — a talent account must
+  // not be able to reach employer routes by editing the URL, and vice versa.
+  const role = user?.user_metadata?.role as string | undefined
+
+  if (isTalentProtected && role && role !== 'talent') {
+    return NextResponse.redirect(new URL(role === 'employer' ? '/employer/dashboard' : '/gateway', request.url))
+  }
+  if (isEmployerProtected && role && role !== 'employer') {
+    return NextResponse.redirect(new URL(role === 'talent' ? '/talent/dashboard' : '/gateway', request.url))
   }
 
   // IMPORTANT: return supabaseResponse (not NextResponse.next()) so that
@@ -52,5 +70,7 @@ export const config = {
   matcher: [
     '/talent/dashboard/:path*',
     '/employer/dashboard/:path*',
+    '/talent/onboarding/:path*',
+    '/employer/onboarding/:path*',
   ],
 }

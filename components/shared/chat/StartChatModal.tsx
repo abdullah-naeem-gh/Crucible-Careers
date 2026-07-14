@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { IconX, IconSend, IconMessageCircle } from '@tabler/icons-react'
 import type { ChatParticipantRole } from '@/types/shared/chat'
-import { openOrCreateConversation, listConversations } from '@/lib/shared/chat/chat.service'
+import { openOrCreateConversation } from '@/lib/shared/chat/chat.service'
 
 interface StartChatModalProps {
   isOpen: boolean
@@ -38,15 +38,7 @@ export default function StartChatModal({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = () => {
-    // If conversation already exists for this application, just open it
-    const existing = listConversations().find(c => c.applicationId === applicationId)
-    if (existing) {
-      onClose()
-      onSuccess(existing.id)
-      return
-    }
-
+  const handleSubmit = async () => {
     if (!message.trim()) {
       setError('Please write a message to start the conversation.')
       return
@@ -54,7 +46,7 @@ export default function StartChatModal({
     setLoading(true)
     setError(null)
     try {
-      const conv = openOrCreateConversation({
+      const conv = await openOrCreateConversation({
         applicationId,
         jobId,
         jobTitle,

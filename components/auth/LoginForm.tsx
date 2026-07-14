@@ -2,11 +2,13 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import GoogleAuthButton from './GoogleAuthButton'
 
 interface LoginFormProps {
   userType: 'talent' | 'employer'
   onSubmit: (formData: LoginFormData) => void
   isLoading?: boolean
+  onGoogleError?: (message: string) => void
 }
 
 export interface LoginFormData {
@@ -14,7 +16,7 @@ export interface LoginFormData {
   password: string
 }
 
-export default function LoginForm({ userType, onSubmit, isLoading = false }: LoginFormProps) {
+export default function LoginForm({ userType, onSubmit, isLoading = false, onGoogleError }: LoginFormProps) {
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: ''
@@ -145,6 +147,8 @@ export default function LoginForm({ userType, onSubmit, isLoading = false }: Log
           <a href="#" className="text-orange-600 hover:underline">Privacy Policy</a>
         </p>
       </form>
+
+      <GoogleAuthButton portal={userType} isDarkTheme={isDarkTheme} onError={onGoogleError} />
     </motion.div>
   )
 }

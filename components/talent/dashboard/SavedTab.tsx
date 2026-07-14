@@ -1,50 +1,18 @@
 "use client";
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { IconCheck } from '@tabler/icons-react'
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
-
-interface SavedJob {
-  id: string
-  title: string
-  company: string
-  location: string
-  type: 'Full-time' | 'Part-time' | 'Contract' | 'Internship'
-  salary?: string
-  tags: string[]
-  postedAt: string
-  description: string
-  matchScore: number
-  savedAt: string
-}
-
-
+import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 export default function SavedTab() {
   const [selectedCompany, setSelectedCompany] = useState<string>('All')
   const [selectedType, setSelectedType] = useState<string>('All')
-  const [savedJobs, setSavedJobs] = useState<SavedJob[]>([])
   const [selectedJobId, setSelectedJobId] = useState<string>('')
   const { appliedJobIds } = useAppliedJobIds()
-
-  useEffect(() => {
-    const loadJobs = () => {
-      try {
-        const stored = localStorage.getItem('talent_saved_jobs')
-        const parsed = stored ? JSON.parse(stored) : []
-        setSavedJobs(parsed)
-        if (parsed.length > 0 && !selectedJobId) {
-          setSelectedJobId(parsed[0].id)
-        }
-      } catch (e) {
-        setSavedJobs([])
-      }
-    }
-    loadJobs()
-    window.addEventListener('talent_saved_jobs_changed', loadJobs)
-    return () => window.removeEventListener('talent_saved_jobs_changed', loadJobs)
-  }, [selectedJobId])
+  const { savedJobs, toggleSave, loading: isLoading } = useSavedJobs()
 
   const companies = ['All', ...Array.from(new Set(savedJobs.map(j => j.company)))]
   const types = ['All', 'Full-time', 'Part-time', 'Contract', 'Internship']
@@ -58,15 +26,7 @@ export default function SavedTab() {
   const selectedJob = savedJobs.find(j => j.id === selectedJobId) ?? filteredJobs[0] ?? null
 
   const handleRemove = (id: string) => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      const updated = parsed.filter((j: any) => j.id !== id)
-      localStorage.setItem('talent_saved_jobs', JSON.stringify(updated))
-      window.dispatchEvent(new Event('talent_saved_jobs_changed'))
-    } catch (e) {
-      console.error(e)
-    }
+    toggleSave(id)
   }
 
   return (
@@ -114,7 +74,20 @@ export default function SavedTab() {
 
         {/* Scrollable List */}
         <div className="flex-1 overflow-auto p-5 space-y-3">
-          {filteredJobs.map(job => (
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="w-full p-4 rounded-xl border border-white/[0.065] bg-white/50">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <Skeleton className="h-3 w-1/2 rounded" />
+                    <Skeleton className="mt-2 h-4 w-3/5 rounded" />
+                    <Skeleton className="mt-2 h-3 w-1/3 rounded" />
+                  </div>
+                  <Skeleton className="h-4 w-16 rounded" />
+                </div>
+              </div>
+            ))
+          ) : filteredJobs.map(job => (
             <motion.button
               key={job.id}
               onClick={() => setSelectedJobId(job.id)}
@@ -137,7 +110,7 @@ export default function SavedTab() {
               </div>
             </motion.button>
           ))}
-          {filteredJobs.length === 0 && (
+          {!isLoading && filteredJobs.length === 0 && (
             <div className="text-center py-12 text-gray-400 text-sm">
               No saved jobs match these filters.
             </div>
@@ -147,7 +120,16 @@ export default function SavedTab() {
 
       {/* Right Column: Job details (col-span-4) */}
       <section className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-[24px] shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] overflow-auto p-6 lg:col-span-4">
-        {!selectedJob ? (
+        {isLoading ? (
+          <div className="space-y-6">
+            <div>
+              <Skeleton className="h-3 w-1/3 rounded" />
+              <Skeleton className="mt-2 h-5 w-2/3 rounded" />
+            </div>
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </div>
+        ) : !selectedJob ? (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">
             Select a job to view details
           </div>

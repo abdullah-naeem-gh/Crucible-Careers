@@ -7,10 +7,32 @@ import useDebounce from '@/hooks/shared/useDebounce'
 import Link from 'next/link'
 import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
-import { getFeaturedCompanyNames } from '@/lib/employer/ranking/reviews'
+import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 interface Props {
   jobs: ScrapedJob[]
+  isLoading?: boolean
+}
+
+function JobCardSkeleton() {
+  return (
+    <div className="w-full p-4 rounded-xl border border-white/[0.065] bg-white">
+      <div className="flex items-start gap-4">
+        <Skeleton className="h-12 w-12 shrink-0 rounded-xl" />
+        <div className="min-w-0 flex-1">
+          <Skeleton className="h-4 w-3/5 rounded" />
+          <Skeleton className="mt-2 h-3.5 w-2/5 rounded" />
+          <Skeleton className="mt-2 h-3 w-1/3 rounded" />
+          <div className="mt-2.5 flex gap-1.5">
+            <Skeleton className="h-5 w-14 rounded-md" />
+            <Skeleton className="h-5 w-16 rounded-md" />
+            <Skeleton className="h-5 w-12 rounded-md" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 const JOB_TYPES = ['full-time', 'part-time', 'contract', 'remote']
@@ -32,7 +54,7 @@ function getMatchScore(jobId: string): number {
   return 65 + (Math.abs(hash) % 34)
 }
 
-export default function JobBrowser({ jobs }: Props) {
+export default function JobBrowser({ jobs, isLoading = false }: Props) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(jobs[0]?._id ?? null)
   const selectedJob = jobs.find(j => j._id === selectedJobId) ?? jobs[0] ?? null
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -42,62 +64,21 @@ export default function JobBrowser({ jobs }: Props) {
   const listRef = useRef<HTMLDivElement>(null)
   const detailPanelRef = useRef<HTMLDivElement>(null)
   const [showFloatingApply, setShowFloatingApply] = useState(false)
-  const [savedJobIds, setSavedJobIds] = useState<string[]>([])
-  const [featuredCompanies, setFeaturedCompanies] = useState<Set<string>>(new Set())
   const { appliedJobIds } = useAppliedJobIds()
+  const { isSaved: isJobSaved, toggleSave } = useSavedJobs()
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      setSavedJobIds(parsed.map((j: any) => j.id))
-    } catch (e) {
-      console.error(e)
-    }
-  }, [])
-
-  useEffect(() => {
-    setFeaturedCompanies(getFeaturedCompanyNames())
-  }, [])
-
-  const isJobSaved = (id: string) => savedJobIds.includes(id)
-
-  const toggleSaveJob = (job: ScrapedJob) => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      let updated = []
-      if (parsed.some((j: any) => j.id === job._id)) {
-        updated = parsed.filter((j: any) => j.id !== job._id)
-      } else {
-        const savedItem = {
-          id: job._id,
-          title: job.title,
-          company: job.company,
-          location: job.location || 'Remote',
-          type: job.type ? (job.type.charAt(0).toUpperCase() + job.type.slice(1)) : 'Full-time',
-          salary: job.salary || undefined,
-          tags: job.tags,
-          postedAt: relativeDate(job.posted_at) || 'Recent',
-          description: job.description || '',
-          matchScore: getMatchScore(job._id),
-          savedAt: new Date().toISOString().split('T')[0]
-        }
-        updated = [...parsed, savedItem]
-      }
-      localStorage.setItem('talent_saved_jobs', JSON.stringify(updated))
-      setSavedJobIds(updated.map((j: any) => j.id))
-      window.dispatchEvent(new Event('talent_saved_jobs_changed'))
-    } catch (e) {
-      console.error(e)
-    }
-  }
+  const toggleSaveJob = (job: ScrapedJob) => toggleSave(job._id)
 
   useEffect(() => {
     if (detailPanelRef.current) {
       detailPanelRef.current.scrollTop = 0
     }
     setShowFloatingApply(false)
+  }, [selectedJobId])
+
+  useEffect(() => {
+    if (!selectedJobId) return
+    fetch(`/api/talent/jobs/${selectedJobId}/view`, { method: 'POST' }).catch(() => {})
   }, [selectedJobId])
 
   useEffect(() => {
@@ -220,7 +201,11 @@ export default function JobBrowser({ jobs }: Props) {
         </div>
 
         <div ref={listRef} className="flex-1 overflow-auto px-5 py-4">
-          {paginated.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => <JobCardSkeleton key={i} />)}
+            </div>
+          ) : paginated.length === 0 ? (
             <div className="h-full flex items-center justify-center text-gray-400 text-sm">
               No jobs match your search
             </div>

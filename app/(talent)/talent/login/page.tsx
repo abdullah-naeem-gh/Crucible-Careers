@@ -183,6 +183,7 @@ export default function TalentLogin() {
                   userType="talent"
                   onSubmit={handleSubmit}
                   isLoading={isLoading}
+                  onGoogleError={setError}
                 />
 
                 {error && (

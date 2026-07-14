@@ -186,6 +186,7 @@ export default function EmployerSignUp() {
                 userType="employer"
                 onSubmit={handleSubmit}
                 isLoading={isLoading}
+                onGoogleError={setError}
               />
 
               <div className="mt-6 text-center">
