@@ -184,20 +184,20 @@ function TalentDashboardContent() {
             transition={{ duration: 0.4, ease: 'easeOut' }}
             className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4"
           >
-            <div className="flex items-center gap-3 rounded-2xl border border-orange-500/30 bg-[#1a1a1a]/95 backdrop-blur px-4 py-3 shadow-xl shadow-black/40">
+            <div className="flex items-center gap-3 rounded-2xl border border-orange-500/30 bg-white/95 px-4 py-3 shadow-xl shadow-black/10 backdrop-blur dark:bg-[#1a1a1a]/95 dark:shadow-black/40">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] flex items-center justify-center text-base">
                 🎉
               </div>
-              <p className="flex-1 text-sm text-white/90 leading-snug">
+              <p className="flex-1 text-sm leading-snug text-gray-700 dark:text-white/90">
                 {onboardedName ? (
-                  <><span className="font-semibold text-white">Welcome, {onboardedName}!</span> Here are jobs picked for you based on your profile.</>  
+                  <><span className="font-semibold text-gray-900 dark:text-white">Welcome, {onboardedName}!</span> Here are jobs picked for you based on your profile.</>
                 ) : (
-                  <><span className="font-semibold text-white">Welcome to Crucible!</span> Here are jobs curated based on your profile.</>
+                  <><span className="font-semibold text-gray-900 dark:text-white">Welcome to Crucible!</span> Here are jobs curated based on your profile.</>
                 )}
               </p>
               <button
                 onClick={() => setShowWelcomeBanner(false)}
-                className="flex-shrink-0 text-white/40 hover:text-white/80 transition-colors text-lg leading-none"
+                className="flex-shrink-0 text-lg leading-none text-gray-400 transition-colors hover:text-gray-700 dark:text-white/40 dark:hover:text-white/80"
                 aria-label="Dismiss"
               >
                 ×

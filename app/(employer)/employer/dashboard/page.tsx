@@ -15,10 +15,11 @@ import AnalyticsTab from "@/components/employer/dashboard/AnalyticsTab";
 import ProfileTab from "@/components/employer/dashboard/ProfileTab";
 import JobForm from "@/components/employer/dashboard/JobForm";
 import MessagesTab from "@/components/shared/chat/MessagesTab";
+import RankingTab from "@/components/employer/dashboard/RankingTab";
 import { getEmployerProfile, saveEmployerProfile } from "@/lib/employer/services/profile.service";
 import { CompanyProfile } from "@/types/employer/profile";
 
-type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages";
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking";
 
 const DEFAULT_PROFILE: CompanyProfile = {
   name: "TechCorp",
@@ -50,7 +51,7 @@ function EmployerDashboardContent() {
   const requestedStage = searchParams.get("stage") as ApplicantPipelineStage | null;
   const onboarded = searchParams.get("onboarded");
   const initialTab: EmployerTab =
-    requestedTab === "jobs" || requestedTab === "applicants" || requestedTab === "analytics" || requestedTab === "profile" || requestedTab === "messages"
+    requestedTab === "jobs" || requestedTab === "applicants" || requestedTab === "analytics" || requestedTab === "profile" || requestedTab === "messages" || requestedTab === "ranking"
       ? (requestedTab as EmployerTab)
       : "overview";
 
@@ -380,6 +381,9 @@ function EmployerDashboardContent() {
                   myDisplayName={company}
                   isDark={true}
                 />
+              )}
+              {activeTab === "ranking" && (
+                <RankingTab key="ranking" jobs={jobs} company={company} />
               )}
             </AnimatePresence>
           </motion.div>

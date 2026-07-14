@@ -7,6 +7,7 @@ import useDebounce from '@/hooks/shared/useDebounce'
 import Link from 'next/link'
 import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
+import { getFeaturedCompanyNames } from '@/lib/employer/ranking/reviews'
 
 interface Props {
   jobs: ScrapedJob[]
@@ -42,6 +43,7 @@ export default function JobBrowser({ jobs }: Props) {
   const detailPanelRef = useRef<HTMLDivElement>(null)
   const [showFloatingApply, setShowFloatingApply] = useState(false)
   const [savedJobIds, setSavedJobIds] = useState<string[]>([])
+  const [featuredCompanies, setFeaturedCompanies] = useState<Set<string>>(new Set())
   const { appliedJobIds } = useAppliedJobIds()
 
   useEffect(() => {
@@ -52,6 +54,10 @@ export default function JobBrowser({ jobs }: Props) {
     } catch (e) {
       console.error(e)
     }
+  }, [])
+
+  useEffect(() => {
+    setFeaturedCompanies(getFeaturedCompanyNames())
   }, [])
 
   const isJobSaved = (id: string) => savedJobIds.includes(id)
@@ -298,6 +304,11 @@ export default function JobBrowser({ jobs }: Props) {
                               {job.source === 'Crucible' && (
                                 <span className="text-[9px] uppercase tracking-wider text-white bg-[#FF6B00] border border-transparent dark:text-orange-300 dark:bg-orange-500/10 dark:border-orange-500/20 px-1.5 py-0.5 rounded font-bold">
                                   Platform
+                                </span>
+                              )}
+                              {featuredCompanies.has(job.company) && (
+                                <span className="text-[9px] uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-200 dark:text-amber-300 dark:bg-amber-500/10 dark:border-amber-500/20 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5">
+                                  ⭐ Featured
                                 </span>
                               )}
                             </div>

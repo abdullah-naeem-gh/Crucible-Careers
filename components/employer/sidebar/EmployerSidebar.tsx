@@ -17,9 +17,10 @@ import {
   IconChevronRight,
   IconLogout,
   IconMessage,
+  IconTrophy,
 } from "@tabler/icons-react";
 
-type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages";
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking";
 
 interface EmployerSidebarProps {
   activeTab: EmployerTab;
@@ -40,6 +41,7 @@ const tabs: Array<{ key: EmployerTab; label: string }> = [
   { key: "applicants", label: "All Applicants" },
   { key: "analytics", label: "Analytics" },
   { key: "messages", label: "Messages" },
+  { key: "ranking", label: "My Ranking" },
 ];
 
 const TAB_ICONS: Record<EmployerTab, React.ComponentType<any>> = {
@@ -49,6 +51,7 @@ const TAB_ICONS: Record<EmployerTab, React.ComponentType<any>> = {
   analytics: IconChartBar,
   profile: IconBuilding,
   messages: IconMessage,
+  ranking: IconTrophy,
 };
 
 export default function EmployerSidebar({
@@ -136,6 +139,7 @@ export default function EmployerSidebar({
               : null;
             const IconComponent = TAB_ICONS[tab.key];
 
+            const isRanking = tab.key === "ranking";
             return (
               <button
                 key={tab.key}
@@ -145,8 +149,10 @@ export default function EmployerSidebar({
                 className={`${railMode ? "grid h-8 w-8 place-items-center justify-center px-0 py-0" : "flex w-full items-center justify-between px-3.5 py-2.5 text-left rounded-xl border"} transition-all cursor-pointer ${
                   active
                     ? railMode
-                      ? "text-[#FF914D]"
-                      : "border-orange-500/20 bg-orange-500/10 text-[#FF914D] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                      ? isRanking ? "text-amber-400" : "text-[#FF914D]"
+                      : isRanking
+                        ? "border-amber-500/20 bg-amber-500/10 text-amber-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                        : "border-orange-500/20 bg-orange-500/10 text-[#FF914D] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
                     : railMode
                       ? "text-white/42 hover:text-white"
                       : "border-transparent text-white/60 hover:border-white/[0.05] hover:bg-white/[0.035] hover:text-white"
@@ -157,7 +163,7 @@ export default function EmployerSidebar({
                   {expandedReady && <span>{tab.label}</span>}
                 </div>
                 {expandedReady && count !== null && (
-                  <span className={`rounded-md px-2 py-0.5 text-xs ${active ? "bg-orange-500/15 text-[#FF914D]" : "text-white/30"}`}>
+                  <span className={`rounded-md px-2 py-0.5 text-xs ${active ? (isRanking ? "bg-amber-500/15 text-amber-400" : "bg-orange-500/15 text-[#FF914D]") : "text-white/30"}`}>
                     {count}
                   </span>
                 )}
