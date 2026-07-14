@@ -126,18 +126,10 @@ function TalentDashboardContent() {
   }, [])
 
   useEffect(() => {
-    const updateSavedCount = () => {
-      try {
-        const savedBookmarked = localStorage.getItem('talent_saved_jobs')
-        const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
-        setSavedCount(bookmarked.length)
-      } catch (e) {
-        console.error('Failed to load saved jobs count', e)
-      }
-    }
-    updateSavedCount()
-    window.addEventListener('talent_saved_jobs_changed', updateSavedCount)
-    return () => window.removeEventListener('talent_saved_jobs_changed', updateSavedCount)
+    fetch('/api/talent/saved')
+      .then(res => res.ok ? res.json() : [])
+      .then((list: any[]) => setSavedCount(list.length))
+      .catch(err => console.error('Failed to load saved jobs count', err))
   }, [])
 
   useEffect(() => {

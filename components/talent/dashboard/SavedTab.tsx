@@ -1,50 +1,17 @@
 "use client";
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { IconCheck } from '@tabler/icons-react'
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
-
-interface SavedJob {
-  id: string
-  title: string
-  company: string
-  location: string
-  type: 'Full-time' | 'Part-time' | 'Contract' | 'Internship'
-  salary?: string
-  tags: string[]
-  postedAt: string
-  description: string
-  matchScore: number
-  savedAt: string
-}
-
-
+import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
 
 export default function SavedTab() {
   const [selectedCompany, setSelectedCompany] = useState<string>('All')
   const [selectedType, setSelectedType] = useState<string>('All')
-  const [savedJobs, setSavedJobs] = useState<SavedJob[]>([])
   const [selectedJobId, setSelectedJobId] = useState<string>('')
   const { appliedJobIds } = useAppliedJobIds()
-
-  useEffect(() => {
-    const loadJobs = () => {
-      try {
-        const stored = localStorage.getItem('talent_saved_jobs')
-        const parsed = stored ? JSON.parse(stored) : []
-        setSavedJobs(parsed)
-        if (parsed.length > 0 && !selectedJobId) {
-          setSelectedJobId(parsed[0].id)
-        }
-      } catch (e) {
-        setSavedJobs([])
-      }
-    }
-    loadJobs()
-    window.addEventListener('talent_saved_jobs_changed', loadJobs)
-    return () => window.removeEventListener('talent_saved_jobs_changed', loadJobs)
-  }, [selectedJobId])
+  const { savedJobs, toggleSave } = useSavedJobs()
 
   const companies = ['All', ...Array.from(new Set(savedJobs.map(j => j.company)))]
   const types = ['All', 'Full-time', 'Part-time', 'Contract', 'Internship']
@@ -58,15 +25,7 @@ export default function SavedTab() {
   const selectedJob = savedJobs.find(j => j.id === selectedJobId) ?? filteredJobs[0] ?? null
 
   const handleRemove = (id: string) => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      const updated = parsed.filter((j: any) => j.id !== id)
-      localStorage.setItem('talent_saved_jobs', JSON.stringify(updated))
-      window.dispatchEvent(new Event('talent_saved_jobs_changed'))
-    } catch (e) {
-      console.error(e)
-    }
+    toggleSave(id)
   }
 
   return (

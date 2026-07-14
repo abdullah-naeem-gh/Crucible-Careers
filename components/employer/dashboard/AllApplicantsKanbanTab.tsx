@@ -86,7 +86,13 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
       setApplicants([]);
       return;
     }
-    setApplicants(getApplicantsForJob(selectedJob));
+    let cancelled = false;
+    getApplicantsForJob(selectedJob).then((data) => {
+      if (!cancelled) setApplicants(data);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedJob]);
 
   useEffect(() => setNoteText(selectedApplicant?.note ?? ""), [selectedApplicant]);
@@ -254,7 +260,7 @@ function MiniStat({ label, value }: { label: string; value: number }) {
 }
 
 function ApplicantKanbanCard({ candidate, job, onOpen, onDragStart, onDragEnd }: { candidate: CandidateProfile; job: EmployerJob | null; onOpen: () => void; onDragStart: (event: React.DragEvent<HTMLButtonElement>) => void; onDragEnd: () => void; }) {
-  const score = job ? calculateAtsScore(candidate.skills, job.tags) : 75;
+  const score = candidate.atsScore ?? (job ? calculateAtsScore(candidate.skills, job.tags) : 75);
   return (
     <button type="button" draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={onOpen} className="kanban-card group w-full rounded-2xl border p-3 text-left outline-none transition-all hover:-translate-y-px hover:border-orange-500/30 hover:shadow-[0_10px_24px_rgba(255,107,0,0.10)] focus:border-orange-500/45 cursor-pointer">
       <div className="flex items-start justify-between gap-3">
@@ -274,7 +280,7 @@ function ApplicantKanbanCard({ candidate, job, onOpen, onDragStart, onDragEnd }:
 
 function CandidateSlideOver({ candidate, job, visibleStages, noteText, onClose, onMove, onNoteTextChange, onSaveNote, onSaveRating, onMessageApplicant }: { candidate: CandidateProfile; job: EmployerJob; visibleStages: ApplicantPipelineStage[]; noteText: string; onClose: () => void; onMove: (applicantId: string, stage: ApplicantPipelineStage) => void; onNoteTextChange: (value: string) => void; onSaveNote: (applicantId: string, note: string) => void; onSaveRating: (applicantId: string, rating: number) => void; onMessageApplicant: (applicant: CandidateProfile, job: EmployerJob) => void }) {
   const currentStage = getPipelineStage(candidate);
-  const score = calculateAtsScore(candidate.skills, job.tags);
+  const score = candidate.atsScore ?? calculateAtsScore(candidate.skills, job.tags);
   const stageOptions = STAGES.filter((stage) => visibleStages.includes(stage.key) || stage.key === currentStage || stage.key === "feedback" || stage.key === "rejected");
   const isActive = currentStage !== 'rejected';
   return (

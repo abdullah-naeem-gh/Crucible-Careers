@@ -7,6 +7,7 @@ import useDebounce from '@/hooks/shared/useDebounce'
 import Link from 'next/link'
 import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
+import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
 
 interface Props {
   jobs: ScrapedJob[]
@@ -41,51 +42,10 @@ export default function JobBrowser({ jobs }: Props) {
   const listRef = useRef<HTMLDivElement>(null)
   const detailPanelRef = useRef<HTMLDivElement>(null)
   const [showFloatingApply, setShowFloatingApply] = useState(false)
-  const [savedJobIds, setSavedJobIds] = useState<string[]>([])
   const { appliedJobIds } = useAppliedJobIds()
+  const { isSaved: isJobSaved, toggleSave } = useSavedJobs()
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      setSavedJobIds(parsed.map((j: any) => j.id))
-    } catch (e) {
-      console.error(e)
-    }
-  }, [])
-
-  const isJobSaved = (id: string) => savedJobIds.includes(id)
-
-  const toggleSaveJob = (job: ScrapedJob) => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      let updated = []
-      if (parsed.some((j: any) => j.id === job._id)) {
-        updated = parsed.filter((j: any) => j.id !== job._id)
-      } else {
-        const savedItem = {
-          id: job._id,
-          title: job.title,
-          company: job.company,
-          location: job.location || 'Remote',
-          type: job.type ? (job.type.charAt(0).toUpperCase() + job.type.slice(1)) : 'Full-time',
-          salary: job.salary || undefined,
-          tags: job.tags,
-          postedAt: relativeDate(job.posted_at) || 'Recent',
-          description: job.description || '',
-          matchScore: getMatchScore(job._id),
-          savedAt: new Date().toISOString().split('T')[0]
-        }
-        updated = [...parsed, savedItem]
-      }
-      localStorage.setItem('talent_saved_jobs', JSON.stringify(updated))
-      setSavedJobIds(updated.map((j: any) => j.id))
-      window.dispatchEvent(new Event('talent_saved_jobs_changed'))
-    } catch (e) {
-      console.error(e)
-    }
-  }
+  const toggleSaveJob = (job: ScrapedJob) => toggleSave(job._id)
 
   useEffect(() => {
     if (detailPanelRef.current) {

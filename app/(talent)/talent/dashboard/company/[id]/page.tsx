@@ -7,6 +7,7 @@ import TalentSidebar from '@/components/talent/sidebar/TalentSidebar'
 import { JOBS } from '@/lib/talent/data/jobs'
 import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
+import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
 
 export default function CompanyProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -16,9 +17,9 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true)
   const [jobCount, setJobCount] = useState(JOBS.length)
   const [appCount, setAppCount] = useState(0)
-  const [savedCount, setSavedCount] = useState(0)
-  const [savedJobIds, setSavedJobIds] = useState<string[]>([])
   const { appliedJobIds } = useAppliedJobIds()
+  const { savedJobs, isSaved: isRoleSaved, toggleSave: toggleSaveRole } = useSavedJobs()
+  const savedCount = savedJobs.length
 
   useEffect(() => {
     fetch(`/api/talent/companies/${companyId}`)
@@ -41,50 +42,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
       .then(res => res.ok ? res.json() : [])
       .then((list: any[]) => setAppCount(list.length))
       .catch(err => console.error('Failed to load talent applications count', err))
-
-    try {
-      const savedBookmarked = localStorage.getItem('talent_saved_jobs')
-      const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
-      setSavedCount(bookmarked.length)
-      setSavedJobIds(bookmarked.map((j: any) => j.id))
-    } catch (e) {
-      console.error(e)
-    }
   }, [companyId])
-
-  const isRoleSaved = (id: string) => savedJobIds.includes(id)
-
-  const toggleSaveRole = (role: { id: string; title: string; type: string; location: string; salary: string }) => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      let updated
-      if (parsed.some((j: any) => j.id === role.id)) {
-        updated = parsed.filter((j: any) => j.id !== role.id)
-      } else {
-        const savedItem = {
-          id: role.id,
-          title: role.title,
-          company: company?.name || 'Unknown Company',
-          location: role.location || 'Remote',
-          type: role.type || 'Full-time',
-          salary: role.salary || undefined,
-          tags: [],
-          postedAt: 'Recently',
-          description: '',
-          matchScore: 0,
-          savedAt: new Date().toISOString().split('T')[0],
-        }
-        updated = [...parsed, savedItem]
-      }
-      localStorage.setItem('talent_saved_jobs', JSON.stringify(updated))
-      setSavedJobIds(updated.map((j: any) => j.id))
-      setSavedCount(updated.length)
-      window.dispatchEvent(new Event('talent_saved_jobs_changed'))
-    } catch (e) {
-      console.error(e)
-    }
-  }
 
   if (loading || !company) {
     return (
@@ -270,7 +228,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => toggleSaveRole(role)}
+                          onClick={() => toggleSaveRole(role.id)}
                           className="shrink-0 p-2 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white"
                           title={isRoleSaved(role.id) ? 'Saved' : 'Save Job'}
                         >

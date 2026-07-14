@@ -67,18 +67,26 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const refreshAll = useCallback(() => {
-    const convs = listConversations()
-    setConversations(convs)
-    if (selectedId) {
-      setMessages(getMessages(selectedId))
-    }
+  const selectedIdRef = useRef(selectedId)
+  useEffect(() => {
+    selectedIdRef.current = selectedId
   }, [selectedId])
 
-  // Initial load + subscriptions
+  const refreshAll = useCallback(async () => {
+    const convs = await listConversations()
+    setConversations(convs)
+    const currentId = selectedIdRef.current
+    if (currentId) {
+      setMessages(await getMessages(currentId))
+    }
+  }, [])
+
+  // Initial load + subscription — mount-only, since refreshAll no longer
+  // depends on selectedId (reads it via a ref instead), the realtime
+  // channel is created once and isn't torn down/recreated on every click.
   useEffect(() => {
     refreshAll()
-    return subscribeChatChanges(refreshAll)
+    return subscribeChatChanges(() => { refreshAll() })
   }, [refreshAll])
 
   // Auto-select first conversation if none selected
@@ -89,11 +97,21 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
     }
   }, [conversations, selectedId])
 
-  // Mark read when a conversation is selected
+  // Mark read + load thread when a conversation is selected
   useEffect(() => {
-    if (selectedId) {
-      markConversationRead(selectedId, role)
-      setMessages(getMessages(selectedId))
+    if (!selectedId) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        await markConversationRead(selectedId, role)
+        const msgs = await getMessages(selectedId)
+        if (!cancelled) setMessages(msgs)
+      } catch (e: any) {
+        if (!cancelled) setError(e.message)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
   }, [selectedId, role])
 
@@ -116,30 +134,38 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
   const handleSelectConv = (id: string) => {
     setSelectedId(id)
     setError(null)
-    markConversationRead(id, role)
-    setMessages(getMessages(id))
   }
 
-  const handleAccept = (convId: string) => {
-    acceptRequest(convId)
-    refreshAll()
-    setSelectedId(convId)
+  const handleAccept = async (convId: string) => {
+    setError(null)
+    try {
+      await acceptRequest(convId)
+      await refreshAll()
+      setSelectedId(convId)
+    } catch (e: any) {
+      setError(e.message)
+    }
   }
 
-  const handleDecline = (convId: string) => {
-    declineRequest(convId)
-    refreshAll()
-    if (selectedId === convId) setSelectedId(null)
+  const handleDecline = async (convId: string) => {
+    setError(null)
+    try {
+      await declineRequest(convId)
+      await refreshAll()
+      if (selectedId === convId) setSelectedId(null)
+    } catch (e: any) {
+      setError(e.message)
+    }
   }
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!selectedId || !inputValue.trim() || sending) return
     setSending(true)
     setError(null)
     try {
-      sendMessage({ conversationId: selectedId, senderRole: role, body: inputValue })
+      await sendMessage({ conversationId: selectedId, senderRole: role, body: inputValue })
       setInputValue('')
-      setMessages(getMessages(selectedId))
+      setMessages(await getMessages(selectedId))
     } catch (e: any) {
       setError(e.message)
     } finally {

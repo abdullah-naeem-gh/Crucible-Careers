@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
 import { computeAtsScore } from '@/lib/shared/atsScore'
+import { pipelineStageLabel } from '@/lib/shared/pipelineStage'
 
 function formatRelative(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime()
@@ -44,7 +45,7 @@ export async function GET() {
     jobTitle: a.jobs?.title || 'Unknown Role',
     company: companyById.get(a.jobs?.employer_id) || 'Unknown Company',
     appliedAt: new Date(a.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    status: a.status,
+    status: pipelineStageLabel(a.status),
     matchScore: a.ats_score ?? 0,
     lastUpdated: formatRelative(a.updated_at),
   }))

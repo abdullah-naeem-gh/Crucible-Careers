@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import StartChatModal from '@/components/shared/chat/StartChatModal'
 
-type ApplicationStatus = 'Applied' | 'Under Review' | 'Interview' | 'Offer' | 'Rejected'
+type ApplicationStatus = 'Applied' | 'Shortlisted' | 'Interviewing' | 'Offered' | 'Hired' | 'Feedback' | 'Rejected'
 
 interface Application {
   id: string
@@ -38,7 +38,7 @@ export default function ApplicationsTab() {
   const [selectedAppId, setSelectedAppId] = useState<string>('')
   const [chatModal, setChatModal] = useState<{ appId: string; jobTitle: string; company: string } | null>(null)
 
-  const statuses = ['All', 'Applied', 'Under Review', 'Interview', 'Offer', 'Rejected']
+  const statuses = ['All', 'Applied', 'Shortlisted', 'Interviewing', 'Offered', 'Hired', 'Feedback', 'Rejected']
 
   useEffect(() => {
     fetch('/api/talent/applications')

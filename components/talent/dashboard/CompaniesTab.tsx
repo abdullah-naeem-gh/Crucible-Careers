@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react'
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
+import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
 
 interface Company {
   id: string
@@ -31,8 +32,8 @@ export default function CompaniesTab() {
   const [companiesList, setCompaniesList] = useState<Company[]>([])
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [savedJobIds, setSavedJobIds] = useState<string[]>([])
   const { appliedJobIds } = useAppliedJobIds()
+  const { isSaved: isRoleSaved, toggleSave: toggleSaveRole } = useSavedJobs()
 
   useEffect(() => {
     fetch('/api/talent/companies')
@@ -43,49 +44,6 @@ export default function CompaniesTab() {
       })
       .catch(err => console.error('Failed to load companies', err))
   }, [])
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      setSavedJobIds(parsed.map((j: any) => j.id))
-    } catch (e) {
-      console.error(e)
-    }
-  }, [])
-
-  const isRoleSaved = (id: string) => savedJobIds.includes(id)
-
-  const toggleSaveRole = (role: { id: string; title: string; type: string; location: string; salary: string }, companyName: string) => {
-    try {
-      const stored = localStorage.getItem('talent_saved_jobs')
-      const parsed = stored ? JSON.parse(stored) : []
-      let updated
-      if (parsed.some((j: any) => j.id === role.id)) {
-        updated = parsed.filter((j: any) => j.id !== role.id)
-      } else {
-        const savedItem = {
-          id: role.id,
-          title: role.title,
-          company: companyName,
-          location: role.location || 'Remote',
-          type: role.type || 'Full-time',
-          salary: role.salary || undefined,
-          tags: [],
-          postedAt: 'Recently',
-          description: '',
-          matchScore: 0,
-          savedAt: new Date().toISOString().split('T')[0],
-        }
-        updated = [...parsed, savedItem]
-      }
-      localStorage.setItem('talent_saved_jobs', JSON.stringify(updated))
-      setSavedJobIds(updated.map((j: any) => j.id))
-      window.dispatchEvent(new Event('talent_saved_jobs_changed'))
-    } catch (e) {
-      console.error(e)
-    }
-  }
 
   const filteredCompanies = useMemo(() => {
     return companiesList.filter(c => 
@@ -303,7 +261,7 @@ export default function CompaniesTab() {
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
-                          onClick={() => toggleSaveRole(role, selectedCompany.name)}
+                          onClick={() => toggleSaveRole(role.id)}
                           className="p-1 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white"
                           title={isRoleSaved(role.id) ? 'Saved' : 'Save Job'}
                         >
