@@ -79,7 +79,7 @@ export default function ApplyFormPage() {
 
   // Load the real talent profile
   useEffect(() => {
-    loadTalentProfile().then((p) => {
+    loadTalentProfile().then(({ profile: p }) => {
       setProfile(p)
       setProfileLoading(false)
     })

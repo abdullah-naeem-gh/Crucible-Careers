@@ -37,15 +37,26 @@ export function createBlankTalentProfile(overrides: Partial<TalentProfileDraft> 
   }
 }
 
-export async function loadTalentProfile(): Promise<TalentProfile | null> {
+export interface TalentProfileLoadResult {
+  profile: TalentProfile | null
+  /** Real first/last name captured at signup — populated even before the talent has set up a profile. */
+  firstName: string
+  lastName: string
+}
+
+export async function loadTalentProfile(): Promise<TalentProfileLoadResult> {
   try {
     const res = await fetch('/api/talent/profile')
     if (!res.ok) throw new Error('Failed to fetch profile')
-    const { profile } = await res.json()
-    return profile || null
+    const data = await res.json()
+    return {
+      profile: data.profile || null,
+      firstName: data.firstName || data.profile?.firstName || '',
+      lastName: data.lastName || data.profile?.lastName || '',
+    }
   } catch (err) {
     console.error('loadTalentProfile error:', err)
-    return null
+    return { profile: null, firstName: '', lastName: '' }
   }
 }
 

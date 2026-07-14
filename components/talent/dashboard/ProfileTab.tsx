@@ -23,10 +23,12 @@ import { calculateCompletionPercentage } from '@/lib/talent/services/profile.ser
 import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import LocationPicker from '@/components/ui/LocationPicker'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 interface ProfileTabProps {
   profile: TalentProfile | null
   onProfileChange: (profile: TalentProfile | null) => void
+  isLoading?: boolean
 }
 
 const surface = 'rounded-[24px] border border-gray-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:border-white/[0.07] dark:bg-[#171717] dark:shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]'
@@ -218,6 +220,32 @@ function PreviewSection({ title, children }: { title: string; children: React.Re
     <div className={`${insetSurface} p-4`}>
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/35">{title}</h3>
       {children}
+    </div>
+  )
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className={`${surface} flex min-h-[42rem] flex-col overflow-hidden p-6 lg:min-h-0 lg:h-full`}>
+      <div className="flex items-center gap-4 border-b border-gray-200 pb-5 dark:border-white/[0.07]">
+        <Skeleton className="h-16 w-16 shrink-0 rounded-2xl" />
+        <div className="min-w-0 flex-1">
+          <Skeleton className="h-3 w-24 rounded" />
+          <Skeleton className="mt-2 h-5 w-48 rounded" />
+        </div>
+      </div>
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i}>
+            <Skeleton className="h-3 w-20 rounded" />
+            <Skeleton className="mt-2 h-10 w-full rounded-xl" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-6">
+        <Skeleton className="h-3 w-28 rounded" />
+        <Skeleton className="mt-2 h-24 w-full rounded-xl" />
+      </div>
     </div>
   )
 }
@@ -452,7 +480,7 @@ function getMissingProfileSections(profile: TalentProfile | null): string[] {
   return missing
 }
 
-export default function ProfileTab({ profile, onProfileChange }: ProfileTabProps) {
+export default function ProfileTab({ profile, onProfileChange, isLoading = false }: ProfileTabProps) {
   const [formState, setFormState] = useState<TalentProfile | null>(profile)
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -558,6 +586,10 @@ export default function ProfileTab({ profile, onProfileChange }: ProfileTabProps
     return getMissingProfileSections(formState)
   }, [formState])
 
+
+  if (isLoading) {
+    return <ProfileSkeleton />
+  }
 
   if (!formState) {
     return <EmptyState onCreate={() => router.push('/talent/onboarding')} />
