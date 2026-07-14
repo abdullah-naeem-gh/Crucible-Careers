@@ -12,6 +12,20 @@ export interface ScrapedJob {
   posted_at: string | null
 }
 
+export interface SavedJob {
+  id: string
+  title: string
+  company: string
+  location: string
+  type: string
+  salary?: string
+  tags: string[]
+  postedAt: string
+  description: string
+  matchScore: number
+  savedAt: string
+}
+
 export interface PaginationMeta {
   total: number
   page: number

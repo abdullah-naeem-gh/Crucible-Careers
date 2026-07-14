@@ -11,7 +11,7 @@ import {
   IconPlus,
   IconUsers,
 } from "@tabler/icons-react";
-import { calculateAtsScore, getPipelineStage } from "@/lib/employer/services/applicants.service";
+import { calculateAtsScore, getApplicantsByJob, getPipelineStage } from "@/lib/employer/services/applicants.service";
 import { ApplicantPipelineStage, CandidateProfile } from "@/types/employer/applicant";
 import { EmployerJob } from "@/types/employer/job";
 
@@ -64,17 +64,6 @@ const stageLabels: Record<ApplicantPipelineStage, string> = {
   rejected: "Rejected",
 };
 
-function readStoredApplicants(jobId: string): CandidateProfile[] {
-  try {
-    const stored = localStorage.getItem(`recruiter_job_${jobId}_applicants`);
-    if (!stored) return [];
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
 function formatAppliedDate(value: string) {
   const timestamp = Date.parse(value);
   if (Number.isNaN(timestamp)) return value || "Date unavailable";
@@ -104,10 +93,13 @@ export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants
   const [applicantsByJob, setApplicantsByJob] = useState<Record<string, CandidateProfile[]>>({});
 
   useEffect(() => {
-    setApplicantsByJob(jobs.reduce<Record<string, CandidateProfile[]>>((records, job) => {
-      records[job.id] = readStoredApplicants(job.id);
-      return records;
-    }, {}));
+    let cancelled = false;
+    getApplicantsByJob(jobs).then((data) => {
+      if (!cancelled) setApplicantsByJob(data);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [jobs]);
 
   const viewModel = useMemo(() => {
@@ -117,7 +109,7 @@ export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants
         candidate,
         job,
         stage: getPipelineStage(candidate),
-        fitScore: calculateAtsScore(candidate.skills ?? [], job.tags ?? []),
+        fitScore: candidate.atsScore ?? calculateAtsScore(candidate.skills ?? [], job.tags ?? []),
         originalIndex: originalIndex++,
       })),
     );

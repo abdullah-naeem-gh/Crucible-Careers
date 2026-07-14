@@ -39,13 +39,10 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
       .then((list: any[]) => setAppCount(list.length))
       .catch(err => console.error('Failed to load applications count', err))
 
-    try {
-      const savedBookmarked = localStorage.getItem('talent_saved_jobs')
-      const bookmarked = savedBookmarked ? JSON.parse(savedBookmarked) : []
-      setSavedCount(bookmarked.length)
-    } catch (e) {
-      console.error(e)
-    }
+    fetch('/api/talent/saved')
+      .then(res => res.ok ? res.json() : [])
+      .then((list: any[]) => setSavedCount(list.length))
+      .catch(err => console.error('Failed to load saved jobs count', err))
   }, [appId])
 
   if (loading || !appDetail) {

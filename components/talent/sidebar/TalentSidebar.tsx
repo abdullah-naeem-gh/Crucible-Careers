@@ -53,7 +53,7 @@ export default function TalentSidebar({
   const name = profileFirstName || profileLastName ? `${profileFirstName || ''} ${profileLastName || ''}`.trim() : 'Alex Johnson'
 
   useEffect(() => {
-    const refresh = () => setChatUnread(getTotalUnread('talent'))
+    const refresh = () => { getTotalUnread('talent').then(setChatUnread) }
     refresh()
     return subscribeChatChanges(refresh)
   }, [])

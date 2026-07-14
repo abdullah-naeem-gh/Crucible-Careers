@@ -24,6 +24,7 @@ import {
 
 import { EmployerJob, JobType, JobStatus } from "@/types/employer/job";
 import { FORM_TEMPLATES } from "@/lib/shared/formTemplates";
+import { calculateAtsScore, getApplicantsByJob } from "@/lib/employer/services/applicants.service";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
 type AnalyticsView = "overview" | "roles" | "candidates" | "sources";
@@ -543,19 +544,21 @@ export default function AnalyticsTab({ jobs }: AnalyticsTabProps) {
   const [applicantGroups, setApplicantGroups] = useState<EmployerApplicantGroups>({});
 
   useEffect(() => {
-    const nextGroups: EmployerApplicantGroups = {};
-
-    jobs.forEach((job) => {
-      try {
-        const saved = localStorage.getItem(`recruiter_job_${job.id}_applicants`);
-        const parsed = saved ? JSON.parse(saved) : null;
-        if (Array.isArray(parsed)) nextGroups[job.id] = parsed;
-      } catch {
-        nextGroups[job.id] = [];
+    let cancelled = false;
+    getApplicantsByJob(jobs).then((data) => {
+      if (cancelled) return;
+      const mapped: EmployerApplicantGroups = {};
+      for (const job of jobs) {
+        mapped[job.id] = (data[job.id] ?? []).map((candidate) => ({
+          ...candidate,
+          matchScore: candidate.atsScore ?? calculateAtsScore(candidate.skills ?? [], job.tags ?? []),
+        }));
       }
+      setApplicantGroups(mapped);
     });
-
-    setApplicantGroups(nextGroups);
+    return () => {
+      cancelled = true;
+    };
   }, [jobs]);
 
   const snapshot = useMemo(() => buildEmployerAnalytics(jobs, applicantGroups), [jobs, applicantGroups]);

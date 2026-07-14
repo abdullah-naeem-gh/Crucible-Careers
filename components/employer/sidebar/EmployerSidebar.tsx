@@ -68,7 +68,7 @@ export default function EmployerSidebar({
   const railMode = collapsed;
 
   useEffect(() => {
-    const refresh = () => setChatUnread(getTotalUnread('employer'))
+    const refresh = () => { getTotalUnread('employer').then(setChatUnread) }
     refresh()
     return subscribeChatChanges(refresh)
   }, []);

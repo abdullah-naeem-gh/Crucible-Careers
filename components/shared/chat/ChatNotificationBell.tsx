@@ -44,14 +44,15 @@ export default function ChatNotificationBell({ role, isDark = true, onOpenMessag
   const [conversations, setConversations] = useState<ChatConversation[]>([])
   const popupRef = useRef<HTMLDivElement>(null)
 
-  const refresh = useCallback(() => {
-    setTotalUnread(getTotalUnread(role))
-    setConversations(listConversations())
+  const refresh = useCallback(async () => {
+    const [unread, convs] = await Promise.all([getTotalUnread(role), listConversations()])
+    setTotalUnread(unread)
+    setConversations(convs)
   }, [role])
 
   useEffect(() => {
     refresh()
-    return subscribeChatChanges(refresh)
+    return subscribeChatChanges(() => { refresh() })
   }, [refresh])
 
   // Click-outside to close
@@ -66,10 +67,15 @@ export default function ChatNotificationBell({ role, isDark = true, onOpenMessag
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const handleItemClick = (convId: string) => {
-    markConversationRead(convId, role)
+  const handleItemClick = async (convId: string) => {
     setOpen(false)
     onOpenMessages(convId)
+    try {
+      await markConversationRead(convId, role)
+      await refresh()
+    } catch (e) {
+      console.error('Failed to mark conversation read', e)
+    }
   }
 
   // Pending incoming requests

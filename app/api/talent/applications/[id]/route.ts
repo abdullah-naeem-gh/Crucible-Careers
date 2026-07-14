@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
+import { pipelineStageLabel } from '@/lib/shared/pipelineStage'
 
-function buildTimeline(status: string, appliedAt: string) {
+function buildTimeline(stage: string, appliedAt: string) {
   const appliedDate = new Date(appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const isAtLeast = (stages: string[]) => stages.includes(stage)
   return [
-    { step: 'Application Submitted', date: appliedDate, completed: true, current: status === 'Applied' },
-    { step: 'Under Review', date: status !== 'Applied' ? 'Completed' : 'Pending', completed: status !== 'Applied', current: status === 'Under Review' },
-    { step: 'Initial Interview', date: (status === 'Interview' || status === 'Offer') ? 'Scheduled' : 'Pending', completed: status === 'Interview' || status === 'Offer', current: status === 'Interview' },
-    { step: 'Technical Assessment', date: status === 'Offer' ? 'Passed' : 'Pending', completed: status === 'Offer', current: false },
+    { step: 'Application Submitted', date: appliedDate, completed: true, current: stage === 'applied' },
+    { step: 'Shortlisted', date: stage !== 'applied' ? 'Completed' : 'Pending', completed: stage !== 'applied', current: stage === 'shortlisted' },
+    { step: 'Interviewing', date: isAtLeast(['interviewing', 'offered', 'hired', 'feedback']) ? 'Scheduled' : 'Pending', completed: isAtLeast(['interviewing', 'offered', 'hired', 'feedback']), current: stage === 'interviewing' },
+    { step: 'Feedback', date: stage === 'feedback' ? 'Requested' : isAtLeast(['offered', 'hired']) ? 'Completed' : 'Pending', completed: isAtLeast(['offered', 'hired']), current: stage === 'feedback' },
     {
-      step: status === 'Rejected' ? 'Application Rejected' : 'Final Offer',
-      date: status === 'Offer' ? 'Sent' : status === 'Rejected' ? 'Processed' : 'Pending',
-      completed: status === 'Offer' || status === 'Rejected',
-      current: status === 'Offer' || status === 'Rejected',
+      step: stage === 'rejected' ? 'Application Rejected' : stage === 'hired' ? 'Hired' : 'Offer',
+      date: stage === 'offered' ? 'Sent' : stage === 'hired' ? 'Accepted' : stage === 'rejected' ? 'Processed' : 'Pending',
+      completed: isAtLeast(['offered', 'hired', 'rejected']),
+      current: isAtLeast(['offered', 'hired', 'rejected']),
     },
   ]
 }
@@ -81,7 +83,7 @@ export async function GET(
     id: application.id,
     jobTitle: job?.title || 'Unknown Role',
     company: company?.company || 'Unknown Company',
-    status: application.status,
+    status: pipelineStageLabel(application.status),
     appliedAt: new Date(application.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     matchScore: myScore,
     averageApplicantScore,

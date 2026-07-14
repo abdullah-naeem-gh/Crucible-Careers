@@ -339,6 +339,7 @@ function EmployerDashboardContent() {
                     jobs={jobs}
                     onBack={() => setViewingJobApplicantsId(null)}
                     onOpenKanban={(jobId) => openApplicantsKanban(jobId)}
+                    onOpenMessages={() => changeTab("messages")}
                   />
                 ) : (
                   <JobsTab
