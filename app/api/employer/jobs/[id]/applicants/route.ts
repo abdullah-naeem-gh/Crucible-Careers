@@ -61,6 +61,8 @@ export async function GET(
       linkedin: snap.linkedin || undefined,
       github: snap.github || undefined,
       portfolio: snap.portfolio || undefined,
+      resumeUrl: a.resume_url || undefined,
+      resumeFilename: a.resume_filename || undefined,
       screeningStatus: toScreeningStatus(pipelineStage),
       pipelineStage,
       customAnswers: a.custom_answers || [],
