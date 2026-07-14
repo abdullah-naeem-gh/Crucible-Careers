@@ -114,8 +114,13 @@ function TalentDashboardContent() {
       .then((list: any[]) => setAppCount(list.length))
       .catch(err => console.error('Failed to load talent applications count', err))
 
-    // Load profile
+    // Load profile — first visit with no profile → redirect to onboarding,
+    // mirroring the employer dashboard's forced-onboarding behavior.
     loadTalentProfile().then(loadedProfile => {
+      if (!loadedProfile && !isOnboarded) {
+        router.replace('/talent/onboarding')
+        return
+      }
       setProfile(loadedProfile)
       setProfileHydrated(true)
     }).catch(err => {
@@ -123,6 +128,7 @@ function TalentDashboardContent() {
       setProfileHydrated(true)
     })
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

@@ -9,3 +9,4 @@ tsconfig.tsbuildinfo
 tsconfig.tsbuildinfo
 supabase/
 .mcp.json
+.env

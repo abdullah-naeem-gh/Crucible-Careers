@@ -17,6 +17,7 @@ import OnboardingStep8, { type MatchedJob } from '@/components/talent/onboarding
 
 import { JOBS } from '@/lib/talent/data/jobs'
 import { createBlankTalentProfile, saveTalentProfile } from '@/lib/talent/services/profile.service'
+import { getCurrentUser } from '@/lib/shared/auth/actions'
 import type { TalentEducation, TalentExperience } from '@/types/talent/profile'
 
 // ─── Job matching ─────────────────────────────────────────────────────────────
@@ -99,6 +100,14 @@ function OnboardingContent() {
   const [step, setStep] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)
   const [isSaving, setIsSaving] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+
+  // Prefill with the Google profile photo, if the account signed in that way.
+  useEffect(() => {
+    getCurrentUser()
+      .then((user) => setAvatarUrl(user?.profile?.avatar_url ?? null))
+      .catch(() => setAvatarUrl(null))
+  }, [])
 
   // ── Step 2: Basics ──
   const [s2, setS2] = useState<Step2Data>({
@@ -156,7 +165,7 @@ function OnboardingContent() {
   const saveProfile = async () => {
     setIsSaving(true)
     try {
-      const blank = createBlankTalentProfile()
+      const blank = createBlankTalentProfile({ photoUrl: avatarUrl })
       const profile = {
         ...blank,
         firstName: '', // Handled by backend from auth session

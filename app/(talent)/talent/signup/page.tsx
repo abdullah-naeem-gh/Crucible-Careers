@@ -185,6 +185,7 @@ export default function TalentSignUp() {
                 userType="talent"
                 onSubmit={handleSubmit}
                 isLoading={isLoading}
+                onGoogleError={setError}
               />
 
               <div className="mt-6 text-center">

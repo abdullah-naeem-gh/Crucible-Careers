@@ -35,12 +35,28 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  const isProtected =
-    pathname.startsWith('/talent/dashboard') ||
-    pathname.startsWith('/employer/dashboard')
+  const isTalentDashboard = pathname.startsWith('/talent/dashboard')
+  const isEmployerDashboard = pathname.startsWith('/employer/dashboard')
+  const isProtected = isTalentDashboard || isEmployerDashboard
 
   if (isProtected && !user) {
     return NextResponse.redirect(new URL('/gateway', request.url))
+  }
+
+  if (isProtected && user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const wrongPortal =
+      (isTalentDashboard && profile?.role === 'employer') ||
+      (isEmployerDashboard && profile?.role === 'talent')
+
+    if (wrongPortal) {
+      return NextResponse.redirect(new URL('/gateway', request.url))
+    }
   }
 
   // IMPORTANT: return supabaseResponse (not NextResponse.next()) so that

@@ -183,6 +183,7 @@ export default function EmployerLogin() {
                   userType="employer"
                   onSubmit={handleSubmit}
                   isLoading={isLoading}
+                  onGoogleError={setError}
                 />
 
                 {error && (
