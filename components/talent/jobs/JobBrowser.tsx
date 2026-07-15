@@ -9,6 +9,7 @@ import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
 import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { getFeaturedCompanyNames } from '@/lib/employer/ranking/reviews'
 
 interface Props {
   jobs: ScrapedJob[]
@@ -66,6 +67,11 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
   const [showFloatingApply, setShowFloatingApply] = useState(false)
   const { appliedJobIds } = useAppliedJobIds()
   const { isSaved: isJobSaved, toggleSave } = useSavedJobs()
+  const [featuredCompanies, setFeaturedCompanies] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    setFeaturedCompanies(getFeaturedCompanyNames())
+  }, [])
 
   const toggleSaveJob = (job: ScrapedJob) => toggleSave(job._id)
 
