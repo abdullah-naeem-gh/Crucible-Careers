@@ -31,6 +31,7 @@ export async function GET() {
 
   const result: ScrapedJob[] = jobs.map((job) => ({
     _id: job.id,
+    employerId: job.employer_id,
     title: job.title,
     company: companyById.get(job.employer_id) || 'Unknown Company',
     location: job.location,

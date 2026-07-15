@@ -1,5 +1,6 @@
 export interface ScrapedJob {
   _id: string
+  employerId?: string
   title: string
   company: string
   location: string | null

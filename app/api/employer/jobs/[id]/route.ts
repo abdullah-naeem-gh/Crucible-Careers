@@ -48,6 +48,12 @@ export async function PATCH(
       .select('*', { count: 'exact', head: true })
       .eq('job_id', id);
 
+    const { count: hiresCount } = await supabase
+      .from('applications')
+      .select('*', { count: 'exact', head: true })
+      .eq('job_id', id)
+      .eq('status', 'hired');
+
     const updatedJob: EmployerJob = {
       id: data.id,
       title: data.title,
@@ -63,6 +69,7 @@ export async function PATCH(
       postedAt: new Date(data.created_at).toLocaleDateString(),
       applications: applicationCount ?? 0,
       views: 0,
+      hires: hiresCount ?? 0,
       matchScore: 0,
       formConfig: data.form_config,
     };
