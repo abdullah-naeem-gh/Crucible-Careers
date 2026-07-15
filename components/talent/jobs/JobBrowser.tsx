@@ -36,8 +36,118 @@ function JobCardSkeleton() {
   )
 }
 
-const JOB_TYPES = ['full-time', 'part-time', 'contract', 'remote']
+type FilterOption = { value: string; label: string }
+type SalaryRange = '' | '50-75' | '75-100' | '100-150' | '150-200' | '200-plus'
+type FilterListKey = 'jobTypes' | 'workModes' | 'locations' | 'industries' | 'seniorityLevels'
+
+interface JobFilters {
+  jobTypes: string[]
+  workModes: string[]
+  locations: string[]
+  industries: string[]
+  seniorityLevels: string[]
+  salaryRange: SalaryRange
+}
+
+const JOB_TYPES: FilterOption[] = [
+  { value: 'full-time', label: 'Full-time' },
+  { value: 'part-time', label: 'Part-time' },
+  { value: 'contract', label: 'Contract' },
+  { value: 'internship', label: 'Internship' },
+]
+const WORK_MODES: FilterOption[] = [
+  { value: 'remote', label: 'Remote' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'on-site', label: 'On-site' },
+]
+const LOCATIONS: FilterOption[] = ['Remote', 'San Francisco', 'New York', 'London', 'Toronto', 'Dubai'].map(value => ({ value, label: value }))
+const INDUSTRIES: FilterOption[] = ['SaaS', 'AI', 'Fintech', 'Healthtech', 'E-commerce', 'Gaming'].map(value => ({ value, label: value }))
+const SENIORITY_LEVELS: FilterOption[] = ['Entry-level', 'Mid-level', 'Senior', 'Lead', 'Manager'].map(value => ({ value, label: value }))
+const SALARY_RANGES: Array<{ value: Exclude<SalaryRange, ''>; label: string; min: number; max: number }> = [
+  { value: '50-75', label: '$50k - $75k', min: 50000, max: 75000 },
+  { value: '75-100', label: '$75k - $100k', min: 75000, max: 100000 },
+  { value: '100-150', label: '$100k - $150k', min: 100000, max: 150000 },
+  { value: '150-200', label: '$150k - $200k', min: 150000, max: 200000 },
+  { value: '200-plus', label: '$200k+', min: 200000, max: Number.POSITIVE_INFINITY },
+]
+const EMPTY_FILTERS: JobFilters = {
+  jobTypes: [],
+  workModes: [],
+  locations: [],
+  industries: [],
+  seniorityLevels: [],
+  salaryRange: '',
+}
 const PAGE_SIZE = 20
+
+function FilterChipGroup({
+  label,
+  options,
+  values,
+  onToggle,
+}: {
+  label: string
+  options: FilterOption[]
+  values: string[]
+  onToggle: (value: string) => void
+}) {
+  return (
+    <div>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-400 dark:text-white/35">{label}</div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {options.map(option => {
+          const active = values.includes(option.value)
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onToggle(option.value)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                active
+                  ? 'talent-job-filter-chip-active border-[#FF6B00] bg-[#FF6B00] text-white shadow-[0_5px_14px_rgba(255,107,0,0.18)]'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700 dark:border-white/[0.09] dark:bg-white/[0.035] dark:text-white/60 dark:hover:border-orange-500/35 dark:hover:bg-orange-500/10 dark:hover:text-orange-300'
+              }`}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function matchesSalaryRange(salary: string | null, selectedRange: SalaryRange): boolean {
+  if (!selectedRange) return true
+  if (!salary) return false
+
+  const values = salary.match(/\d[\d,]*(?:\.\d+)?\s*[kK]?/g)?.map(rawValue => {
+    const normalized = rawValue.replace(/,/g, '').trim()
+    const usesThousands = /k$/i.test(normalized)
+    const value = Number.parseFloat(normalized.replace(/k$/i, ''))
+    return usesThousands ? value * 1000 : value
+  }).filter(Number.isFinite)
+
+  if (!values?.length) return false
+
+  const selected = SALARY_RANGES.find(range => range.value === selectedRange)
+  if (!selected) return true
+
+  const jobMin = Math.min(...values)
+  const jobMax = Math.max(...values)
+  return jobMax >= selected.min && jobMin <= selected.max
+}
+
+function matchesTagFilter(tags: string[], values: string[]): boolean {
+  if (values.length === 0) return true
+
+  const normalizedTags = tags.map(tag => tag.toLowerCase())
+  return values.some(value => {
+    const normalizedValue = value.toLowerCase()
+    return normalizedTags.some(tag => normalizedValue.length <= 2 ? tag === normalizedValue : tag.includes(normalizedValue))
+  })
+}
 
 function relativeDate(iso: string | null): string {
   if (!iso) return ''
@@ -57,10 +167,9 @@ function getMatchScore(jobId: string): number {
 
 export default function JobBrowser({ jobs, isLoading = false }: Props) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(jobs[0]?._id ?? null)
-  const selectedJob = jobs.find(j => j._id === selectedJobId) ?? jobs[0] ?? null
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [searchInput, setSearchInput] = useState('')
-  const [activeType, setActiveType] = useState('')
+  const [filters, setFilters] = useState<JobFilters>(EMPTY_FILTERS)
   const [page, setPage] = useState(1)
   const listRef = useRef<HTMLDivElement>(null)
   const detailPanelRef = useRef<HTMLDivElement>(null)
@@ -101,18 +210,33 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
   const query = useDebounce(searchInput, 300)
 
   const filtered = useMemo(() => {
+    const q = query.toLowerCase()
+
     return jobs.filter(j => {
-      const q = query.toLowerCase()
       const matchesQuery = !q || (
         j.title.toLowerCase().includes(q) ||
         j.company.toLowerCase().includes(q) ||
         (j.location ?? '').toLowerCase().includes(q) ||
         j.tags.some(t => t.toLowerCase().includes(q))
       )
-      const matchesType = !activeType || j.type === activeType
-      return matchesQuery && matchesType
+      const matchesType = filters.jobTypes.length === 0 || (!!j.type && filters.jobTypes.includes(j.type))
+      const matchesWorkMode = filters.workModes.length === 0 || (!!j.locationType && filters.workModes.includes(j.locationType))
+      const normalizedLocation = (j.location ?? '').toLowerCase()
+      const matchesLocation = filters.locations.length === 0 || filters.locations.some(location => normalizedLocation.includes(location.toLowerCase()))
+      const matchesIndustry = matchesTagFilter(j.tags, filters.industries)
+      const matchesSeniority = matchesTagFilter(j.tags, filters.seniorityLevels)
+      const matchesSalary = matchesSalaryRange(j.salary, filters.salaryRange)
+
+      return matchesQuery && matchesType && matchesWorkMode && matchesLocation && matchesIndustry && matchesSeniority && matchesSalary
     })
-  }, [jobs, query, activeType])
+  }, [jobs, query, filters])
+
+  const selectedJob = filtered.find(j => j._id === selectedJobId) ?? filtered[0] ?? null
+
+  useEffect(() => {
+    if (selectedJobId && filtered.some(job => job._id === selectedJobId)) return
+    setSelectedJobId(filtered[0]?._id ?? null)
+  }, [filtered, selectedJobId])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -122,8 +246,11 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
     setPage(1)
   }
 
-  const handleTypeToggle = (t: string) => {
-    setActiveType(prev => (prev === t ? '' : t))
+  const toggleListFilter = (key: FilterListKey, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: prev[key].includes(value) ? prev[key].filter(item => item !== value) : [...prev[key], value],
+    }))
     setPage(1)
   }
 
@@ -134,11 +261,18 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
 
   const clearFilters = () => {
     setSearchInput('')
-    setActiveType('')
+    setFilters(EMPTY_FILTERS)
     setPage(1)
   }
 
-  const hasFilters = !!(query || activeType)
+  const activeFilterCount =
+    filters.jobTypes.length +
+    filters.workModes.length +
+    filters.locations.length +
+    filters.industries.length +
+    filters.seniorityLevels.length +
+    (filters.salaryRange ? 1 : 0)
+  const hasFilters = !!(query || activeFilterCount)
 
   return (
     <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
@@ -164,7 +298,7 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
                   : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
               }`}
             >
-              Filters{activeType ? ' (1)' : ''}
+              Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
             </button>
           </div>
 
@@ -178,29 +312,48 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
                 transition={{ duration: 0.2 }}
                 className="px-5 pb-4 overflow-hidden border-t border-gray-200"
               >
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {JOB_TYPES.map(t => (
-                    <button
-                      key={t}
-                      onClick={() => handleTypeToggle(t)}
-                      className={`px-3 py-1.5 rounded-full text-sm border capitalize transition-colors ${
-                        activeType === t
-                          ? 'bg-[#FF6B00] text-white border-[#FF6B00]'
-                          : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
+                <div className="custom-scrollbar mt-3 max-h-[52vh] overflow-y-auto pr-1">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FilterChipGroup label="Job types" options={JOB_TYPES} values={filters.jobTypes} onToggle={value => toggleListFilter('jobTypes', value)} />
+                    <FilterChipGroup label="Work modes" options={WORK_MODES} values={filters.workModes} onToggle={value => toggleListFilter('workModes', value)} />
+                    <FilterChipGroup label="Locations" options={LOCATIONS} values={filters.locations} onToggle={value => toggleListFilter('locations', value)} />
+                    <FilterChipGroup label="Industries" options={INDUSTRIES} values={filters.industries} onToggle={value => toggleListFilter('industries', value)} />
+                    <FilterChipGroup label="Seniority levels" options={SENIORITY_LEVELS} values={filters.seniorityLevels} onToggle={value => toggleListFilter('seniorityLevels', value)} />
+                    <div>
+                      <label htmlFor="talent-job-salary-filter" className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-400 dark:text-white/35">
+                        Salary range
+                      </label>
+                      <select
+                        id="talent-job-salary-filter"
+                        value={filters.salaryRange}
+                        onChange={event => {
+                          setFilters(prev => ({ ...prev, salaryRange: event.target.value as SalaryRange }))
+                          setPage(1)
+                        }}
+                        className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-white/[0.09] dark:bg-[#141414] dark:text-white/70"
+                      >
+                        <option value="">Any salary</option>
+                        {SALARY_RANGES.map(range => (
+                          <option key={range.value} value={range.value}>{range.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-3 dark:border-white/[0.07]">
+                    <span className="text-xs text-gray-400 dark:text-white/35">
+                      {filtered.length} matching job{filtered.length === 1 ? '' : 's'}
+                    </span>
+                    {hasFilters && (
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="text-sm font-medium text-gray-500 transition-colors hover:text-[#FF6B00] dark:text-white/45 dark:hover:text-[#FF914D]"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {hasFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    Clear all
-                  </button>
-                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -213,7 +366,7 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
             </div>
           ) : paginated.length === 0 ? (
             <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-              No jobs match your search
+              No jobs match your search and filters
             </div>
           ) : (
             <AnimatePresence mode="wait">

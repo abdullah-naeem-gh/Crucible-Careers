@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { DashboardThemeSwitcher } from "@/components/shared/theme/DashboardThemeProvider";
+import { DashboardThemeSwitcher, useDashboardTheme } from "@/components/shared/theme/DashboardThemeProvider";
 import ChatNotificationBell from "@/components/shared/chat/ChatNotificationBell";
 import { subscribeChatChanges, getTotalUnread } from "@/lib/shared/chat/chat.service";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -70,6 +70,13 @@ export default function EmployerSidebar({
 }: EmployerSidebarProps) {
   const [showNoJobsPrompt, setShowNoJobsPrompt] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
+  const { theme } = useDashboardTheme();
+  const isDarkTheme = theme === "dark";
+  const collapseBtnClass = `transition-colors cursor-pointer rounded-full flex items-center justify-center ${
+    isDarkTheme
+      ? "text-white/45 hover:bg-white/10 hover:text-white"
+      : "text-gray-400 hover:bg-gray-100 hover:text-gray-900"
+  }`;
   const expandedReady = !collapsed;
   const railMode = collapsed;
 
@@ -100,7 +107,7 @@ export default function EmployerSidebar({
         <button
           type="button"
           onClick={() => onCollapsedChange?.(false)}
-          className="absolute left-1/2 top-3 grid h-8 w-8 -translate-x-1/2 place-items-center rounded-full text-white/45 transition-colors hover:text-white cursor-pointer"
+          className={`absolute left-1/2 top-3 h-8 w-8 -translate-x-1/2 ${collapseBtnClass}`}
           aria-label="Expand sidebar"
         >
           <IconChevronRight size={17} />
@@ -113,7 +120,7 @@ export default function EmployerSidebar({
           <button
             type="button"
             onClick={() => onCollapsedChange?.(true)}
-            className="grid h-9 w-9 place-items-center rounded-full text-white/45 transition-colors hover:text-white cursor-pointer"
+            className={`h-9 w-9 ${collapseBtnClass}`}
             aria-label="Collapse sidebar"
           >
             <IconChevronLeft size={17} />

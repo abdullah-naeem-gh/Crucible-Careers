@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { usePathname, useRouter } from 'next/navigation'
-import { DashboardThemeSwitcher } from '@/components/shared/theme/DashboardThemeProvider'
+import { DashboardThemeSwitcher, useDashboardTheme } from '@/components/shared/theme/DashboardThemeProvider'
 import { logout } from '@/lib/shared/auth/actions'
 import { IconBriefcase, IconBuilding, IconFileDescription, IconBookmark, IconUser, IconAward, IconSettings, IconChevronLeft, IconChevronRight, IconLogout, IconMessage } from '@tabler/icons-react'
 import ChatNotificationBell from '@/components/shared/chat/ChatNotificationBell'
@@ -56,6 +56,13 @@ export default function TalentSidebar({
   const pathname = usePathname()
   const router = useRouter()
   const [chatUnread, setChatUnread] = useState(unreadMessages)
+  const { theme } = useDashboardTheme()
+  const isDarkTheme = theme === 'dark'
+  const collapseBtnClass = `transition-colors cursor-pointer rounded-full flex items-center justify-center ${
+    isDarkTheme
+      ? "text-white/45 hover:bg-white/10 hover:text-white"
+      : "text-gray-400 hover:bg-gray-100 hover:text-gray-900"
+  }`
   const expandedReady = !collapsed
   const railMode = collapsed
   const initials = profileFirstName || profileLastName ? `${profileFirstName?.charAt(0) || ''}${profileLastName?.charAt(0) || ''}`.toUpperCase() : 'AJ'
@@ -103,7 +110,7 @@ export default function TalentSidebar({
         <button
           type="button"
           onClick={() => onCollapsedChange?.(false)}
-          className="absolute left-1/2 top-3 grid h-8 w-8 -translate-x-1/2 place-items-center rounded-full text-gray-400 transition-colors hover:text-gray-900 dark:text-white/45 dark:hover:text-white cursor-pointer"
+          className={`absolute left-1/2 top-3 h-8 w-8 -translate-x-1/2 ${collapseBtnClass}`}
           aria-label="Expand sidebar"
         >
           <IconChevronRight size={17} />
@@ -122,7 +129,7 @@ export default function TalentSidebar({
           <button
             type="button"
             onClick={() => onCollapsedChange?.(true)}
-            className="grid h-9 w-9 place-items-center rounded-full text-gray-400 transition-colors hover:text-gray-900 dark:text-white/45 dark:hover:text-white cursor-pointer"
+            className={`h-9 w-9 ${collapseBtnClass}`}
             aria-label="Collapse sidebar"
           >
             <IconChevronLeft size={17} />

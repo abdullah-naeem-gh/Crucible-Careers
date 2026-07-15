@@ -5,33 +5,24 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   IconBell,
   IconChevronRight,
-  IconCheck,
   IconDownload,
   IconMessageCircle,
   IconPlayerTrackNext,
   IconShield,
   IconSparkles,
-  IconTargetArrow,
   IconUserCog,
 } from '@tabler/icons-react'
 import { createDefaultTalentSettings, loadTalentSettings, saveTalentSettings } from '@/lib/talent/services/settings.service'
 import { TalentSettings } from '@/types/talent/settings'
 
-type SettingsSection = 'notifications' | 'discovery' | 'privacy' | 'communication' | 'workflow' | 'experience' | 'account'
+type SettingsSection = 'notifications' | 'privacy' | 'communication' | 'workflow' | 'experience' | 'account'
 
 const surface = 'rounded-[24px] border border-gray-200 bg-white/70 backdrop-blur-sm shadow-[12px_12px_30px_rgba(0,0,0,0.035),-6px_-6px_18px_rgba(255,255,255,0.5)] dark:border-white/[0.07] dark:bg-[#171717]'
 const inputClass = 'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-white/[0.08] dark:bg-[#121212] dark:text-white'
 const mutedLabel = 'text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-400 dark:text-white/30'
 
-const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance']
-const WORK_MODES = ['Remote', 'Hybrid', 'On-site']
-const INDUSTRIES = ['SaaS', 'AI', 'Fintech', 'Healthtech', 'E-commerce', 'Gaming']
-const SENIORITY_LEVELS = ['Entry-level', 'Mid-level', 'Senior', 'Lead', 'Manager']
-const LOCATIONS = ['Remote', 'San Francisco', 'New York', 'London', 'Toronto', 'Dubai']
-
 const sections: Array<{ id: SettingsSection; label: string; description: string; icon: React.ComponentType<any> }> = [
   { id: 'notifications', label: 'Notifications', description: 'Job alerts, application updates, and digest cadence.', icon: IconBell },
-  { id: 'discovery', label: 'Job Discovery', description: 'Search filters, job matching, and opportunity targeting.', icon: IconTargetArrow },
   { id: 'privacy', label: 'Privacy & Visibility', description: 'Profile discoverability and recruiter-facing visibility.', icon: IconShield },
   { id: 'communication', label: 'Communication', description: 'Employer contact preferences and reminder behavior.', icon: IconMessageCircle },
   { id: 'workflow', label: 'Application Workflow', description: 'Quick apply defaults, resume behavior, and tracking.', icon: IconPlayerTrackNext },
@@ -63,27 +54,6 @@ function ToggleRow({ title, description, checked, onChange }: { title: string; d
         <span className="custom-toggle-track" />
         <span className="custom-toggle-knob" />
       </label>
-    </div>
-  )
-}
-
-function ChoiceGrid({ options, values, onToggle }: { options: string[]; values: string[]; onToggle: (value: string) => void }) {
-  return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-      {options.map((option) => {
-        const active = values.includes(option)
-        return (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onToggle(option)}
-            className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition ${active ? 'border-gray-900/10 bg-gray-50 text-gray-900 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 dark:border-white/[0.06] dark:bg-[#121212] dark:text-white/68'}`}
-          >
-            <span>{option}</span>
-            {active && <IconCheck size={16} />}
-          </button>
-        )
-      })}
     </div>
   )
 }
@@ -138,10 +108,6 @@ export default function SettingsTab() {
     saveTalentSettings(settings)
     setIsSaving(false)
     setSavedNotice(true)
-  }
-
-  const toggleListValue = (values: string[], value: string) => {
-    return values.includes(value) ? values.filter((item) => item !== value) : [...values, value]
   }
 
   const notificationSummary = [
@@ -238,6 +204,20 @@ export default function SettingsTab() {
                     <ToggleRow title="Browser push" description="Show in-browser alerts for faster response on active applications." checked={settings.notifications.browserPush} onChange={(value) => updateSection('notifications', { ...settings.notifications, browserPush: value })} />
                     <ToggleRow title="Job matches" description="Send alerts when new roles fit your saved profile signals and search preferences." checked={settings.notifications.jobMatches} onChange={(value) => updateSection('notifications', { ...settings.notifications, jobMatches: value })} />
                     <ToggleRow title="Saved search alerts" description="Notify when saved search filters return new opportunities." checked={settings.notifications.savedSearchAlerts} onChange={(value) => updateSection('notifications', { ...settings.notifications, savedSearchAlerts: value })} />
+                    <div>
+                      <div className={mutedLabel}>Job alert frequency</div>
+                      <div className="mt-2">
+                        <Segmented
+                          value={settings.jobDiscovery.alertFrequency}
+                          onChange={(value) => updateSection('jobDiscovery', { ...settings.jobDiscovery, alertFrequency: value as TalentSettings['jobDiscovery']['alertFrequency'] })}
+                          options={[
+                            { value: 'instant', label: 'Instant' },
+                            { value: 'daily', label: 'Daily' },
+                            { value: 'weekly', label: 'Weekly' },
+                          ]}
+                        />
+                      </div>
+                    </div>
                   </SectionCard>
                   <SectionCard title="Application events" description="Keep your candidate workflow visible without checking every tab manually.">
                     <ToggleRow title="Application status changes" description="Alert on shortlisted, rejected, interview, and offer movement." checked={settings.notifications.applicationStatus} onChange={(value) => updateSection('notifications', { ...settings.notifications, applicationStatus: value })} />
@@ -257,65 +237,6 @@ export default function SettingsTab() {
                             { value: 'monthly', label: 'Monthly' },
                           ]}
                         />
-                      </div>
-                    </div>
-                  </SectionCard>
-                </>
-              )}
-
-              {activeSection === 'discovery' && (
-                <>
-                  <SectionCard title="Opportunity targeting" description="Refine how matching and discovery prioritize roles for you.">
-                    <div>
-                      <div className={mutedLabel}>Preferred job types</div>
-                      <div className="mt-2"><ChoiceGrid options={JOB_TYPES} values={settings.jobDiscovery.jobTypes} onToggle={(value) => updateSection('jobDiscovery', { ...settings.jobDiscovery, jobTypes: toggleListValue(settings.jobDiscovery.jobTypes, value) })} /></div>
-                    </div>
-                    <div>
-                      <div className={mutedLabel}>Work modes</div>
-                      <div className="mt-2"><ChoiceGrid options={WORK_MODES} values={settings.jobDiscovery.workModes} onToggle={(value) => updateSection('jobDiscovery', { ...settings.jobDiscovery, workModes: toggleListValue(settings.jobDiscovery.workModes, value) })} /></div>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <div className={mutedLabel}>Salary range</div>
-                        <select value={settings.jobDiscovery.salaryRange} onChange={(e) => updateSection('jobDiscovery', { ...settings.jobDiscovery, salaryRange: e.target.value })} className={`${inputClass} mt-2`}>
-                          <option>$50k - $75k</option>
-                          <option>$75k - $100k</option>
-                          <option>$100k - $150k</option>
-                          <option>$150k - $200k</option>
-                          <option>$200k+</option>
-                        </select>
-                      </div>
-                      <div>
-                        <div className={mutedLabel}>Remote preference</div>
-                        <select value={settings.jobDiscovery.remotePreference} onChange={(e) => updateSection('jobDiscovery', { ...settings.jobDiscovery, remotePreference: e.target.value as TalentSettings['jobDiscovery']['remotePreference'] })} className={`${inputClass} mt-2`}>
-                          <option value="remote">Remote only</option>
-                          <option value="hybrid">Hybrid</option>
-                          <option value="onsite">On-site only</option>
-                          <option value="any">Any</option>
-                        </select>
-                      </div>
-                    </div>
-                  </SectionCard>
-                  <SectionCard title="Market filters" description="Guide which roles enter your alerts and recommendation pool.">
-                    <div>
-                      <div className={mutedLabel}>Preferred locations</div>
-                      <div className="mt-2"><ChoiceGrid options={LOCATIONS} values={settings.jobDiscovery.preferredLocations} onToggle={(value) => updateSection('jobDiscovery', { ...settings.jobDiscovery, preferredLocations: toggleListValue(settings.jobDiscovery.preferredLocations, value) })} /></div>
-                    </div>
-                    <div>
-                      <div className={mutedLabel}>Industries</div>
-                      <div className="mt-2"><ChoiceGrid options={INDUSTRIES} values={settings.jobDiscovery.industries} onToggle={(value) => updateSection('jobDiscovery', { ...settings.jobDiscovery, industries: toggleListValue(settings.jobDiscovery.industries, value) })} /></div>
-                    </div>
-                    <div>
-                      <div className={mutedLabel}>Seniority levels</div>
-                      <div className="mt-2"><ChoiceGrid options={SENIORITY_LEVELS} values={settings.jobDiscovery.seniorityLevels} onToggle={(value) => updateSection('jobDiscovery', { ...settings.jobDiscovery, seniorityLevels: toggleListValue(settings.jobDiscovery.seniorityLevels, value) })} /></div>
-                    </div>
-                    <ToggleRow title="Visa support needed" description="Prioritize jobs with sponsorship support." checked={settings.jobDiscovery.visaSupportNeeded} onChange={(value) => updateSection('jobDiscovery', { ...settings.jobDiscovery, visaSupportNeeded: value })} />
-                    <ToggleRow title="Open to relocation" description="Let discovery include relocation-friendly roles." checked={settings.jobDiscovery.openToRelocation} onChange={(value) => updateSection('jobDiscovery', { ...settings.jobDiscovery, openToRelocation: value })} />
-                    <ToggleRow title="Willing to travel" description="Surface roles with travel expectations." checked={settings.jobDiscovery.willingToTravel} onChange={(value) => updateSection('jobDiscovery', { ...settings.jobDiscovery, willingToTravel: value })} />
-                    <div>
-                      <div className={mutedLabel}>Alert frequency</div>
-                      <div className="mt-2">
-                        <Segmented value={settings.jobDiscovery.alertFrequency} onChange={(value) => updateSection('jobDiscovery', { ...settings.jobDiscovery, alertFrequency: value as TalentSettings['jobDiscovery']['alertFrequency'] })} options={[{ value: 'instant', label: 'Instant' }, { value: 'daily', label: 'Daily' }, { value: 'weekly', label: 'Weekly' }]} />
                       </div>
                     </div>
                   </SectionCard>

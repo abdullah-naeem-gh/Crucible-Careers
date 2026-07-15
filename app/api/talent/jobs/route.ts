@@ -7,7 +7,7 @@ export async function GET() {
 
   const { data: jobs, error } = await supabase
     .from('jobs')
-    .select('id, employer_id, title, location, type, salary_range, tags, description, created_at')
+    .select('id, employer_id, title, location, location_type, type, salary_range, tags, description, created_at')
     .eq('status', 'Active')
     .order('created_at', { ascending: false })
 
@@ -34,6 +34,7 @@ export async function GET() {
     title: job.title,
     company: companyById.get(job.employer_id) || 'Unknown Company',
     location: job.location,
+    locationType: job.location_type ? (job.location_type.toLowerCase() as ScrapedJob['locationType']) : null,
     type: job.type ? (job.type.toLowerCase() as ScrapedJob['type']) : null,
     salary: job.salary_range,
     url: `/apply/${job.id}`,

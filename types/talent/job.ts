@@ -3,7 +3,8 @@ export interface ScrapedJob {
   title: string
   company: string
   location: string | null
-  type: 'full-time' | 'part-time' | 'contract' | 'remote' | null
+  type: 'full-time' | 'part-time' | 'contract' | 'internship' | 'remote' | null
+  locationType?: 'remote' | 'hybrid' | 'on-site' | null
   salary: string | null
   url: string
   source: string
