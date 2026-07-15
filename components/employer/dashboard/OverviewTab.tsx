@@ -15,6 +15,7 @@ import { calculateAtsScore, getApplicantsByJob, getPipelineStage } from "@/lib/e
 import { ApplicantPipelineStage, CandidateProfile } from "@/types/employer/applicant";
 import { EmployerJob } from "@/types/employer/job";
 import { Skeleton } from "@/components/ui/Skeleton";
+import EmployerCalendar, { CalendarCandidate } from "@/components/employer/dashboard/EmployerCalendar";
 
 export type { EmployerJob };
 
@@ -224,6 +225,18 @@ export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants
     { label: "In interviews", value: viewModel.interviewing, helper: "Open hiring pipeline", icon: IconUsers, onClick: () => onOpenApplicants(interviewDestination) },
   ];
 
+  const calendarCandidates = useMemo<CalendarCandidate[]>(
+    () => viewModel.applicants
+      .filter((item) => item.stage === "applied" || item.stage === "shortlisted" || item.stage === "interviewing")
+      .map((item) => ({
+        key: `${item.job.id}:${item.candidate.id}`,
+        candidateName: item.candidate.name,
+        candidateEmail: item.candidate.email,
+        jobTitle: item.job.title,
+      })),
+    [viewModel.applicants],
+  );
+
   return (
     <OverviewMotion>
       <section className={`${surface} flex h-full min-h-[38rem] flex-col overflow-hidden`}>
@@ -327,6 +340,8 @@ export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants
               </div>
             </section>
           </div>
+
+          <EmployerCalendar candidates={calendarCandidates} />
         </div>
       </section>
     </OverviewMotion>
