@@ -67,22 +67,29 @@ export async function getMicrosoftUserEmail(accessToken: string): Promise<string
 }
 
 export async function createMicrosoftEvent(accessToken: string, event: CalendarEventInput): Promise<CalendarEventResult> {
-  // Graph wants a bare local dateTime + separate IANA timeZone rather than an
-  // offset-suffixed ISO string — callers pass UTC ISO ("...Z"), stripped here.
-  const toGraphDateTime = (iso: string) => iso.replace("Z", "");
-
   const res = await fetch(EVENTS_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       subject: event.summary,
       body: { contentType: "text", content: event.description || "" },
-      start: { dateTime: toGraphDateTime(event.startDateTime), timeZone: "UTC" },
-      end: { dateTime: toGraphDateTime(event.endDateTime), timeZone: "UTC" },
+      start: { dateTime: event.startDateTime, timeZone: event.timeZone },
+      end: { dateTime: event.endDateTime, timeZone: event.timeZone },
       location: event.location ? { displayName: event.location } : undefined,
     }),
   });
   if (!res.ok) throw new Error(`Microsoft event creation failed: ${await res.text()}`);
   const data = await res.json();
   return { eventId: data.id, eventLink: data.webLink };
+}
+
+export async function deleteMicrosoftEvent(accessToken: string, eventId: string): Promise<void> {
+  const res = await fetch(`${EVENTS_URL}/${eventId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  // 404 means it was already deleted on Microsoft's side — not an error for us.
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`Microsoft event deletion failed: ${await res.text()}`);
+  }
 }

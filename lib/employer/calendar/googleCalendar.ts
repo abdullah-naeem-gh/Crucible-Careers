@@ -70,11 +70,22 @@ export async function createGoogleEvent(accessToken: string, event: CalendarEven
       summary: event.summary,
       description: event.description,
       location: event.location,
-      start: { dateTime: event.startDateTime },
-      end: { dateTime: event.endDateTime },
+      start: { dateTime: event.startDateTime, timeZone: event.timeZone },
+      end: { dateTime: event.endDateTime, timeZone: event.timeZone },
     }),
   });
   if (!res.ok) throw new Error(`Google event creation failed: ${await res.text()}`);
   const data = await res.json();
   return { eventId: data.id, eventLink: data.htmlLink };
+}
+
+export async function deleteGoogleEvent(accessToken: string, eventId: string): Promise<void> {
+  const res = await fetch(`${EVENTS_URL}/${eventId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  // 410 Gone means it was already deleted on Google's side — not an error for us.
+  if (!res.ok && res.status !== 404 && res.status !== 410) {
+    throw new Error(`Google event deletion failed: ${await res.text()}`);
+  }
 }
