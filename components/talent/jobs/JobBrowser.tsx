@@ -291,6 +291,11 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
                                   Platform
                                 </span>
                               )}
+                              {featuredCompanies.has(job.company) && (
+                                <span className="text-[9px] uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-200 dark:text-amber-300 dark:bg-amber-500/10 dark:border-amber-500/20 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5">
+                                  ⭐ Featured
+                                </span>
+                              )}
                             </div>
                             <button
                               type="button"

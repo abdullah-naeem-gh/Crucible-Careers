@@ -6,6 +6,8 @@ import { useParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   IconFileText,
+  IconStar,
+  IconStarFilled,
 } from '@tabler/icons-react'
 import { FormConfig, FormField, EmployerJob } from '@/types/employer/job'
 import { FORM_TEMPLATES } from '@/lib/shared/formTemplates'
@@ -13,6 +15,7 @@ import { loadTalentProfile } from '@/lib/talent/services/profile.service'
 import { computeExperienceYears } from '@/lib/shared/experienceYears'
 import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
 import type { TalentProfile } from '@/types/talent/profile'
+import { addReview } from '@/lib/employer/ranking/reviews'
 
 function buildInitialValue(field: FormField, profile: TalentProfile | null): any {
   if (field.type === 'multi-select') {
@@ -67,6 +70,11 @@ export default function ApplyFormPage() {
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewHovered, setReviewHovered] = useState(0)
+  const [reviewSubmitted, setReviewSubmitted] = useState(false)
 
   // Load the real job (and its form_config) from the API
   useEffect(() => {
@@ -588,7 +596,32 @@ export default function ApplyFormPage() {
               <p className="text-gray-600 mt-2 text-sm leading-relaxed">
                 Thank you for applying. Your application has been saved and is currently being processed by the hiring team.
               </p>
-              <div className="flex items-center justify-center gap-3 mt-8">
+
+              {/* Review CTA */}
+              {!reviewSubmitted && (
+                <motion.button
+                  type="button"
+                  onClick={() => setShowReviewModal(true)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="mt-8 flex items-center gap-2 mx-auto rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-700 cursor-pointer hover:bg-amber-100 transition-colors"
+                >
+                  <IconStarFilled size={16} className="text-amber-500" />
+                  Review {job?.company}
+                </motion.button>
+              )}
+              {reviewSubmitted && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700"
+                >
+                  <IconStarFilled size={14} className="text-amber-500" />
+                  Review submitted — thank you!
+                </motion.div>
+              )}
+
+              <div className="flex items-center justify-center gap-3 mt-6">
                 <Link href="/talent/dashboard?tab=applications" className="px-5 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white rounded-xl text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity">
                   Track application
                 </Link>
@@ -596,6 +629,99 @@ export default function ApplyFormPage() {
                   Back to home
                 </Link>
               </div>
+
+              {/* Review modal */}
+              <AnimatePresence>
+                {showReviewModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-4"
+                    onClick={() => setShowReviewModal(false)}
+                  >
+                    <motion.div
+                      initial={{ y: 40, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: 40, opacity: 0 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-2xl p-6"
+                    >
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">
+                        Rate your experience
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-5">
+                        How was your experience applying to{' '}
+                        <span className="font-semibold text-gray-700">{job?.company}</span>?
+                      </p>
+
+                      {/* Star picker */}
+                      <div className="flex justify-center gap-2 mb-5">
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const active = (reviewHovered || reviewRating) >= star
+                          return (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setReviewRating(star)}
+                              onMouseEnter={() => setReviewHovered(star)}
+                              onMouseLeave={() => setReviewHovered(0)}
+                              className="cursor-pointer transition-transform hover:scale-110"
+                              aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                            >
+                              {active ? (
+                                <IconStarFilled size={32} className="text-amber-400" />
+                              ) : (
+                                <IconStar size={32} className="text-gray-200" />
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      {/* Comment */}
+                      <textarea
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        placeholder="Share your experience (optional)…"
+                        rows={3}
+                        className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+                      />
+
+                      <div className="flex gap-3 mt-5">
+                        <button
+                          type="button"
+                          onClick={() => setShowReviewModal(false)}
+                          className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                          Skip
+                        </button>
+                        <button
+                          type="button"
+                          disabled={reviewRating === 0}
+                          onClick={() => {
+                            if (!reviewRating || !job) return
+                            addReview({
+                              companyName: job.company ?? job.title,
+                              rating: reviewRating,
+                              comment: reviewComment.trim(),
+                              reviewerName: profile
+                                ? `${profile.firstName} ${profile.lastName}`.trim() || 'Anonymous'
+                                : 'Anonymous',
+                            })
+                            setShowReviewModal(false)
+                            setReviewSubmitted(true)
+                          }}
+                          className="flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-white cursor-pointer shadow-[0_6px_16px_rgba(245,158,11,0.2)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                        >
+                          Submit Review
+                        </button>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
