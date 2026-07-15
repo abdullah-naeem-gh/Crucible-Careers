@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const { applicationId, date, startTime, endTime, format, location } = body;
+  const { applicationId, date, startTime, endTime, format, location, timeZone } = body;
 
   if (!applicationId || !date || !startTime || !endTime || !format) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -96,19 +96,21 @@ export async function POST(request: NextRequest) {
   // failed external sync must never undo the interview already saved above.
   let calendarProvider: CalendarProvider | null = null;
   let calendarEventLink: string | null = null;
+  let calendarSyncError: string | null = null;
+  let hadConnection = false;
 
   try {
     for (const provider of ["google", "microsoft"] as const) {
       const accessToken = await getValidAccessToken(supabase, user.id, provider);
       if (!accessToken) continue;
+      hadConnection = true;
 
-      const startDateTime = new Date(`${date}T${startTime}:00Z`).toISOString();
-      const endDateTime = new Date(`${date}T${endTime}:00Z`).toISOString();
       const eventInput = {
         summary: `Interview with ${candidateName}`,
         description: `${job.title} — interview scheduled via Crucible Careers`,
-        startDateTime,
-        endDateTime,
+        startDateTime: `${date}T${startTime}:00`,
+        endDateTime: `${date}T${endTime}:00`,
+        timeZone: timeZone || "UTC",
         location: location || undefined,
       };
 
@@ -128,6 +130,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error("Failed to push interview to external calendar:", err);
+    if (hadConnection) calendarSyncError = err instanceof Error ? err.message : "Failed to sync to your connected calendar.";
   }
 
   return NextResponse.json(
@@ -142,6 +145,7 @@ export async function POST(request: NextRequest) {
       location: interview.location || "",
       calendarProvider,
       calendarEventLink,
+      calendarSyncError,
     },
     { status: 201 },
   );

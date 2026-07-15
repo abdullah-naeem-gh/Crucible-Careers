@@ -16,6 +16,7 @@ import {
   IconClock,
   IconMapPin,
   IconPhone,
+  IconTrash,
   IconVideo,
   IconX,
 } from "@tabler/icons-react";
@@ -45,6 +46,7 @@ interface CalendarEvent {
   location: string;
   calendarProvider?: "google" | "microsoft" | null;
   calendarEventLink?: string | null;
+  calendarSyncError?: string | null;
 }
 
 interface ProviderConnection {
@@ -104,7 +106,7 @@ function newForm(date: Date, candidateKey = ""): EventForm {
   return { candidateKey, date: dateKey(date), startTime: "09:00", endTime: "09:30", format: "video", location: "" };
 }
 
-function EventCard({ event }: { event: CalendarEvent }) {
+function EventCard({ event, onDelete, isDeleting }: { event: CalendarEvent; onDelete: (event: CalendarEvent) => void; isDeleting: boolean }) {
   const FormatIcon = event.format === "video" ? IconVideo : event.format === "phone" ? IconPhone : IconMapPin;
   return (
     <div className="calendar-event-card flex gap-3 rounded-2xl border border-white/[0.07] bg-[#141414] p-4">
@@ -112,7 +114,12 @@ function EventCard({ event }: { event: CalendarEvent }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div><h4 className="text-sm font-semibold text-white">Interview with {event.candidateName}</h4><p className="mt-0.5 text-xs text-white/38">{event.jobTitle}</p></div>
-          <span className="rounded-lg border border-orange-500/15 bg-orange-500/[0.07] px-2 py-1 text-[10px] font-semibold text-[#FF914D]">{formatTime(event.startTime)}</span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg border border-orange-500/15 bg-orange-500/[0.07] px-2 py-1 text-[10px] font-semibold text-[#FF914D]">{formatTime(event.startTime)}</span>
+            <button type="button" onClick={() => onDelete(event)} disabled={isDeleting} aria-label={`Delete interview with ${event.candidateName}`} className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-white/30 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed">
+              <IconTrash size={14} />
+            </button>
+          </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/35">
           <span className="inline-flex items-center gap-1.5"><IconClock size={13} />{formatTime(event.startTime)} – {formatTime(event.endTime)}</span>
@@ -142,6 +149,7 @@ export default function EmployerCalendar({ candidates }: EmployerCalendarProps) 
   const [form, setForm] = useState<EventForm>(() => newForm(today, candidates[0]?.key));
   const [formError, setFormError] = useState("");
   const [isScheduling, setIsScheduling] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [connections, setConnections] = useState<Record<"google" | "microsoft", ProviderConnection>>({
     google: { connected: false, email: null },
     microsoft: { connected: false, email: null },
@@ -263,6 +271,7 @@ export default function EmployerCalendar({ candidates }: EmployerCalendarProps) 
           endTime: form.endTime,
           format: form.format,
           location: form.location.trim(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
       if (!res.ok) {
@@ -279,13 +288,30 @@ export default function EmployerCalendar({ candidates }: EmployerCalendarProps) 
       setNotice(
         created.calendarProvider
           ? `Interview with ${candidate.candidateName} scheduled and synced to your ${created.calendarProvider === "google" ? "Google" : "Microsoft"} calendar.`
-          : `Interview with ${candidate.candidateName} scheduled.`,
+          : created.calendarSyncError
+            ? `Interview scheduled, but calendar sync failed: ${created.calendarSyncError}`
+            : `Interview with ${candidate.candidateName} scheduled.`,
       );
     } catch (err) {
       console.error("Failed to schedule interview", err);
       setFormError("Failed to schedule interview. Please try again.");
     } finally {
       setIsScheduling(false);
+    }
+  };
+
+  const deleteEvent = async (event: CalendarEvent) => {
+    setDeletingId(event.id);
+    try {
+      const res = await fetch(`/api/employer/interviews/${event.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete interview");
+      setEvents((current) => current.filter((item) => item.id !== event.id));
+      setNotice(`Interview with ${event.candidateName} cancelled.`);
+    } catch (err) {
+      console.error("Failed to delete interview", err);
+      setNotice("Failed to cancel interview. Please try again.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -350,7 +376,7 @@ export default function EmployerCalendar({ candidates }: EmployerCalendarProps) 
             <span className="hidden items-center gap-1.5 text-[11px] text-white/35 sm:inline-flex"><IconCalendarEvent size={14} />Your recruiting events</span>
           </div>
           <div className="min-h-[27rem] p-4 sm:p-5">
-            {visibleEvents.length ? <div className="space-y-3">{visibleEvents.map((event) => <EventCard key={event.id} event={event} />)}</div> : (
+            {visibleEvents.length ? <div className="space-y-3">{visibleEvents.map((event) => <EventCard key={event.id} event={event} onDelete={deleteEvent} isDeleting={deletingId === event.id} />)}</div> : (
               <div className="grid min-h-[24rem] place-items-center text-center"><div className="max-w-sm">
                 <div className="relative mx-auto h-28 w-64"><div className="absolute left-3 top-8 h-14 w-36 -rotate-3 rounded-2xl border border-white/[0.07] bg-[#141414] opacity-60" /><div className="absolute right-3 top-5 h-16 w-40 rotate-2 rounded-2xl border border-orange-500/15 bg-orange-500/[0.08]" /><div className="absolute left-1/2 top-0 grid h-16 w-16 -translate-x-1/2 place-items-center rounded-2xl border border-white/10 bg-[#1b1b1b] text-[#FF914D] shadow-lg"><IconCalendarEvent size={29} /></div><div className="absolute bottom-1 left-1/2 h-2 w-32 -translate-x-1/2 rounded-full bg-black/25 blur-md" /></div>
                 <h3 className="mt-1 text-base font-semibold text-white">No {activeView === "week" ? "events this week" : activeView === "today" ? "events today" : "past events"}</h3>
