@@ -9,7 +9,7 @@ const ME_URL = "https://graph.microsoft.com/v1.0/me";
 const SCOPES = "offline_access User.Read Calendars.ReadWrite";
 
 function redirectUri() {
-  return `${process.env.FRONTEND_URL}/api/employer/calendar/microsoft/callback`;
+  return `${process.env.NEXT_PUBLIC_SITE_URL}/api/employer/calendar/microsoft/callback`;
 }
 
 export function getMicrosoftAuthUrl(state: string): string {

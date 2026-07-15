@@ -6,7 +6,7 @@ const USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 const EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
 
 function redirectUri() {
-  return `${process.env.FRONTEND_URL}/api/employer/calendar/google/callback`;
+  return `${process.env.NEXT_PUBLIC_SITE_URL}/api/employer/calendar/google/callback`;
 }
 
 export function getGoogleAuthUrl(state: string): string {
