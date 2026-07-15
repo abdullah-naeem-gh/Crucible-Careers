@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useDashboardTheme } from "@/components/shared/theme/DashboardThemeProvider";
 import {
@@ -42,6 +43,13 @@ interface CalendarEvent {
   endTime: string;
   format: InterviewFormat;
   location: string;
+  calendarProvider?: "google" | "microsoft" | null;
+  calendarEventLink?: string | null;
+}
+
+interface ProviderConnection {
+  connected: boolean;
+  email: string | null;
 }
 
 interface EventForm {
@@ -109,6 +117,9 @@ function EventCard({ event }: { event: CalendarEvent }) {
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/35">
           <span className="inline-flex items-center gap-1.5"><IconClock size={13} />{formatTime(event.startTime)} – {formatTime(event.endTime)}</span>
           <span className="inline-flex items-center gap-1.5"><FormatIcon size={13} />{event.location || (event.format === "video" ? "Video interview" : event.format === "phone" ? "Phone interview" : "In person")}</span>
+          {event.calendarEventLink && (
+            <a href={event.calendarEventLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[#FF914D] hover:text-white"><IconCalendarEvent size={13} />View in calendar</a>
+          )}
         </div>
       </div>
     </div>
@@ -117,6 +128,8 @@ function EventCard({ event }: { event: CalendarEvent }) {
 
 export default function EmployerCalendar({ candidates }: EmployerCalendarProps) {
   const { theme } = useDashboardTheme();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const today = useMemo(() => startOfDay(new Date()), []);
   const [selectedDate, setSelectedDate] = useState(today);
   const [visibleMonth, setVisibleMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -128,6 +141,40 @@ export default function EmployerCalendar({ candidates }: EmployerCalendarProps) 
   const [notice, setNotice] = useState<string | null>(null);
   const [form, setForm] = useState<EventForm>(() => newForm(today, candidates[0]?.key));
   const [formError, setFormError] = useState("");
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [connections, setConnections] = useState<Record<"google" | "microsoft", ProviderConnection>>({
+    google: { connected: false, email: null },
+    microsoft: { connected: false, email: null },
+  });
+
+  useEffect(() => {
+    fetch("/api/employer/interviews")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: CalendarEvent[]) => setEvents(data))
+      .catch((err) => console.error("Failed to load interviews", err));
+
+    fetch("/api/employer/calendar/connections")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data) setConnections(data); })
+      .catch((err) => console.error("Failed to load calendar connections", err));
+  }, []);
+
+  // Reflect the OAuth callback's redirect result, then strip the query param.
+  useEffect(() => {
+    const calendarStatus = searchParams.get("calendar");
+    if (!calendarStatus) return;
+    if (calendarStatus === "connected") {
+      setNotice("Calendar connected.");
+      fetch("/api/employer/calendar/connections")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => { if (data) setConnections(data); })
+        .catch(() => {});
+    } else if (calendarStatus === "error") {
+      setNotice("Failed to connect calendar. Please try again.");
+    }
+    router.replace("/employer/dashboard?tab=overview", { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const cells = useMemo(() => monthCells(visibleMonth), [visibleMonth]);
   const eventDates = useMemo(() => new Set(events.map((event) => event.date)), [events]);
@@ -185,7 +232,7 @@ export default function EmployerCalendar({ candidates }: EmployerCalendarProps) 
     setIsScheduleOpen(true);
   };
 
-  const scheduleEvent = () => {
+  const scheduleEvent = async () => {
     const candidate = candidates.find((item) => item.key === form.candidateKey);
     if (!candidate || !form.date || !form.startTime || !form.endTime) {
       setFormError("Select a candidate, date, and interview time.");
@@ -199,21 +246,63 @@ export default function EmployerCalendar({ candidates }: EmployerCalendarProps) 
       setFormError("Add a location for an in-person interview.");
       return;
     }
-    setEvents((current) => [...current, {
-      id: `${Date.now()}-${candidate.key}`,
-      candidateName: candidate.candidateName,
-      jobTitle: candidate.jobTitle,
-      date: form.date,
-      startTime: form.startTime,
-      endTime: form.endTime,
-      format: form.format,
-      location: form.location.trim(),
-    }]);
-    const eventDate = dateFromKey(form.date);
-    selectDate(eventDate);
-    setActiveView(eventDate < today ? "past" : form.date === dateKey(today) ? "today" : "week");
-    setIsScheduleOpen(false);
-    setNotice(`Interview with ${candidate.candidateName} added to this session.`);
+
+    // candidate.key is "<jobId>:<applicationId>" — see calendarCandidates in OverviewTab.tsx
+    const applicationId = candidate.key.split(":")[1];
+
+    setIsScheduling(true);
+    setFormError("");
+    try {
+      const res = await fetch("/api/employer/interviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          applicationId,
+          date: form.date,
+          startTime: form.startTime,
+          endTime: form.endTime,
+          format: form.format,
+          location: form.location.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setFormError(data.error || "Failed to schedule interview. Please try again.");
+        return;
+      }
+      const created: CalendarEvent = await res.json();
+      setEvents((current) => [...current, created]);
+      const eventDate = dateFromKey(form.date);
+      selectDate(eventDate);
+      setActiveView(eventDate < today ? "past" : form.date === dateKey(today) ? "today" : "week");
+      setIsScheduleOpen(false);
+      setNotice(
+        created.calendarProvider
+          ? `Interview with ${candidate.candidateName} scheduled and synced to your ${created.calendarProvider === "google" ? "Google" : "Microsoft"} calendar.`
+          : `Interview with ${candidate.candidateName} scheduled.`,
+      );
+    } catch (err) {
+      console.error("Failed to schedule interview", err);
+      setFormError("Failed to schedule interview. Please try again.");
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const disconnectProvider = async (provider: "google" | "microsoft") => {
+    try {
+      const res = await fetch("/api/employer/calendar/disconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider }),
+      });
+      if (!res.ok) throw new Error("Failed to disconnect");
+      setConnections((current) => ({ ...current, [provider]: { connected: false, email: null } }));
+      setNotice(`Disconnected from ${provider === "google" ? "Google Calendar" : "Microsoft Outlook"}.`);
+    } catch (err) {
+      console.error("Failed to disconnect calendar", err);
+      setNotice("Failed to disconnect. Please try again.");
+    }
   };
 
   const shiftMonth = (amount: number) => setVisibleMonth((current) => new Date(current.getFullYear(), current.getMonth() + amount, 1));
@@ -222,10 +311,31 @@ export default function EmployerCalendar({ candidates }: EmployerCalendarProps) 
   return (
     <section className="employer-calendar mt-6 overflow-hidden rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]">
       <div className="calendar-connect-banner m-4 flex flex-col gap-4 rounded-2xl border border-orange-500/15 bg-gradient-to-r from-orange-500/[0.12] to-orange-400/[0.035] p-4 sm:m-5 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div><div className="text-sm font-semibold text-white">Your calendar is not connected yet</div><p className="mt-1 text-xs leading-relaxed text-white/45">Add availability for faster scheduling and manage interviews in one place.</p></div>
+        <div>
+          <div className="text-sm font-semibold text-white">
+            {connections.google.connected || connections.microsoft.connected ? "Your calendar" : "Your calendar is not connected yet"}
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-white/45">Add availability for faster scheduling and manage interviews in one place.</p>
+        </div>
         <div className="flex flex-col gap-2 min-[460px]:flex-row">
-          <button type="button" onClick={() => setNotice("Google Calendar sync is coming soon.")} className="calendar-provider-button inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#141414] px-3.5 text-xs font-semibold text-white/75 hover:border-orange-500/30 hover:bg-white/[0.035] hover:text-white cursor-pointer"><IconBrandGoogle size={17} className="text-[#4285F4]" />Google Calendar</button>
-          <button type="button" onClick={() => setNotice("Microsoft Outlook sync is coming soon.")} className="calendar-provider-button inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#141414] px-3.5 text-xs font-semibold text-white/75 hover:border-orange-500/30 hover:bg-white/[0.035] hover:text-white cursor-pointer"><IconBrandWindows size={17} className="text-[#00A4EF]" />Microsoft Outlook</button>
+          {connections.google.connected ? (
+            <button type="button" onClick={() => disconnectProvider("google")} className="calendar-provider-button inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] px-3.5 text-xs font-semibold text-emerald-300 hover:border-red-500/25 hover:bg-red-500/[0.07] hover:text-red-300 cursor-pointer">
+              <IconBrandGoogle size={17} className="text-[#4285F4]" />
+              {connections.google.email || "Connected"}
+              <IconX size={13} className="opacity-60" />
+            </button>
+          ) : (
+            <a href="/api/employer/calendar/google/connect" className="calendar-provider-button inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#141414] px-3.5 text-xs font-semibold text-white/75 hover:border-orange-500/30 hover:bg-white/[0.035] hover:text-white cursor-pointer"><IconBrandGoogle size={17} className="text-[#4285F4]" />Google Calendar</a>
+          )}
+          {connections.microsoft.connected ? (
+            <button type="button" onClick={() => disconnectProvider("microsoft")} className="calendar-provider-button inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] px-3.5 text-xs font-semibold text-emerald-300 hover:border-red-500/25 hover:bg-red-500/[0.07] hover:text-red-300 cursor-pointer">
+              <IconBrandWindows size={17} className="text-[#00A4EF]" />
+              {connections.microsoft.email || "Connected"}
+              <IconX size={13} className="opacity-60" />
+            </button>
+          ) : (
+            <a href="/api/employer/calendar/microsoft/connect" className="calendar-provider-button inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#141414] px-3.5 text-xs font-semibold text-white/75 hover:border-orange-500/30 hover:bg-white/[0.035] hover:text-white cursor-pointer"><IconBrandWindows size={17} className="text-[#00A4EF]" />Microsoft Outlook</a>
+          )}
         </div>
       </div>
 
@@ -278,7 +388,7 @@ export default function EmployerCalendar({ candidates }: EmployerCalendarProps) 
               <label className="block"><span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-white/40">{form.format === "in-person" ? "Location" : form.format === "phone" ? "Call details (optional)" : "Meeting link (optional)"}</span><input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} placeholder={form.format === "in-person" ? "Office or meeting room" : form.format === "phone" ? "Phone number or instructions" : "https://meet.example.com/..."} className="h-11 w-full rounded-xl border border-white/10 bg-[#141414] px-3 text-sm text-white outline-none placeholder:text-white/20 focus:border-orange-500/50" /></label>
               {formError && <p role="alert" className="rounded-xl border border-red-500/15 bg-red-500/[0.07] px-3 py-2.5 text-xs text-red-300">{formError}</p>}
             </div>
-            <div className="flex justify-end gap-2 border-t border-white/[0.07] px-5 py-4"><button type="button" onClick={() => setIsScheduleOpen(false)} className="calendar-ghost-button h-10 rounded-xl px-4 text-xs font-semibold text-white/45 hover:bg-white/[0.04] hover:text-white cursor-pointer">Cancel</button><button type="button" onClick={scheduleEvent} className="calendar-primary-button inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF6B00] px-4 text-xs font-semibold text-white hover:bg-[#ff7a1a] cursor-pointer"><IconCalendarPlus size={16} />Add interview</button></div>
+            <div className="flex justify-end gap-2 border-t border-white/[0.07] px-5 py-4"><button type="button" onClick={() => setIsScheduleOpen(false)} className="calendar-ghost-button h-10 rounded-xl px-4 text-xs font-semibold text-white/45 hover:bg-white/[0.04] hover:text-white cursor-pointer">Cancel</button><button type="button" disabled={isScheduling} onClick={scheduleEvent} className="calendar-primary-button inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF6B00] px-4 text-xs font-semibold text-white hover:bg-[#ff7a1a] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"><IconCalendarPlus size={16} />{isScheduling ? "Scheduling…" : "Add interview"}</button></div>
           </motion.div>
         </motion.div>
       )}</AnimatePresence>
@@ -288,7 +398,7 @@ export default function EmployerCalendar({ candidates }: EmployerCalendarProps) 
           <motion.div role="dialog" aria-modal="true" aria-labelledby="full-calendar-title" initial={{ opacity: 0, scale: 0.985, y: -8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.99, y: -6 }} className="solid-popup-modal flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[1500px] flex-col overflow-hidden rounded-[20px] border border-white/[0.08] bg-[#171717] shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-[24px] lg:max-h-[calc(100dvh-4rem)]" onMouseDown={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#FF914D]">Interview schedule</p><h3 id="full-calendar-title" className="mt-1 text-lg font-semibold text-white">{monthTitle}</h3></div><div className="flex items-center"><button type="button" onClick={() => shiftMonth(-1)} aria-label="Previous month" className="grid h-9 w-9 place-items-center rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white cursor-pointer"><IconChevronLeft size={18} /></button><button type="button" onClick={() => shiftMonth(1)} aria-label="Next month" className="grid h-9 w-9 place-items-center rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white cursor-pointer"><IconChevronRight size={18} /></button><button type="button" onClick={() => setIsFullOpen(false)} aria-label="Close full calendar" className="ml-1 grid h-9 w-9 place-items-center rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white cursor-pointer"><IconX size={18} /></button></div></div>
             <div className="min-h-0 overflow-auto p-3 custom-scrollbar sm:p-5"><div className="calendar-full-grid grid min-w-[42rem] grid-cols-7 gap-px overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.07]">{LONG_WEEKDAYS.map((day) => <div key={day} className="bg-[#141414] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-white/35">{day}</div>)}{cells.map((date) => { const key = dateKey(date); const dayEvents = events.filter((event) => event.date === key); return <button key={key} type="button" onClick={() => { selectDate(date); setIsFullOpen(false); }} className={`min-h-20 bg-[#171717] p-2 text-left hover:bg-white/[0.025] cursor-pointer ${date.getMonth() === visibleMonth.getMonth() ? "" : "opacity-35"}`}><span className={`grid h-6 w-6 place-items-center rounded-lg text-[11px] ${key === dateKey(today) ? "bg-[#FF6B00] font-semibold text-white" : "text-white/55"}`}>{date.getDate()}</span><div className="mt-1 space-y-1">{dayEvents.slice(0, 2).map((event) => <div key={event.id} className="truncate rounded-md bg-orange-500/10 px-1.5 py-1 text-[9px] font-medium text-[#FF914D]">{event.startTime} {event.candidateName}</div>)}{dayEvents.length > 2 && <div className="px-1 text-[9px] text-white/35">+{dayEvents.length - 2} more</div>}</div></button>; })}</div></div>
-            <div className="flex items-center justify-between gap-3 border-t border-white/[0.07] px-5 py-4"><p className="text-[11px] text-white/30">Session-only prototype · Events reset on refresh</p><button type="button" onClick={() => { setIsFullOpen(false); openScheduler(selectedDate); }} className="calendar-primary-button inline-flex h-9 shrink-0 items-center gap-2 rounded-xl bg-[#FF6B00] px-3.5 text-xs font-semibold text-white hover:bg-[#ff7a1a] cursor-pointer"><IconCalendarPlus size={15} />Schedule interview</button></div>
+            <div className="flex items-center justify-between gap-3 border-t border-white/[0.07] px-5 py-4"><p className="text-[11px] text-white/30">{connections.google.connected || connections.microsoft.connected ? "Interviews sync to your connected calendar" : "Connect a calendar above to sync interviews automatically"}</p><button type="button" onClick={() => { setIsFullOpen(false); openScheduler(selectedDate); }} className="calendar-primary-button inline-flex h-9 shrink-0 items-center gap-2 rounded-xl bg-[#FF6B00] px-3.5 text-xs font-semibold text-white hover:bg-[#ff7a1a] cursor-pointer"><IconCalendarPlus size={15} />Schedule interview</button></div>
           </motion.div>
         </motion.div>
       )}</AnimatePresence>, portalRoot)}

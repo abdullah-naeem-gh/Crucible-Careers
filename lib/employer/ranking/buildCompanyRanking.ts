@@ -47,12 +47,9 @@ export function buildCompanyRanking(
   // Signal: jobs posted — max meaningful = 20 → 100 %
   const jobsScore = Math.min((jobs.length / 20) * 100, 100);
 
-  // Signal: successful hires — estimate ~18% of applications shortlisted
-  const totalShortlisted = jobs.reduce(
-    (sum, j) => sum + Math.floor(j.applications * 0.18),
-    0,
-  );
-  const hiresScore = Math.min((totalShortlisted / 15) * 100, 100);
+  // Signal: successful hires — real count of applications marked "hired"
+  const totalHires = jobs.reduce((sum, j) => sum + (j.hires ?? 0), 0);
+  const hiresScore = Math.min((totalHires / 15) * 100, 100);
 
   // Signal: reviews — avg rating (0–5) mapped to 0–100
   const reviewScore = Math.min((avgReviewRating / 5) * 100, 100);
@@ -88,9 +85,9 @@ export function buildCompanyRanking(
     {
       key: "hires",
       label: "Successful Hires",
-      description: "Estimated shortlisted / hired candidates",
+      description: "Candidates hired through the platform",
       score: hiresScore,
-      rawValue: totalShortlisted,
+      rawValue: totalHires,
       unit: "hires",
       weightedPoints: Math.round(hiresScore * WEIGHTS.hires),
     },

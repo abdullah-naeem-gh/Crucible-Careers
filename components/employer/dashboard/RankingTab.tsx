@@ -14,10 +14,9 @@ import type { EmployerJob } from "@/types/employer/job";
 import type { CompanyRanking, CompanyReview, RankGrade } from "@/types/employer/ranking";
 import { buildCompanyRanking } from "@/lib/employer/ranking/buildCompanyRanking";
 import {
-  getReviewsForCompany,
-  getAverageRating,
-  getActiveBoosts,
-  setActiveBoosts,
+  getEmployerReviews,
+  getEmployerBoosts,
+  toggleEmployerBoost,
 } from "@/lib/employer/ranking/reviews";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -131,12 +130,6 @@ const surface =
   "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 const insetSurface =
   "rounded-2xl border border-white/[0.065] bg-[#141414] shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]";
-
-// ── Demo seed: gives a B-rank without persistent storage ──────────────────────
-// Jobs=8 gives jobsScore=40 → 10pts. Hires demo seeded ~18 → 100% → 30pts.
-// Reviews 4.2/5 → 84% → 17pts. Stars=0 → 0pts. Total ≈ 57 → B
-const DEMO_AVG_RATING = 4.2;
-const DEMO_SHORTLISTED_OVERRIDE = 18; // injected so hires score hits ~100
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -473,63 +466,38 @@ interface RankingTabProps {
 export default function RankingTab({ jobs, company }: RankingTabProps) {
   const [activeBoosts, setActiveBoostsState] = useState<string[]>([]);
   const [reviews, setReviews] = useState<CompanyReview[]>([]);
-  const [avgRating, setAvgRating] = useState(DEMO_AVG_RATING);
+  const [avgRating, setAvgRating] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
 
   // Load active boosts on mount
   useEffect(() => {
-    const boosts = getActiveBoosts(company);
-    setActiveBoostsState(boosts);
-  }, [company]);
+    getEmployerBoosts().then(setActiveBoostsState);
+  }, []);
 
   const handleToggleBoost = (boostId: string) => {
-    let nextBoosts: string[];
-    if (activeBoosts.includes(boostId)) {
-      nextBoosts = activeBoosts.filter((id) => id !== boostId);
-    } else {
-      nextBoosts = [...activeBoosts, boostId];
-    }
+    const isActivating = !activeBoosts.includes(boostId);
+    const nextBoosts = isActivating
+      ? [...activeBoosts, boostId]
+      : activeBoosts.filter((id) => id !== boostId);
     setActiveBoostsState(nextBoosts);
-    setActiveBoosts(company, nextBoosts);
+    toggleEmployerBoost(boostId, isActivating).catch((err) => {
+      console.error("Failed to toggle boost:", err);
+      setActiveBoostsState(activeBoosts); // revert on failure
+    });
   };
 
-  // Load persisted reviews (written by talent via apply page)
+  // Load real reviews submitted by talent via the apply page
   useEffect(() => {
-    const revs = getReviewsForCompany(company);
-    if (revs.length > 0) {
+    getEmployerReviews().then(({ reviews: revs, averageRating }) => {
       setReviews(revs);
-      setAvgRating(getAverageRating(company));
-    }
-    // If no real reviews, keep demo rating so B rank renders from the start
-  }, [company]);
+      setAvgRating(averageRating);
+    });
+  }, []);
 
-  // Build ranking — inject DEMO_SHORTLISTED_OVERRIDE so hires score is non-zero
-  // even with an empty jobs array, giving a realistic B grade by default
-  const ranking = useMemo(() => {
-    const base = buildCompanyRanking(jobs, activeBoosts, avgRating);
-    if (jobs.length === 0) {
-      // Demo override: bump hires score so the rank is sensible
-      const demoHiresScore = Math.min((DEMO_SHORTLISTED_OVERRIDE / 15) * 100, 100);
-      const demoJobsScore = 35; // pretend 7 jobs
-      const reviewScore = Math.min((avgRating / 5) * 100, 100);
-      
-      let boostsPoints = 0;
-      if (activeBoosts.includes("job-spotlight")) boostsPoints += 3;
-      if (activeBoosts.includes("candidate-unlock")) boostsPoints += 3;
-      if (activeBoosts.includes("profile-branding")) boostsPoints += 4;
-      const boostsScore = Math.min((boostsPoints / 10) * 100, 100);
-
-      const totalScore = Math.round(
-        demoJobsScore * 0.25 + demoHiresScore * 0.30 + reviewScore * 0.20 + boostsScore * 0.25,
-      );
-      return {
-        ...base,
-        totalScore,
-        grade: (totalScore >= 88 ? "S" : totalScore >= 72 ? "A" : totalScore >= 54 ? "B" : totalScore >= 36 ? "C" : "D") as RankGrade,
-      };
-    }
-    return base;
-  }, [jobs, activeBoosts, avgRating]);
+  const ranking = useMemo(
+    () => buildCompanyRanking(jobs, activeBoosts, avgRating),
+    [jobs, activeBoosts, avgRating],
+  );
 
   const cfg = GRADE_CONFIG[ranking.grade as RankGrade];
 

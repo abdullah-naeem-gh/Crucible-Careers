@@ -8,7 +8,7 @@ import { FORM_TEMPLATES } from "@/lib/shared/formTemplates";
 interface JobFormProps {
   defaultCompany?: string;
   initialData?: EmployerJob | null;
-  onSubmit: (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "matchScore">) => void;
+  onSubmit: (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "hires" | "matchScore">) => void;
 }
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
