@@ -63,10 +63,4 @@ export interface TalentSettings {
     timezone: string
     weekStartsOn: 'monday' | 'sunday'
   }
-  account: {
-    accountEmail: string
-    twoFactorReady: boolean
-    sessionAlerts: boolean
-    dataExportReady: boolean
-  }
 }

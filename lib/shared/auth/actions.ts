@@ -67,6 +67,32 @@ export async function signInWithGoogle(portal: UserRole) {
 }
 
 /**
+ * Update the current user's email. Supabase sends a confirmation email(s)
+ * before the change takes effect.
+ */
+export async function updateEmail(newEmail: string) {
+  const supabase = createBrowserSupabaseClient()
+  const { error } = await supabase.auth.updateUser({ email: newEmail })
+  if (error) throw error
+}
+
+/**
+ * Update the current user's password, re-authenticating with the current
+ * password first as a safeguard before this sensitive mutation.
+ */
+export async function changePassword(currentPassword: string, newPassword: string) {
+  const supabase = createBrowserSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.email) throw new Error('Not signed in.')
+
+  const { error: reauthError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword })
+  if (reauthError) throw new Error('Current password is incorrect.')
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) throw error
+}
+
+/**
  * Sign out the current user and clear their session.
  */
 export async function logout() {
