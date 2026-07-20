@@ -532,6 +532,26 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
 
   const connectGithub = async () => {
     setGithubVerifyError('')
+
+    // If a GitHub identity is already linked (e.g. it survived an earlier
+    // edit to the free-text link, which only clears our own tracking columns),
+    // re-run linkIdentity() would fail with "identity_already_exists" — just
+    // re-sync from the existing identity instead of going through OAuth again.
+    const { data: identitiesData } = await supabase.auth.getUserIdentities()
+    const existingGithubIdentity = identitiesData?.identities.find((identity) => identity.provider === 'github')
+    if (existingGithubIdentity) {
+      try {
+        const res = await fetch('/api/talent/profile/github-verify', { method: 'POST' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to verify GitHub.')
+        setFormState((prev) => (prev ? { ...prev, githubVerifiedUsername: data.githubVerifiedUsername, githubVerifiedAt: data.githubVerifiedAt } : prev))
+        onProfileChange(profile ? { ...profile, githubVerifiedUsername: data.githubVerifiedUsername, githubVerifiedAt: data.githubVerifiedAt } : profile)
+      } catch (err) {
+        setGithubVerifyError(err instanceof Error ? err.message : 'Failed to verify GitHub.')
+      }
+      return
+    }
+
     const { error } = await supabase.auth.linkIdentity({
       provider: 'github',
       options: { redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent('/talent/dashboard?tab=profile')}` },
