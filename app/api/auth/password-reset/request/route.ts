@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: 'Password reset is not configured.' }, { status: 500 })
   }
 
-  const origin = process.env.FRONTEND_URL || request.nextUrl.origin
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin
   const redirectTo = `${origin}/auth/reset-password?userType=${userType}`
   const supabase = createClient(supabaseUrl, supabaseKey)
   const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo })

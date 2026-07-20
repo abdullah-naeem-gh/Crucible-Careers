@@ -2,6 +2,13 @@ import { TalentSettings } from '@/types/talent/settings'
 
 export const TALENT_SETTINGS_STORAGE_KEY = 'talent_settings'
 
+// These 3 sections are persisted server-side (Supabase, `talent_settings` table).
+// The remaining sections (jobDiscovery, applicationWorkflow, experience) stay
+// local-only for now — see plan notes on why each was left unwired. Account &
+// Security is handled entirely separately (lib/shared/auth/actions.ts +
+// app/api/talent/account/**) since it's real account actions, not preferences.
+const PERSISTED_KEYS = ['notifications', 'profileVisibility', 'communications'] as const
+
 export function createDefaultTalentSettings(): TalentSettings {
   return {
     notifications: {
@@ -60,16 +67,10 @@ export function createDefaultTalentSettings(): TalentSettings {
       timezone: 'Pacific Time (PT)',
       weekStartsOn: 'monday',
     },
-    account: {
-      accountEmail: 'alex.johnson@email.com',
-      twoFactorReady: false,
-      sessionAlerts: true,
-      dataExportReady: true,
-    },
   }
 }
 
-export function loadTalentSettings(): TalentSettings {
+function loadLocalSettings(): TalentSettings {
   if (typeof window === 'undefined') return createDefaultTalentSettings()
 
   try {
@@ -85,7 +86,43 @@ export function loadTalentSettings(): TalentSettings {
   }
 }
 
-export function saveTalentSettings(settings: TalentSettings) {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(TALENT_SETTINGS_STORAGE_KEY, JSON.stringify(settings))
+export async function loadTalentSettings(): Promise<TalentSettings> {
+  const defaults = createDefaultTalentSettings()
+  const local = loadLocalSettings()
+
+  const merged: TalentSettings = { ...defaults, ...local }
+
+  try {
+    const res = await fetch('/api/talent/settings')
+    if (res.ok) {
+      const remote = await res.json()
+      for (const key of PERSISTED_KEYS) {
+        if (remote[key]) {
+          merged[key] = { ...defaults[key], ...remote[key] } as never
+        }
+      }
+    }
+  } catch {
+    // Fall back to whatever local/default values are already in `merged`.
+  }
+
+  return merged
+}
+
+export async function saveTalentSettings(settings: TalentSettings): Promise<void> {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(TALENT_SETTINGS_STORAGE_KEY, JSON.stringify(settings))
+  }
+
+  await fetch('/api/talent/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      notifications: settings.notifications,
+      profileVisibility: settings.profileVisibility,
+      communications: settings.communications,
+    }),
+  }).catch(() => {
+    // Local copy already saved above — a failed remote sync isn't fatal here.
+  })
 }

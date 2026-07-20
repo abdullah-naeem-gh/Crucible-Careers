@@ -212,7 +212,7 @@ function EmployerDashboardContent() {
     changeTab("jobs");
   };
 
-  const saveJob = async (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "matchScore">) => {
+  const saveJob = async (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "hires" | "matchScore">) => {
     try {
       const isEditing = !!editingJob;
       const url = isEditing ? `/api/employer/jobs/${editingJob.id}` : "/api/employer/jobs";

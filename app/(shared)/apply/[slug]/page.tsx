@@ -68,6 +68,7 @@ export default function ApplyFormPage() {
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [applicationId, setApplicationId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [showReviewModal, setShowReviewModal] = useState(false)
@@ -75,6 +76,8 @@ export default function ApplyFormPage() {
   const [reviewComment, setReviewComment] = useState('')
   const [reviewHovered, setReviewHovered] = useState(0)
   const [reviewSubmitted, setReviewSubmitted] = useState(false)
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  const [reviewError, setReviewError] = useState<string | null>(null)
 
   // Load the real job (and its form_config) from the API
   useEffect(() => {
@@ -235,6 +238,8 @@ export default function ApplyFormPage() {
       })
 
       if (res.status === 201) {
+        const data = await res.json().catch(() => ({}))
+        setApplicationId(data.id ?? null)
         setSubmitted(true)
       } else if (res.status === 409) {
         const data = await res.json().catch(() => ({}))
@@ -689,6 +694,10 @@ export default function ApplyFormPage() {
                         className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
                       />
 
+                      {reviewError && (
+                        <p className="mt-3 text-xs text-red-500">{reviewError}</p>
+                      )}
+
                       <div className="flex gap-3 mt-5">
                         <button
                           type="button"
@@ -699,23 +708,28 @@ export default function ApplyFormPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={reviewRating === 0}
-                          onClick={() => {
-                            if (!reviewRating || !job) return
-                            addReview({
-                              companyName: job.company ?? job.title,
-                              rating: reviewRating,
-                              comment: reviewComment.trim(),
-                              reviewerName: profile
-                                ? `${profile.firstName} ${profile.lastName}`.trim() || 'Anonymous'
-                                : 'Anonymous',
-                            })
-                            setShowReviewModal(false)
-                            setReviewSubmitted(true)
+                          disabled={reviewRating === 0 || reviewSubmitting || !applicationId}
+                          onClick={async () => {
+                            if (!reviewRating || !applicationId) return
+                            setReviewError(null)
+                            setReviewSubmitting(true)
+                            try {
+                              await addReview({
+                                applicationId,
+                                rating: reviewRating,
+                                comment: reviewComment.trim(),
+                              })
+                              setShowReviewModal(false)
+                              setReviewSubmitted(true)
+                            } catch (err) {
+                              setReviewError(err instanceof Error ? err.message : 'Failed to submit review. Please try again.')
+                            } finally {
+                              setReviewSubmitting(false)
+                            }
                           }}
                           className="flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-white cursor-pointer shadow-[0_6px_16px_rgba(245,158,11,0.2)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                         >
-                          Submit Review
+                          {reviewSubmitting ? 'Submitting…' : 'Submit Review'}
                         </button>
                       </div>
                     </motion.div>

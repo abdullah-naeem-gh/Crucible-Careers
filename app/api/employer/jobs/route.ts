@@ -49,12 +49,16 @@ export async function GET(request: NextRequest) {
   // Count real applications per job
   const jobIds = data.map((job) => job.id)
   const countByJob = new Map<string, number>()
+  const hiresByJob = new Map<string, number>()
   if (jobIds.length > 0) {
     const { data: apps } = await supabase
       .from('applications')
-      .select('job_id')
+      .select('job_id, status')
       .in('job_id', jobIds)
-    ;(apps ?? []).forEach((a) => countByJob.set(a.job_id, (countByJob.get(a.job_id) ?? 0) + 1))
+    ;(apps ?? []).forEach((a) => {
+      countByJob.set(a.job_id, (countByJob.get(a.job_id) ?? 0) + 1)
+      if (a.status === 'hired') hiresByJob.set(a.job_id, (hiresByJob.get(a.job_id) ?? 0) + 1)
+    })
   }
 
   // Count real views per job (deduped per talent at the job_views table level)
@@ -83,6 +87,7 @@ export async function GET(request: NextRequest) {
     postedAt: new Date(job.created_at).toLocaleDateString(),
     applications: countByJob.get(job.id) ?? 0,
     views: viewsByJob.get(job.id) ?? 0,
+    hires: hiresByJob.get(job.id) ?? 0,
     matchScore: 0,
     formConfig: job.form_config,
   }))
@@ -149,6 +154,7 @@ export async function POST(request: NextRequest) {
       postedAt: 'Just now',
       applications: 0,
       views: 0,
+      hires: 0,
       matchScore: 0,
       formConfig: data.form_config,
     }

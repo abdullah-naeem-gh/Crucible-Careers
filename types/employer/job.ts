@@ -60,6 +60,7 @@ export interface EmployerJob {
   requirements: string[];
   applications: number;
   views: number;
+  hires: number;
   matchScore: number;
   formConfig?: FormConfig;
 }

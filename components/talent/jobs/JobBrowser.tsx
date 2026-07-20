@@ -9,7 +9,7 @@ import { IconBookmark, IconBookmarkFilled, IconCheck } from '@tabler/icons-react
 import { useAppliedJobIds } from '@/lib/talent/hooks/useAppliedJobIds'
 import { useSavedJobs } from '@/lib/talent/hooks/useSavedJobs'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { getFeaturedCompanyNames } from '@/lib/employer/ranking/reviews'
+import { getFeaturedEmployerIds } from '@/lib/employer/ranking/reviews'
 
 interface Props {
   jobs: ScrapedJob[]
@@ -179,7 +179,7 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
   const [featuredCompanies, setFeaturedCompanies] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    setFeaturedCompanies(getFeaturedCompanyNames())
+    getFeaturedEmployerIds().then(setFeaturedCompanies)
   }, [])
 
   const toggleSaveJob = (job: ScrapedJob) => toggleSave(job._id)
@@ -450,7 +450,7 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
                                   Platform
                                 </span>
                               )}
-                              {featuredCompanies.has(job.company) && (
+                              {!!job.employerId && featuredCompanies.has(job.employerId) && (
                                 <span className="text-[9px] uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-200 dark:text-amber-300 dark:bg-amber-500/10 dark:border-amber-500/20 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5">
                                   ⭐ Featured
                                 </span>

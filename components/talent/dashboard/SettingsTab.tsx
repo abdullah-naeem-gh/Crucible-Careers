@@ -1,19 +1,28 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+  IconAlertTriangle,
   IconBell,
   IconChevronRight,
   IconDownload,
+  IconLock,
+  IconMail,
   IconMessageCircle,
   IconPlayerTrackNext,
   IconShield,
   IconSparkles,
   IconUserCog,
+  IconX,
 } from '@tabler/icons-react'
 import { createDefaultTalentSettings, loadTalentSettings, saveTalentSettings } from '@/lib/talent/services/settings.service'
 import { TalentSettings } from '@/types/talent/settings'
+import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
+import { updateEmail, changePassword, logout } from '@/lib/shared/auth/actions'
+import { useDashboardTheme } from '@/components/shared/theme/DashboardThemeProvider'
 
 type SettingsSection = 'notifications' | 'privacy' | 'communication' | 'workflow' | 'experience' | 'account'
 
@@ -58,6 +67,41 @@ function ToggleRow({ title, description, checked, onChange }: { title: string; d
   )
 }
 
+function DisabledToggleRow({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 opacity-60 dark:border-white/[0.06] dark:bg-[#121212]">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold text-gray-900 dark:text-white">{title}</div>
+        <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-white/38">{description}</p>
+      </div>
+      <span className="shrink-0 cursor-not-allowed rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/35">
+        Coming soon
+      </span>
+    </div>
+  )
+}
+
+function ChoiceGrid({ options, values, onToggle }: { options: string[]; values: string[]; onToggle: (value: string) => void }) {
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      {options.map((option) => {
+        const active = values.includes(option)
+        return (
+          <button
+            key={option}
+            type="button"
+            onClick={() => onToggle(option)}
+            className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition ${active ? 'border-gray-900/10 bg-gray-50 text-gray-900 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 dark:border-white/[0.06] dark:bg-[#121212] dark:text-white/68'}`}
+          >
+            <span>{option}</span>
+            {active && <IconCheck size={16} />}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function Segmented({ options, value, onChange }: { options: Array<{ value: string; label: string }>; value: string; onChange: (value: string) => void }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -79,16 +123,127 @@ function Segmented({ options, value, onChange }: { options: Array<{ value: strin
 }
 
 export default function SettingsTab() {
+  const router = useRouter()
+  const { theme } = useDashboardTheme()
   const [settings, setSettings] = useState<TalentSettings>(() => createDefaultTalentSettings())
   const [activeSection, setActiveSection] = useState<SettingsSection>('notifications')
   const [isSaving, setIsSaving] = useState(false)
   const [savedNotice, setSavedNotice] = useState(false)
   const [hydrated, setHydrated] = useState(false)
 
+  const [emailInput, setEmailInput] = useState('')
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
+  const [emailMessage, setEmailMessage] = useState('')
+
+  const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' })
+  const [passwordStatus, setPasswordStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
+  const [passwordMessage, setPasswordMessage] = useState('')
+
+  const [exportStatus, setExportStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteStatus, setDeleteStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [deleteError, setDeleteError] = useState('')
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null)
+
   useEffect(() => {
-    setSettings(loadTalentSettings())
-    setHydrated(true)
+    let cancelled = false
+    loadTalentSettings().then((loaded) => {
+      if (cancelled) return
+      setSettings(loaded)
+      setHydrated(true)
+    })
+    return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) setEmailInput(user.email)
+    })
+  }, [])
+
+  useEffect(() => {
+    setPortalRoot(document.body)
+  }, [])
+
+  const handleUpdateEmail = async () => {
+    if (!emailInput.trim()) return
+    setEmailStatus('saving')
+    setEmailMessage('')
+    try {
+      await updateEmail(emailInput.trim())
+      setEmailStatus('success')
+      setEmailMessage('Check your inbox to confirm the change.')
+    } catch (err) {
+      setEmailStatus('error')
+      setEmailMessage(err instanceof Error ? err.message : 'Failed to update email.')
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (passwordForm.next !== passwordForm.confirm) {
+      setPasswordStatus('error')
+      setPasswordMessage('New password and confirmation do not match.')
+      return
+    }
+    if (passwordForm.next.length < 8) {
+      setPasswordStatus('error')
+      setPasswordMessage('New password must be at least 8 characters.')
+      return
+    }
+    setPasswordStatus('saving')
+    setPasswordMessage('')
+    try {
+      await changePassword(passwordForm.current, passwordForm.next)
+      setPasswordStatus('success')
+      setPasswordMessage('Password updated.')
+      setPasswordForm({ current: '', next: '', confirm: '' })
+    } catch (err) {
+      setPasswordStatus('error')
+      setPasswordMessage(err instanceof Error ? err.message : 'Failed to update password.')
+    }
+  }
+
+  const handleExport = async () => {
+    setExportStatus('loading')
+    try {
+      const res = await fetch('/api/talent/account/export')
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'crucible-careers-data-export.xlsx'
+      link.click()
+      URL.revokeObjectURL(url)
+      setExportStatus('idle')
+    } catch {
+      setExportStatus('error')
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleteStatus('loading')
+    setDeleteError('')
+    try {
+      const res = await fetch('/api/talent/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to delete account.')
+      }
+      await logout()
+      router.push('/')
+    } catch (err) {
+      setDeleteStatus('error')
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete account.')
+    }
+  }
 
   useEffect(() => {
     if (!savedNotice) return
@@ -104,8 +259,7 @@ export default function SettingsTab() {
 
   const handleSave = async () => {
     setIsSaving(true)
-    await new Promise((resolve) => setTimeout(resolve, 450))
-    saveTalentSettings(settings)
+    await saveTalentSettings(settings)
     setIsSaving(false)
     setSavedNotice(true)
   }
@@ -347,23 +501,61 @@ export default function SettingsTab() {
 
               {activeSection === 'account' && (
                 <>
-                  <SectionCard title="Identity and security" description="Administrative account controls for your talent profile.">
-                    <div className="sm:col-span-2">
-                      <div className={mutedLabel}>Account email</div>
-                      <input value={settings.account.accountEmail} onChange={(e) => updateSection('account', { ...settings.account, accountEmail: e.target.value })} className={`${inputClass} mt-2`} />
+                  <SectionCard title="Account email" description="Changing your email sends a confirmation link before it takes effect.">
+                    <div>
+                      <div className={mutedLabel}>Email address</div>
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                        <input type="email" value={emailInput} onChange={(e) => { setEmailInput(e.target.value); setEmailStatus('idle') }} className={inputClass} />
+                        <button type="button" onClick={handleUpdateEmail} disabled={emailStatus === 'saving'} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FF6B00] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#E55F00] disabled:opacity-60">
+                          <IconMail size={16} /> {emailStatus === 'saving' ? 'Updating...' : 'Update email'}
+                        </button>
+                      </div>
+                      {emailMessage && (
+                        <p className={`mt-2 text-xs ${emailStatus === 'error' ? 'text-red-600 dark:text-red-300' : 'text-emerald-600 dark:text-emerald-300'}`}>{emailMessage}</p>
+                      )}
                     </div>
-                    <ToggleRow title="Session alerts" description="Email when account access occurs from a new device or browser." checked={settings.account.sessionAlerts} onChange={(value) => updateSection('account', { ...settings.account, sessionAlerts: value })} />
-                    <ToggleRow title="Two-factor ready" description="Mark this account as prepared for future 2FA enablement flows." checked={settings.account.twoFactorReady} onChange={(value) => updateSection('account', { ...settings.account, twoFactorReady: value })} />
                   </SectionCard>
+
+                  <SectionCard title="Password" description="Confirm your current password before setting a new one.">
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div>
+                        <div className={mutedLabel}>Current password</div>
+                        <input type="password" value={passwordForm.current} onChange={(e) => { setPasswordForm((prev) => ({ ...prev, current: e.target.value })); setPasswordStatus('idle') }} className={`${inputClass} mt-2`} />
+                      </div>
+                      <div>
+                        <div className={mutedLabel}>New password</div>
+                        <input type="password" value={passwordForm.next} onChange={(e) => { setPasswordForm((prev) => ({ ...prev, next: e.target.value })); setPasswordStatus('idle') }} className={`${inputClass} mt-2`} />
+                      </div>
+                      <div>
+                        <div className={mutedLabel}>Confirm new password</div>
+                        <input type="password" value={passwordForm.confirm} onChange={(e) => { setPasswordForm((prev) => ({ ...prev, confirm: e.target.value })); setPasswordStatus('idle') }} className={`${inputClass} mt-2`} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button type="button" onClick={handleChangePassword} disabled={passwordStatus === 'saving' || !passwordForm.current || !passwordForm.next} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#FF6B00] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#E55F00] disabled:opacity-60">
+                        <IconLock size={16} /> {passwordStatus === 'saving' ? 'Updating...' : 'Update password'}
+                      </button>
+                      {passwordMessage && (
+                        <p className={`text-xs ${passwordStatus === 'error' ? 'text-red-600 dark:text-red-300' : 'text-emerald-600 dark:text-emerald-300'}`}>{passwordMessage}</p>
+                      )}
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="Coming soon" description="Not built yet — shown for visibility, not functional.">
+                    <DisabledToggleRow title="Session alerts" description="Email when account access occurs from a new device or browser." />
+                    <DisabledToggleRow title="Two-factor authentication" description="Secure sign-in with an authenticator app." />
+                  </SectionCard>
+
                   <SectionCard title="Data actions" description="High-impact account actions remain clearly separated from everyday preferences.">
                     <div className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3 dark:border-white/[0.06] dark:bg-white/[0.025]">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-gray-900 dark:text-white">Export account data</div>
-                          <p className="mt-1 text-xs text-gray-500 dark:text-white/38">Prepare a downloadable snapshot of profile, applications, and preference history.</p>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-white/38">Download an Excel workbook with your profile, applications, saved jobs, and settings.</p>
+                          {exportStatus === 'error' && <p className="mt-1 text-xs text-red-600 dark:text-red-300">Failed to export. Please try again.</p>}
                         </div>
-                        <button type="button" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 dark:border-white/[0.06] dark:bg-[#121212] dark:text-white/68">
-                          <IconDownload size={16} /> Export
+                        <button type="button" onClick={handleExport} disabled={exportStatus === 'loading'} className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 disabled:opacity-60 dark:border-white/[0.06] dark:bg-[#121212] dark:text-white/68">
+                          <IconDownload size={16} /> {exportStatus === 'loading' ? 'Preparing...' : 'Export'}
                         </button>
                       </div>
                     </div>
@@ -371,9 +563,9 @@ export default function SettingsTab() {
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-red-700 dark:text-red-300">Close account</div>
-                          <p className="mt-1 text-xs text-red-600/80 dark:text-red-200/75">Remove your talent access and stop new employer discovery. This remains a deliberate manual action.</p>
+                          <p className="mt-1 text-xs text-red-600/80 dark:text-red-200/75">Permanently delete your talent account and all associated data. This cannot be undone.</p>
                         </div>
-                        <button type="button" className="rounded-xl border border-red-200 bg-white px-3.5 py-2 text-sm font-semibold text-red-600 dark:border-red-500/20 dark:bg-[#171717] dark:text-red-300">Delete account</button>
+                        <button type="button" onClick={() => { setIsDeleteModalOpen(true); setDeleteStatus('idle'); setDeleteError(''); setDeletePassword('') }} className="rounded-xl border border-red-200 bg-white px-3.5 py-2 text-sm font-semibold text-red-600 dark:border-red-500/20 dark:bg-[#171717] dark:text-red-300">Delete account</button>
                       </div>
                     </div>
                   </SectionCard>
@@ -383,6 +575,41 @@ export default function SettingsTab() {
           </AnimatePresence>
         </div>
       </section>
+
+      {portalRoot && createPortal(
+        <AnimatePresence>
+          {isDeleteModalOpen && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`dashboard-theme-${theme} fixed inset-0 z-[100] grid place-items-center bg-black/60 p-4 backdrop-blur-sm`} onMouseDown={() => setIsDeleteModalOpen(false)}>
+              <motion.div role="dialog" aria-modal="true" aria-labelledby="delete-account-title" initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }} className="w-full max-w-md overflow-hidden rounded-[24px] border border-red-200 bg-white shadow-2xl dark:border-red-500/20 dark:bg-[#171717]" onMouseDown={(event) => event.stopPropagation()}>
+                <div className="flex items-start justify-between gap-3 border-b border-gray-200 px-5 py-4 dark:border-white/[0.07]">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-300"><IconAlertTriangle size={18} /></div>
+                    <div>
+                      <h3 id="delete-account-title" className="text-base font-semibold text-gray-950 dark:text-white">Delete your account</h3>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-white/40">This permanently removes your profile, applications, and saved jobs. This cannot be undone.</p>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setIsDeleteModalOpen(false)} aria-label="Close" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 dark:text-white/40 dark:hover:bg-white/[0.05]"><IconX size={16} /></button>
+                </div>
+                <div className="space-y-3 p-5">
+                  <div>
+                    <div className={mutedLabel}>Confirm your password</div>
+                    <input type="password" value={deletePassword} onChange={(e) => { setDeletePassword(e.target.value); setDeleteStatus('idle') }} className={`${inputClass} mt-2`} />
+                  </div>
+                  {deleteStatus === 'error' && <p className="text-xs text-red-600 dark:text-red-300">{deleteError}</p>}
+                </div>
+                <div className="flex justify-end gap-2 border-t border-gray-200 px-5 py-4 dark:border-white/[0.07]">
+                  <button type="button" onClick={() => setIsDeleteModalOpen(false)} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-100 dark:text-white/45 dark:hover:bg-white/[0.05]">Cancel</button>
+                  <button type="button" onClick={handleDeleteAccount} disabled={deleteStatus === 'loading' || !deletePassword} className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60">
+                    {deleteStatus === 'loading' ? 'Deleting...' : 'Delete my account'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        portalRoot,
+      )}
     </div>
   )
 }

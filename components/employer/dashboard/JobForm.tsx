@@ -22,7 +22,7 @@ import {
 interface JobFormProps {
   defaultCompany?: string;
   initialData?: EmployerJob | null;
-  onSubmit: (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "matchScore">) => void;
+  onSubmit: (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "hires" | "matchScore">) => void;
 }
 
 // ─── Animation variants ────────────────────────────────────────────────────────
