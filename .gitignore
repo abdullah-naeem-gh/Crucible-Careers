@@ -7,6 +7,6 @@ tsconfig.tsbuildinfo
 .agents
 .playwright-mcp
 tsconfig.tsbuildinfo
-supabase/
+/supabase/
 .mcp.json
 .env
