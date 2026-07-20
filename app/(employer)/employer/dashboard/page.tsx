@@ -44,6 +44,14 @@ const DEFAULT_PROFILE: CompanyProfile = {
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 
+function PersistentTabPanel({ active, children }: { active: boolean; children: React.ReactNode }) {
+  return (
+    <div className={active ? "h-full" : "hidden"} aria-hidden={!active}>
+      {children}
+    </div>
+  );
+}
+
 function EmployerDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,6 +65,7 @@ function EmployerDashboardContent() {
       : "overview";
 
   const [activeTab, setActiveTab] = useState<EmployerTab>(initialTab);
+  const [visitedTabs, setVisitedTabs] = useState<Set<EmployerTab>>(() => new Set([initialTab]));
   const [jobs, setJobs] = useState<EmployerJob[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
@@ -85,6 +94,15 @@ function EmployerDashboardContent() {
     window.addEventListener("resize", updateSidebarMetrics);
     return () => window.removeEventListener("resize", updateSidebarMetrics);
   }, []);
+
+  useEffect(() => {
+    setVisitedTabs((current) => {
+      if (current.has(activeTab)) return current;
+      const next = new Set(current);
+      next.add(activeTab);
+      return next;
+    });
+  }, [activeTab]);
 
   useEffect(() => {
     const loadJobs = async () => {
@@ -333,10 +351,9 @@ function EmployerDashboardContent() {
             transition={{ duration: 0.18, ease: "easeOut" }}
             className="min-h-[70vh] min-w-0 flex-1 lg:h-[92vh] lg:self-center"
           >
-            <AnimatePresence initial={false} mode="wait">
-              {activeTab === "overview" && (
+            {(visitedTabs.has("overview") || activeTab === "overview") && (
+              <PersistentTabPanel active={activeTab === "overview"}>
                 <OverviewTab
-                  key="overview"
                   jobs={jobs}
                   company={company}
                   onOpenJob={openJob}
@@ -344,11 +361,12 @@ function EmployerDashboardContent() {
                   onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
                   jobsLoading={jobsLoading}
                 />
-              )}
-              {activeTab === "jobs" && (
-                viewingJobApplicantsId ? (
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has("jobs") || activeTab === "jobs") && (
+              <PersistentTabPanel active={activeTab === "jobs"}>
+                {viewingJobApplicantsId ? (
                   <JobApplicationsView
-                    key="job-applicants"
                     jobId={viewingJobApplicantsId}
                     jobs={jobs}
                     onBack={() => setViewingJobApplicantsId(null)}
@@ -357,7 +375,6 @@ function EmployerDashboardContent() {
                   />
                 ) : (
                   <JobsTab
-                    key="jobs"
                     jobs={jobs}
                     selectedJob={selectedJob}
                     onSelect={setSelectedJobId}
@@ -367,11 +384,12 @@ function EmployerDashboardContent() {
                     onRemove={removeJob}
                     onViewApplications={setViewingJobApplicantsId}
                   />
-                )
-              )}
-              {activeTab === "applicants" && (
+                )}
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has("applicants") || activeTab === "applicants") && (
+              <PersistentTabPanel active={activeTab === "applicants"}>
                 <AllApplicantsKanbanTab
-                  key="applicants"
                   jobs={jobs}
                   initialJobId={requestedJobId}
                   initialStage={requestedStage}
@@ -382,25 +400,32 @@ function EmployerDashboardContent() {
                   onOpenCandidateChat={setCandidateChatTarget}
                   jobsLoading={jobsLoading}
                 />
-              )}
-              {activeTab === "analytics" && (
-                <AnalyticsTab key="analytics" jobs={jobs} analytics={analytics} jobsLoading={jobsLoading} />
-              )}
-              {activeTab === "profile" && (
-                <ProfileTab key="profile" profile={profile} onChange={handleProfileChange} isLoading={!hydrated} />
-              )}
-              {activeTab === "messages" && (
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has("analytics") || activeTab === "analytics") && (
+              <PersistentTabPanel active={activeTab === "analytics"}>
+                <AnalyticsTab jobs={jobs} analytics={analytics} jobsLoading={jobsLoading} />
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has("profile") || activeTab === "profile") && (
+              <PersistentTabPanel active={activeTab === "profile"}>
+                <ProfileTab profile={profile} onChange={handleProfileChange} isLoading={!hydrated} />
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has("messages") || activeTab === "messages") && (
+              <PersistentTabPanel active={activeTab === "messages"}>
                 <MessagesTab
-                  key="messages"
                   role="employer"
                   myDisplayName={company}
                   isDark={true}
                 />
-              )}
-              {activeTab === "ranking" && (
-                <RankingTab key="ranking" jobs={jobs} company={company} />
-              )}
-            </AnimatePresence>
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has("ranking") || activeTab === "ranking") && (
+              <PersistentTabPanel active={activeTab === "ranking"}>
+                <RankingTab jobs={jobs} company={company} />
+              </PersistentTabPanel>
+            )}
           </motion.div>
         </div>
       </section>
