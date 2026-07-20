@@ -33,6 +33,14 @@ function ViewMotion({ children, className = "h-full" }: { children: React.ReactN
   )
 }
 
+function PersistentTabPanel({ active, children }: { active: boolean; children: React.ReactNode }) {
+  return (
+    <div className={active ? "h-full" : "hidden"} aria-hidden={!active}>
+      {children}
+    </div>
+  )
+}
+
 function TalentDashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -52,6 +60,7 @@ function TalentDashboardContent() {
   ) ? (requestedTab as TalentTab) : 'profile'
 
   const [activeTab, setActiveTab] = useState<TalentTab>(initialTab)
+  const [visitedTabs, setVisitedTabs] = useState<Set<TalentTab>>(() => new Set([initialTab]))
   const [jobs, setJobs] = useState<ScrapedJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(true)
   const [appCount, setAppCount] = useState(0)
@@ -106,6 +115,15 @@ function TalentDashboardContent() {
       setActiveTab('profile')
     }
   }, [requestedTab])
+
+  useEffect(() => {
+    setVisitedTabs(current => {
+      if (current.has(activeTab)) return current
+      const next = new Set(current)
+      next.add(activeTab)
+      return next
+    })
+  }, [activeTab])
 
   useEffect(() => {
     // Load real jobs posted by employers, across all companies
@@ -239,52 +257,66 @@ function TalentDashboardContent() {
             />
           </motion.div>
           <motion.div initial={false} animate={{ opacity: 1 }} transition={{ duration: 0.18, ease: "easeOut" }} className="min-h-[70vh] min-w-0 flex-1 lg:h-[92vh] lg:self-center">
-            <AnimatePresence initial={false} mode="wait">
-              {activeTab === 'jobs' && (
-                <ViewMotion key="jobs">
+            {(visitedTabs.has('jobs') || activeTab === 'jobs') && (
+              <PersistentTabPanel active={activeTab === 'jobs'}>
+                <ViewMotion>
                   <JobBrowser jobs={jobs} isLoading={jobsLoading} />
                 </ViewMotion>
-              )}
-              {activeTab === 'companies' && (
-                <ViewMotion key="companies">
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has('companies') || activeTab === 'companies') && (
+              <PersistentTabPanel active={activeTab === 'companies'}>
+                <ViewMotion>
                   <CompaniesTab />
                 </ViewMotion>
-              )}
-              {activeTab === 'applications' && (
-                <ViewMotion key="applications">
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has('applications') || activeTab === 'applications') && (
+              <PersistentTabPanel active={activeTab === 'applications'}>
+                <ViewMotion>
                   <ApplicationsTab />
                 </ViewMotion>
-              )}
-              {activeTab === 'saved' && (
-                <ViewMotion key="saved">
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has('saved') || activeTab === 'saved') && (
+              <PersistentTabPanel active={activeTab === 'saved'}>
+                <ViewMotion>
                   <SavedTab />
                 </ViewMotion>
-              )}
-              {activeTab === 'profile' && (
-                <ViewMotion key="profile">
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has('profile') || activeTab === 'profile') && (
+              <PersistentTabPanel active={activeTab === 'profile'}>
+                <ViewMotion>
                   <ProfileTab profile={profile} onProfileChange={setProfile} isLoading={!profileHydrated} />
                 </ViewMotion>
-              )}
-              {activeTab === 'exams' && (
-                <ViewMotion key="exams">
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has('exams') || activeTab === 'exams') && (
+              <PersistentTabPanel active={activeTab === 'exams'}>
+                <ViewMotion>
                   <ExamsTab />
                 </ViewMotion>
-              )}
-              {activeTab === 'settings' && (
-                <ViewMotion key="settings">
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has('settings') || activeTab === 'settings') && (
+              <PersistentTabPanel active={activeTab === 'settings'}>
+                <ViewMotion>
                   <SettingsTab />
                 </ViewMotion>
-              )}
-              {activeTab === 'messages' && (
-                <ViewMotion key="messages">
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has('messages') || activeTab === 'messages') && (
+              <PersistentTabPanel active={activeTab === 'messages'}>
+                <ViewMotion>
                   <MessagesTab
                     role="talent"
                     myDisplayName={displayFirstName ? `${displayFirstName} ${displayLastName}`.trim() : 'Alex Johnson'}
                     isDark={false}
                   />
                 </ViewMotion>
-              )}
-            </AnimatePresence>
+              </PersistentTabPanel>
+            )}
           </motion.div>
         </div>
       </section>
