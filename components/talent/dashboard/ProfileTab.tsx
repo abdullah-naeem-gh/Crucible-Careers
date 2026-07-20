@@ -2,7 +2,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   IconBrandGithub,
@@ -435,10 +435,14 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
           </PreviewSection>
 
           <PreviewSection title="Links and media">
-            {(profile.linkedin || profile.github || profile.portfolio || profile.introVideoUrl || profile.resumeFilename) ? (
+            {(profile.linkedin || profile.github || profile.githubVerifiedUsername || profile.portfolio || profile.introVideoUrl || profile.resumeFilename) ? (
               <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 xl:grid-cols-1">
                 {profile.linkedin && <a href={normalizeUrl(profile.linkedin)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-blue-600 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-sky-300"><IconBrandLinkedin size={15} /> LinkedIn</a>}
-                {profile.github && <a href={normalizeUrl(profile.github)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-gray-700 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-white/60"><IconBrandGithub size={15} /> GitHub</a>}
+                {profile.githubVerifiedUsername ? (
+                  <a href={`https://github.com/${profile.githubVerifiedUsername}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"><IconBrandGithub size={15} /> GitHub Verified <IconCheck size={13} /></a>
+                ) : (
+                  profile.github && <a href={normalizeUrl(profile.github)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-gray-700 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-white/60"><IconBrandGithub size={15} /> GitHub</a>
+                )}
                 {profile.portfolio && <a href={normalizeUrl(profile.portfolio)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-[#FF6B00] dark:border-white/[0.06] dark:bg-white/[0.025]"><IconWorld size={15} /> Portfolio</a>}
                 {profile.introVideoUrl && <a href={normalizeUrl(profile.introVideoUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-[#FF6B00] dark:border-white/[0.06] dark:bg-white/[0.025]"><IconVideo size={15} /> Intro video</a>}
                 {profile.resumeUrl && <a href={normalizeUrl(profile.resumeUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-gray-600 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-white/45 hover:text-orange-500"><IconFileText size={15} /> {profile.resumeFilename || 'View Resume'}</a>}
@@ -483,6 +487,9 @@ function getMissingProfileSections(profile: TalentProfile | null): string[] {
 export default function ProfileTab({ profile, onProfileChange, isLoading = false }: ProfileTabProps) {
   const [formState, setFormState] = useState<TalentProfile | null>(profile)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [isVerifyingGithub, setIsVerifyingGithub] = useState(false)
+  const [githubVerifyError, setGithubVerifyError] = useState('')
   const [isEditing, setIsEditing] = useState(false)
   const [saved, setSaved] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -523,6 +530,33 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
   useEffect(() => {
     setFormState(profile)
   }, [profile])
+
+  useEffect(() => {
+    if (searchParams.get('github') !== 'linked') return
+    setIsVerifyingGithub(true)
+    fetch('/api/talent/profile/github-verify', { method: 'POST' })
+      .then(async (res) => {
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to verify GitHub.')
+        setFormState((prev) => (prev ? { ...prev, githubVerifiedUsername: data.githubVerifiedUsername, githubVerifiedAt: data.githubVerifiedAt } : prev))
+        onProfileChange(profile ? { ...profile, githubVerifiedUsername: data.githubVerifiedUsername, githubVerifiedAt: data.githubVerifiedAt } : profile)
+      })
+      .catch((err) => setGithubVerifyError(err instanceof Error ? err.message : 'Failed to verify GitHub.'))
+      .finally(() => {
+        setIsVerifyingGithub(false)
+        router.replace('/talent/dashboard?tab=profile', { scroll: false })
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  const connectGithub = async () => {
+    setGithubVerifyError('')
+    const { error } = await supabase.auth.linkIdentity({
+      provider: 'github',
+      options: { redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent('/talent/dashboard?tab=profile&github=linked')}` },
+    })
+    if (error) setGithubVerifyError(error.message)
+  }
 
   const set = <K extends keyof TalentProfile>(key: K, value: TalentProfile[K]) => {
     setFormState((prev) => (prev ? { ...prev, [key]: value } : prev))
@@ -806,7 +840,37 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
                 <FormSection title="Links and media">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Field label="LinkedIn"><input type="url" className={fieldClass} value={formState.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
-                    <Field label="GitHub"><input type="url" className={fieldClass} value={formState.github} onChange={(e) => set('github', e.target.value)} /></Field>
+                    <Field label="GitHub">
+                      <input type="url" className={fieldClass} value={formState.github} onChange={(e) => set('github', e.target.value)} placeholder="Your GitHub profile URL" />
+                      <div className="mt-2">
+                        {formState.githubVerifiedUsername ? (
+                          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+                            <IconCheck size={15} />
+                            <span>GitHub Verified · @{formState.githubVerifiedUsername}</span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isVerifyingGithub}
+                            onClick={connectGithub}
+                            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-orange-300 bg-orange-50/30 px-3 py-2 text-xs font-semibold text-[#FF6B00] transition-all hover:border-orange-400 hover:bg-orange-50 disabled:opacity-75 dark:border-orange-500/30 dark:bg-orange-500/5 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/10"
+                          >
+                            {isVerifyingGithub ? (
+                              <>
+                                <IconLoader2 size={16} className="animate-spin" />
+                                <span>Verifying...</span>
+                              </>
+                            ) : (
+                              <>
+                                <IconBrandGithub size={16} />
+                                <span>Verify with GitHub</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                        {githubVerifyError && <p className="mt-1.5 text-xs text-red-600 dark:text-red-300">{githubVerifyError}</p>}
+                      </div>
+                    </Field>
                     <Field label="Portfolio"><input type="url" className={fieldClass} value={formState.portfolio} onChange={(e) => set('portfolio', e.target.value)} /></Field>
                     <Field label="Intro video URL"><input type="url" className={fieldClass} value={formState.introVideoUrl} onChange={(e) => set('introVideoUrl', e.target.value)} /></Field>
                     <Field label="Resume">

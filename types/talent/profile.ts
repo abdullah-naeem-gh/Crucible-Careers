@@ -47,6 +47,8 @@ export interface TalentProfile {
   hourlyRate: string
   linkedin: string
   github: string
+  githubVerifiedUsername?: string
+  githubVerifiedAt?: string
   portfolio: string
   introVideoUrl: string
   resumeFilename: string
