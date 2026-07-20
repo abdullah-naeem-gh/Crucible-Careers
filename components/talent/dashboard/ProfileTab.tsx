@@ -566,7 +566,12 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
 
   const saveProfile = (p = formState) => {
     if (!p) return
-    onProfileChange(p)
+    // Mirrors the server-side check in app/api/talent/onboarding — if the
+    // free-text GitHub link changed, the verified badge no longer applies.
+    const githubLinkChanged = !!profile?.githubVerifiedUsername && profile.github !== p.github
+    const next = githubLinkChanged ? { ...p, githubVerifiedUsername: undefined, githubVerifiedAt: undefined } : p
+    onProfileChange(next)
+    setFormState(next)
     setIsEditing(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 1800)
