@@ -41,13 +41,15 @@ interface Props {
   /** Optional: open directly to this conversationId on mount */
   initialConversationId?: string | null
   isDark?: boolean
+  variant?: 'full' | 'thread'
+  onClose?: () => void
 }
 
 // ────────────────────────────────────────────────────────────────────────────
 //  Main Component
 // ────────────────────────────────────────────────────────────────────────────
 
-export default function MessagesTab({ role, myDisplayName, initialConversationId, isDark = true }: Props) {
+export default function MessagesTab({ role, myDisplayName, initialConversationId, isDark = true, variant = 'full', onClose }: Props) {
   let activeTheme: 'light' | 'dark' = 'light'
   try {
     const context = useDashboardTheme()
@@ -64,6 +66,7 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
   const [inputValue, setInputValue] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasLoadedConversations, setHasLoadedConversations] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -73,11 +76,17 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
   }, [selectedId])
 
   const refreshAll = useCallback(async () => {
-    const convs = await listConversations()
-    setConversations(convs)
-    const currentId = selectedIdRef.current
-    if (currentId) {
-      setMessages(await getMessages(currentId))
+    try {
+      const convs = await listConversations()
+      setConversations(convs)
+      const currentId = selectedIdRef.current
+      if (currentId) {
+        setMessages(await getMessages(currentId))
+      }
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setHasLoadedConversations(true)
     }
   }, [])
 
@@ -89,13 +98,17 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
     return subscribeChatChanges(() => { refreshAll() })
   }, [refreshAll])
 
-  // Auto-select first conversation if none selected
   useEffect(() => {
-    if (!selectedId && conversations.length > 0) {
+    if (initialConversationId) setSelectedId(initialConversationId)
+  }, [initialConversationId])
+
+  // Auto-select first conversation if none selected in the full inbox.
+  useEffect(() => {
+    if (variant === 'full' && !selectedId && conversations.length > 0) {
       const accepted = conversations.filter(c => c.requestState === 'accepted')
       if (accepted.length > 0) setSelectedId(accepted[0].id)
     }
-  }, [conversations, selectedId])
+  }, [conversations, selectedId, variant])
 
   // Mark read + load thread when a conversation is selected
   useEffect(() => {
@@ -294,7 +307,9 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
       return (
         <div className="h-full flex flex-col items-center justify-center gap-3 text-center p-6">
           <IconMessage size={40} className={textMuted} strokeWidth={1.3} />
-          <p className={`text-sm ${textMuted}`}>Select a conversation to view messages</p>
+          <p className={`text-sm ${textMuted}`}>
+            {variant === 'thread' && !hasLoadedConversations ? 'Loading conversation…' : variant === 'thread' ? 'Conversation unavailable' : 'Select a conversation to view messages'}
+          </p>
         </div>
       )
     }
@@ -341,6 +356,16 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
             }`}>
               Active
             </span>
+          )}
+          {variant === 'thread' && onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close conversation"
+              className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition-colors ${isDarkTheme ? 'border-white/10 text-white/45 hover:bg-white/[0.06] hover:text-white' : 'border-gray-200 text-gray-400 hover:bg-gray-100 hover:text-gray-700'}`}
+            >
+              <IconX size={17} />
+            </button>
           )}
         </div>
 
@@ -458,6 +483,25 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
   // ─── Render ───────────────────────────────────────────────────────────────
 
   const requestBadge = requestConvs.length + outgoingPending.filter(c => c.requestState === 'pending').length
+
+  if (variant === 'thread') {
+    return (
+      <section className={`flex h-full flex-col overflow-hidden ${surface}`}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selectedId ?? 'empty'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex h-full flex-col"
+          >
+            {renderThread()}
+          </motion.div>
+        </AnimatePresence>
+      </section>
+    )
+  }
 
   return (
     <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">

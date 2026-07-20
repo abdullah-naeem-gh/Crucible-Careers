@@ -8,13 +8,14 @@ import JobApplicationsView from "@/components/employer/jobs/JobApplicationsView"
 
 // Import modular tab components
 import OverviewTab, { EmployerJob, Analytics } from "@/components/employer/dashboard/OverviewTab";
-import { ApplicantPipelineStage } from "@/types/employer/applicant";
+import { ApplicantPipelineStage, EmployerCandidateChatTarget } from "@/types/employer/applicant";
 import JobsTab from "@/components/employer/dashboard/JobsTab";
 import AllApplicantsKanbanTab from "@/components/employer/dashboard/AllApplicantsKanbanTab";
 import AnalyticsTab from "@/components/employer/dashboard/AnalyticsTab";
 import ProfileTab from "@/components/employer/dashboard/ProfileTab";
 import JobForm from "@/components/employer/dashboard/JobForm";
 import MessagesTab from "@/components/shared/chat/MessagesTab";
+import EmployerChatDrawer from "@/components/employer/chat/EmployerChatDrawer";
 import RankingTab from "@/components/employer/dashboard/RankingTab";
 import { getEmployerProfile, saveEmployerProfile } from "@/lib/employer/services/profile.service";
 import { CompanyProfile } from "@/types/employer/profile";
@@ -64,6 +65,7 @@ function EmployerDashboardContent() {
   const [hydrated, setHydrated] = useState(false);
   const [profile, setProfile] = useState<CompanyProfile>(DEFAULT_PROFILE);
   const [viewingJobApplicantsId, setViewingJobApplicantsId] = useState<string | null>(null);
+  const [candidateChatTarget, setCandidateChatTarget] = useState<EmployerCandidateChatTarget | null>(null);
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDesktopLayout, setIsDesktopLayout] = useState(false);
@@ -183,6 +185,7 @@ function EmployerDashboardContent() {
 
 
   const changeTab = (tab: EmployerTab) => {
+    setCandidateChatTarget(null);
     setActiveTab(tab);
     setViewingJobApplicantsId(null);
     router.replace(
@@ -350,7 +353,7 @@ function EmployerDashboardContent() {
                     jobs={jobs}
                     onBack={() => setViewingJobApplicantsId(null)}
                     onOpenKanban={(jobId) => openApplicantsKanban(jobId)}
-                    onOpenMessages={() => changeTab("messages")}
+                    onOpenCandidateChat={setCandidateChatTarget}
                   />
                 ) : (
                   <JobsTab
@@ -376,7 +379,7 @@ function EmployerDashboardContent() {
                     const stageParam = requestedStage ? `&stage=${requestedStage}` : "";
                     router.replace(`/employer/dashboard?tab=applicants&job=${jobId}${stageParam}`, { scroll: false });
                   }}
-                  onOpenMessages={() => changeTab("messages")}
+                  onOpenCandidateChat={setCandidateChatTarget}
                   jobsLoading={jobsLoading}
                 />
               )}
@@ -401,6 +404,16 @@ function EmployerDashboardContent() {
           </motion.div>
         </div>
       </section>
+
+      <AnimatePresence>
+        {candidateChatTarget && (
+          <EmployerChatDrawer
+            key={`${candidateChatTarget.applicationId}-${candidateChatTarget.jobId}`}
+            target={candidateChatTarget}
+            onClose={() => setCandidateChatTarget(null)}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence initial={false}>
         {isFormOpen && (

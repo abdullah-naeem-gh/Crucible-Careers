@@ -88,6 +88,22 @@ export async function getConversation(id: string): Promise<ChatConversation | nu
   return conv ?? null
 }
 
+/** Get the conversation associated with an application, if one exists. */
+export async function getConversationForApplication(applicationId: string): Promise<ChatConversation | null> {
+  const supabase = createBrowserSupabaseClient()
+  const { data, error } = await supabase
+    .from('conversations')
+    .select(CONVERSATION_SELECT)
+    .eq('application_id', applicationId)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  if (!data) return null
+
+  const [conv] = await mapConversations(supabase, [data])
+  return conv ?? null
+}
+
 /**
  * Open or create a conversation for an application.
  * If one already exists, returns the existing conversation (idempotent).

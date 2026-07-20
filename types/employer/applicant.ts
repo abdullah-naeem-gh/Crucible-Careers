@@ -78,3 +78,12 @@ export interface ApplicantsByJob {
   job: EmployerJob;
   applicants: CandidateProfile[];
 }
+
+export interface EmployerCandidateChatTarget {
+  applicationId: string;
+  jobId: string;
+  jobTitle: string;
+  companyName: string;
+  talentName: string;
+  talentEmail: string;
+}
