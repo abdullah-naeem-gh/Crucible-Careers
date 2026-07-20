@@ -867,37 +867,39 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
                 <FormSection title="Links and media">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Field label="LinkedIn"><input type="url" className={fieldClass} value={formState.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
-                    <Field label="GitHub">
-                      <input type="url" className={fieldClass} value={formState.github} onChange={(e) => set('github', e.target.value)} placeholder="Your GitHub profile URL" />
-                      <div className="mt-2">
-                        {formState.githubVerifiedUsername ? (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
-                              <IconCheck size={15} />
-                              <span>GitHub Verified · @{formState.githubVerifiedUsername}</span>
+                    <div className="sm:col-span-2">
+                      <Field label="GitHub">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                          <input type="url" className={fieldClass + " flex-1 min-w-0"} value={formState.github} onChange={(e) => set('github', e.target.value)} placeholder="Your GitHub profile URL" />
+                          {formState.githubVerifiedUsername ? (
+                            <div className="flex shrink-0 items-center gap-2">
+                              <div className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-2.5 text-xs font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                <IconCheck size={15} />
+                                <span>Verified @{formState.githubVerifiedUsername}</span>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={isDisconnectingGithub}
+                                onClick={disconnectGithub}
+                                className="rounded-xl border border-gray-200 px-3 py-2.5 text-xs font-medium text-gray-500 transition-all hover:border-red-300 hover:text-red-600 disabled:opacity-60 dark:border-white/10 dark:text-white/45 dark:hover:border-red-500/40 dark:hover:text-red-300"
+                              >
+                                {isDisconnectingGithub ? 'Disconnecting...' : 'Disconnect'}
+                              </button>
                             </div>
+                          ) : (
                             <button
                               type="button"
-                              disabled={isDisconnectingGithub}
-                              onClick={disconnectGithub}
-                              className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-500 transition-all hover:border-red-300 hover:text-red-600 disabled:opacity-60 dark:border-white/10 dark:text-white/45 dark:hover:border-red-500/40 dark:hover:text-red-300"
+                              onClick={connectGithub}
+                              className="flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-dashed border-orange-300 bg-orange-50/30 px-3.5 py-2.5 text-xs font-semibold text-[#FF6B00] transition-all hover:border-orange-400 hover:bg-orange-50 dark:border-orange-500/30 dark:bg-orange-500/5 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/10"
                             >
-                              {isDisconnectingGithub ? 'Disconnecting...' : 'Disconnect'}
+                              <IconBrandGithub size={16} />
+                              <span>Verify with GitHub</span>
                             </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={connectGithub}
-                            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-orange-300 bg-orange-50/30 px-3 py-2 text-xs font-semibold text-[#FF6B00] transition-all hover:border-orange-400 hover:bg-orange-50 dark:border-orange-500/30 dark:bg-orange-500/5 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/10"
-                          >
-                            <IconBrandGithub size={16} />
-                            <span>Verify with GitHub</span>
-                          </button>
-                        )}
+                          )}
+                        </div>
                         {githubVerifyError && <p className="mt-1.5 text-xs text-red-600 dark:text-red-300">{githubVerifyError}</p>}
-                      </div>
-                    </Field>
+                      </Field>
+                    </div>
                     <Field label="Portfolio"><input type="url" className={fieldClass} value={formState.portfolio} onChange={(e) => set('portfolio', e.target.value)} /></Field>
                     <Field label="Intro video URL"><input type="url" className={fieldClass} value={formState.introVideoUrl} onChange={(e) => set('introVideoUrl', e.target.value)} /></Field>
                     <Field label="Resume">
