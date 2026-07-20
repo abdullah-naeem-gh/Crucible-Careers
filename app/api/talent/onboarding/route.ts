@@ -34,6 +34,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // If the free-text GitHub link is being changed, the verified badge no
+    // longer reflects it — clear it server-side rather than trusting whatever
+    // the client happens to send, since formState.github and
+    // formState.githubVerifiedUsername are edited independently on the client.
+    const { data: existingProfile } = await supabase
+      .from('talent_profiles')
+      .select('github, github_verified_username')
+      .eq('user_id', user.id)
+      .single()
+
+    const githubLinkChanged = !!existingProfile?.github_verified_username && existingProfile.github !== (payload.github || '')
+    const githubVerifiedUsername = githubLinkChanged ? null : (payload.githubVerifiedUsername ?? null)
+    const githubVerifiedAt = githubLinkChanged ? null : (payload.githubVerifiedAt ?? null)
+
+    if (githubLinkChanged) {
+      try {
+        const { data: identitiesData } = await supabase.auth.getUserIdentities()
+        const githubIdentity = identitiesData?.identities.find((identity) => identity.provider === 'github')
+        if (githubIdentity) {
+          const { error: unlinkError } = await supabase.auth.unlinkIdentity(githubIdentity)
+          // Supabase refuses to unlink a user's only identity (they'd be locked
+          // out) — that's fine, just leave it linked; our own verified fields
+          // are already cleared above regardless.
+          if (unlinkError) console.error('Failed to unlink GitHub identity:', unlinkError)
+        }
+      } catch (err) {
+        console.error('Failed to unlink GitHub identity:', err)
+      }
+    }
+
     // 2. Upsert Talent Profile
     const { data: profile, error: profileError } = await supabase
       .from('talent_profiles')
@@ -52,6 +82,12 @@ export async function POST(request: NextRequest) {
         hourly_rate: payload.hourlyRate,
         linkedin: payload.linkedin,
         github: payload.github,
+        // Supabase's upsert() resets any column not present in this payload
+        // back to null on conflict (it isn't a scoped partial update) — these
+        // two are managed exclusively by the GitHub verification flow, so we
+        // must round-trip whatever the client currently has to avoid wiping it.
+        github_verified_username: githubVerifiedUsername,
+        github_verified_at: githubVerifiedAt,
         portfolio: payload.portfolio,
         intro_video_url: payload.introVideoUrl,
         resume_filename: payload.resumeFilename,

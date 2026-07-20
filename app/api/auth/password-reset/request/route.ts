@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY
 
   if (!supabaseUrl || !supabaseKey) {
     return NextResponse.json({ success: false, message: 'Password reset is not configured.' }, { status: 500 })
