@@ -54,18 +54,24 @@ export async function GET(request: Request) {
         const identityData = githubIdentity.identity_data as Record<string, unknown> | undefined
         const username = (identityData?.user_name || identityData?.preferred_username || identityData?.login) as string | undefined
         if (username) {
+          // Also overwrite the free-text `github` link to match the real
+          // verified account — otherwise a user could type someone else's
+          // GitHub URL, verify with their own account, and the two would
+          // display inconsistently (their real username badge next to a
+          // stranger's link).
+          const verifiedUrl = `https://github.com/${username}`
           // A plain update() only touches the columns listed here — unlike
           // upsert(), which resets every column absent from the payload back
           // to null on conflict and would wipe the rest of the profile.
           const { data: updated } = await supabase
             .from('talent_profiles')
-            .update({ github_verified_username: username, github_verified_at: new Date().toISOString() })
+            .update({ github: verifiedUrl, github_verified_username: username, github_verified_at: new Date().toISOString() })
             .eq('user_id', user.id)
             .select('user_id')
           if (!updated || updated.length === 0) {
             await supabase
               .from('talent_profiles')
-              .insert({ user_id: user.id, github_verified_username: username, github_verified_at: new Date().toISOString() })
+              .insert({ user_id: user.id, github: verifiedUrl, github_verified_username: username, github_verified_at: new Date().toISOString() })
           }
         }
       }

@@ -26,12 +26,15 @@ export async function POST() {
   }
 
   const verifiedAt = new Date().toISOString();
+  const verifiedUrl = `https://github.com/${username}`;
 
-  // A plain update() only touches the columns listed here — upsert() would
-  // reset every other profile column to null (see onboarding route).
+  // Also overwrite the free-text link to match the real verified account —
+  // see the identical comment in app/api/auth/callback/route.ts. A plain
+  // update() only touches the columns listed here — upsert() would reset
+  // every other profile column to null.
   const { error } = await supabase
     .from("talent_profiles")
-    .update({ github_verified_username: username, github_verified_at: verifiedAt })
+    .update({ github: verifiedUrl, github_verified_username: username, github_verified_at: verifiedAt })
     .eq("user_id", user.id);
 
   if (error) {
@@ -39,7 +42,7 @@ export async function POST() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ githubVerifiedUsername: username, githubVerifiedAt: verifiedAt });
+  return NextResponse.json({ github: verifiedUrl, githubVerifiedUsername: username, githubVerifiedAt: verifiedAt });
 }
 
 export async function DELETE() {

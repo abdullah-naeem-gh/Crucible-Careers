@@ -544,8 +544,8 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
         const res = await fetch('/api/talent/profile/github-verify', { method: 'POST' })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed to verify GitHub.')
-        setFormState((prev) => (prev ? { ...prev, githubVerifiedUsername: data.githubVerifiedUsername, githubVerifiedAt: data.githubVerifiedAt } : prev))
-        onProfileChange(profile ? { ...profile, githubVerifiedUsername: data.githubVerifiedUsername, githubVerifiedAt: data.githubVerifiedAt } : profile)
+        setFormState((prev) => (prev ? { ...prev, github: data.github, githubVerifiedUsername: data.githubVerifiedUsername, githubVerifiedAt: data.githubVerifiedAt } : prev))
+        onProfileChange(profile ? { ...profile, github: data.github, githubVerifiedUsername: data.githubVerifiedUsername, githubVerifiedAt: data.githubVerifiedAt } : profile)
       } catch (err) {
         setGithubVerifyError(err instanceof Error ? err.message : 'Failed to verify GitHub.')
       }
