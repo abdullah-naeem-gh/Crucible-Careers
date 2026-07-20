@@ -52,6 +52,12 @@ export async function POST(request: NextRequest) {
         hourly_rate: payload.hourlyRate,
         linkedin: payload.linkedin,
         github: payload.github,
+        // Supabase's upsert() resets any column not present in this payload
+        // back to null on conflict (it isn't a scoped partial update) — these
+        // two are managed exclusively by the GitHub verification flow, so we
+        // must round-trip whatever the client currently has to avoid wiping it.
+        github_verified_username: payload.githubVerifiedUsername ?? null,
+        github_verified_at: payload.githubVerifiedAt ?? null,
         portfolio: payload.portfolio,
         intro_video_url: payload.introVideoUrl,
         resume_filename: payload.resumeFilename,

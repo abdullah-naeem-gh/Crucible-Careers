@@ -2,7 +2,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   IconBrandGithub,
@@ -487,8 +487,7 @@ function getMissingProfileSections(profile: TalentProfile | null): string[] {
 export default function ProfileTab({ profile, onProfileChange, isLoading = false }: ProfileTabProps) {
   const [formState, setFormState] = useState<TalentProfile | null>(profile)
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const [isVerifyingGithub, setIsVerifyingGithub] = useState(false)
+  const [isDisconnectingGithub, setIsDisconnectingGithub] = useState(false)
   const [githubVerifyError, setGithubVerifyError] = useState('')
   const [isEditing, setIsEditing] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -531,31 +530,34 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
     setFormState(profile)
   }, [profile])
 
-  useEffect(() => {
-    if (searchParams.get('github') !== 'linked') return
-    setIsVerifyingGithub(true)
-    fetch('/api/talent/profile/github-verify', { method: 'POST' })
-      .then(async (res) => {
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Failed to verify GitHub.')
-        setFormState((prev) => (prev ? { ...prev, githubVerifiedUsername: data.githubVerifiedUsername, githubVerifiedAt: data.githubVerifiedAt } : prev))
-        onProfileChange(profile ? { ...profile, githubVerifiedUsername: data.githubVerifiedUsername, githubVerifiedAt: data.githubVerifiedAt } : profile)
-      })
-      .catch((err) => setGithubVerifyError(err instanceof Error ? err.message : 'Failed to verify GitHub.'))
-      .finally(() => {
-        setIsVerifyingGithub(false)
-        router.replace('/talent/dashboard?tab=profile', { scroll: false })
-      })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
-
   const connectGithub = async () => {
     setGithubVerifyError('')
     const { error } = await supabase.auth.linkIdentity({
       provider: 'github',
-      options: { redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent('/talent/dashboard?tab=profile&github=linked')}` },
+      options: { redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent('/talent/dashboard?tab=profile')}` },
     })
     if (error) setGithubVerifyError(error.message)
+  }
+
+  const disconnectGithub = async () => {
+    setGithubVerifyError('')
+    setIsDisconnectingGithub(true)
+    try {
+      const { data } = await supabase.auth.getUserIdentities()
+      const githubIdentity = data?.identities.find((identity) => identity.provider === 'github')
+      if (githubIdentity) {
+        const { error } = await supabase.auth.unlinkIdentity(githubIdentity)
+        if (error) throw error
+      }
+      const res = await fetch('/api/talent/profile/github-verify', { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to clear GitHub verification.')
+      setFormState((prev) => (prev ? { ...prev, githubVerifiedUsername: undefined, githubVerifiedAt: undefined } : prev))
+      onProfileChange(profile ? { ...profile, githubVerifiedUsername: undefined, githubVerifiedAt: undefined } : profile)
+    } catch (err) {
+      setGithubVerifyError(err instanceof Error ? err.message : 'Failed to disconnect GitHub.')
+    } finally {
+      setIsDisconnectingGithub(false)
+    }
   }
 
   const set = <K extends keyof TalentProfile>(key: K, value: TalentProfile[K]) => {
@@ -844,28 +846,28 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
                       <input type="url" className={fieldClass} value={formState.github} onChange={(e) => set('github', e.target.value)} placeholder="Your GitHub profile URL" />
                       <div className="mt-2">
                         {formState.githubVerifiedUsername ? (
-                          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
-                            <IconCheck size={15} />
-                            <span>GitHub Verified · @{formState.githubVerifiedUsername}</span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+                              <IconCheck size={15} />
+                              <span>GitHub Verified · @{formState.githubVerifiedUsername}</span>
+                            </div>
+                            <button
+                              type="button"
+                              disabled={isDisconnectingGithub}
+                              onClick={disconnectGithub}
+                              className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-500 transition-all hover:border-red-300 hover:text-red-600 disabled:opacity-60 dark:border-white/10 dark:text-white/45 dark:hover:border-red-500/40 dark:hover:text-red-300"
+                            >
+                              {isDisconnectingGithub ? 'Disconnecting...' : 'Disconnect'}
+                            </button>
                           </div>
                         ) : (
                           <button
                             type="button"
-                            disabled={isVerifyingGithub}
                             onClick={connectGithub}
-                            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-orange-300 bg-orange-50/30 px-3 py-2 text-xs font-semibold text-[#FF6B00] transition-all hover:border-orange-400 hover:bg-orange-50 disabled:opacity-75 dark:border-orange-500/30 dark:bg-orange-500/5 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/10"
+                            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-orange-300 bg-orange-50/30 px-3 py-2 text-xs font-semibold text-[#FF6B00] transition-all hover:border-orange-400 hover:bg-orange-50 dark:border-orange-500/30 dark:bg-orange-500/5 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/10"
                           >
-                            {isVerifyingGithub ? (
-                              <>
-                                <IconLoader2 size={16} className="animate-spin" />
-                                <span>Verifying...</span>
-                              </>
-                            ) : (
-                              <>
-                                <IconBrandGithub size={16} />
-                                <span>Verify with GitHub</span>
-                              </>
-                            )}
+                            <IconBrandGithub size={16} />
+                            <span>Verify with GitHub</span>
                           </button>
                         )}
                         {githubVerifyError && <p className="mt-1.5 text-xs text-red-600 dark:text-red-300">{githubVerifyError}</p>}
