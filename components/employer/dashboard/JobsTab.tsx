@@ -8,6 +8,13 @@ import { EmployerJob } from "@/types/employer/job";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 const JOBS_PER_PAGE = 10;
+type JobFilter = "all" | "active" | "inactive";
+
+const jobFilters: { label: string; value: JobFilter }[] = [
+  { label: "All", value: "all" },
+  { label: "Active", value: "active" },
+  { label: "Archived / Drafted", value: "inactive" },
+];
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 const insetSurface = "rounded-2xl border border-white/[0.065] bg-[#141414] shadow-[inset_2px_2px_8px_rgba(0,0,0,0.2),inset_-1px_-1px_3px_rgba(255,255,255,0.025)]";
@@ -75,6 +82,7 @@ export default function JobsTab({
   const [isFormPreviewOpen, setIsFormPreviewOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [jobFilter, setJobFilter] = useState<JobFilter>("all");
   const [pageJobs, setPageJobs] = useState<EmployerJob[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoadingPage, setIsLoadingPage] = useState(true);
@@ -87,7 +95,7 @@ export default function JobsTab({
     const loadPage = async () => {
       setIsLoadingPage(true);
       try {
-        const res = await fetch(`/api/employer/jobs?page=${currentPage}&limit=${JOBS_PER_PAGE}`);
+        const res = await fetch(`/api/employer/jobs?page=${currentPage}&limit=${JOBS_PER_PAGE}&status=${jobFilter}`);
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
@@ -110,7 +118,7 @@ export default function JobsTab({
     return () => {
       cancelled = true;
     };
-  }, [currentPage, jobs.length]);
+  }, [currentPage, jobFilter, jobs.length]);
 
   // Prefer the parent's copy of each job so optimistic updates (pause/activate)
   // show up immediately instead of waiting on the next page re-fetch.
@@ -132,6 +140,28 @@ export default function JobsTab({
             <button onClick={onNewJob} className="rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-4 py-3 text-sm font-medium text-white shadow-[0_8px_20px_rgba(255,107,0,0.18)] cursor-pointer">
               + New Job
             </button>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2" aria-label="Filter job listings by status">
+            {jobFilters.map((filter) => {
+              const isActive = jobFilter === filter.value;
+
+              return (
+                <button
+                  key={filter.value}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => {
+                    setJobFilter(filter.value);
+                    setCurrentPage(1);
+                  }}
+                  className={`job-filter-chip rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                    isActive ? "job-filter-chip-active" : ""
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              );
+            })}
           </div>
           <div className="mt-3 text-xs text-white/35">{jobs.length} job{jobs.length === 1 ? "" : "s"} posted</div>
         </div>
@@ -158,6 +188,13 @@ export default function JobsTab({
                   </div>
                 </div>
               ))}
+            </div>
+          ) : paginatedJobs.length === 0 ? (
+            <div className="grid min-h-56 place-items-center rounded-2xl border border-dashed border-white/10 px-6 text-center">
+              <div>
+                <div className="text-sm font-semibold text-white/70">No jobs in this view</div>
+                <p className="mt-1 text-xs text-white/35">Try another status filter or create a new job listing.</p>
+              </div>
             </div>
           ) : (
           paginatedJobs.map((job) => (

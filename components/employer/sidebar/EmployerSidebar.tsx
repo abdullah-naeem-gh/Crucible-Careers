@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { DashboardThemeSwitcher } from "@/components/shared/theme/DashboardThemeProvider";
+import { DashboardThemeSwitcher, useDashboardTheme } from "@/components/shared/theme/DashboardThemeProvider";
 import ChatNotificationBell from "@/components/shared/chat/ChatNotificationBell";
 import { subscribeChatChanges, getTotalUnread } from "@/lib/shared/chat/chat.service";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -70,6 +70,13 @@ export default function EmployerSidebar({
 }: EmployerSidebarProps) {
   const [showNoJobsPrompt, setShowNoJobsPrompt] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
+  const { theme } = useDashboardTheme();
+  const isDarkTheme = theme === "dark";
+  const collapseBtnClass = `transition-colors cursor-pointer rounded-full flex items-center justify-center ${
+    isDarkTheme
+      ? "text-white/45 hover:bg-white/10 hover:text-white"
+      : "text-gray-400 hover:bg-gray-100 hover:text-gray-900"
+  }`;
   const expandedReady = !collapsed;
   const railMode = collapsed;
 
@@ -96,20 +103,30 @@ export default function EmployerSidebar({
       transition={{ opacity: { duration: 0.35, ease: "easeOut" }, x: { duration: 0.35, ease: "easeOut" } }}
       className={`relative flex min-h-[18rem] overflow-hidden flex-col rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)] transition-[padding,border-radius] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:h-[92vh] ${collapsed ? "items-center px-2 py-3 lg:px-2 lg:py-3" : "p-5 lg:p-6"}`}
     >
-      {expandedReady && (
+      {collapsed && (
+        <button
+          type="button"
+          onClick={() => onCollapsedChange?.(false)}
+          className={`absolute left-1/2 top-3 h-8 w-8 -translate-x-1/2 ${collapseBtnClass}`}
+          aria-label="Expand sidebar"
+        >
+          <IconChevronRight size={17} />
+        </button>
+      )}
+      {!collapsed && (
         <div className="absolute right-4 top-4 sm:right-5 sm:top-5 flex items-center gap-2">
           <ChatNotificationBell role="employer" isDark={true} onOpenMessages={() => onTabChange('messages')} />
           <DashboardThemeSwitcher />
+          <button
+            type="button"
+            onClick={() => onCollapsedChange?.(true)}
+            className={`h-9 w-9 ${collapseBtnClass}`}
+            aria-label="Collapse sidebar"
+          >
+            <IconChevronLeft size={17} />
+          </button>
         </div>
       )}
-      <button
-        type="button"
-        onClick={() => onCollapsedChange?.(!collapsed)}
-        className={railMode ? "absolute left-1/2 top-3 grid h-8 w-8 -translate-x-1/2 place-items-center rounded-full text-white/45 transition-colors hover:text-white cursor-pointer" : "absolute right-24 top-4 grid h-9 w-9 place-items-center rounded-full text-white/45 transition-colors hover:text-white cursor-pointer sm:right-24 sm:top-5"}
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {collapsed ? <IconChevronRight size={17} /> : <IconChevronLeft size={17} />}
-      </button>
 
       <div className={`flex min-h-0 w-full flex-1 flex-col ${railMode ? "items-center" : "min-w-[232px]"}`}>
 

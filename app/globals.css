@@ -437,6 +437,53 @@ input[type="submit"]:not(:disabled) {
   border-color: rgba(209, 213, 219, 0.95) !important;
 }
 
+.talent-job-filter-chip-active,
+.dashboard-theme-light .talent-job-filter-chip-active,
+.dashboard-theme-dark .talent-job-filter-chip-active {
+  background: #ff6b00 !important;
+  border-color: #ff6b00 !important;
+  color: #ffffff !important;
+}
+
+.job-filter-chip {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.job-filter-chip:hover {
+  background: rgba(255, 107, 0, 0.1);
+  border-color: rgba(255, 145, 77, 0.35);
+  color: #ff914d;
+}
+
+.job-filter-chip-active {
+  background: #ff6b00;
+  border-color: #ff6b00;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(255, 107, 0, 0.2);
+}
+
+.dashboard-theme-light .job-filter-chip {
+  background: #ffffff;
+  border-color: #e5e7eb;
+  color: #4b5563;
+}
+
+.dashboard-theme-light .job-filter-chip:hover {
+  background: #fff7ed;
+  border-color: rgba(249, 115, 22, 0.45);
+  color: #c2410c;
+}
+
+.dashboard-theme-light .job-filter-chip-active,
+.dashboard-theme-light .job-filter-chip-active:hover {
+  background: #ea580c;
+  border-color: #ea580c;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(194, 65, 12, 0.2);
+}
+
 .dashboard-theme-light tr:hover,
 .dashboard-theme-light [class*="hover:bg-gray-50"]:hover {
   background-color: rgba(0, 0, 0, 0.035) !important;

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { FormConfig, FormField, FieldType, SemanticType } from "@/types/employer/job";
 import { FORM_TEMPLATES } from "@/lib/shared/formTemplates";
+import DarkSelect from "@/components/ui/DarkSelect";
 import {
   IconTrash,
   IconPlus,
@@ -13,6 +14,7 @@ import {
   IconTemplate,
   IconCheck,
   IconInfoCircle,
+  IconChevronDown,
 } from "@tabler/icons-react";
 
 interface FormBuilderProps {
@@ -128,18 +130,19 @@ export default function FormBuilder({ value, onChange }: FormBuilderProps) {
         <div className="flex items-center gap-2">
           <IconTemplate size={18} className="text-[#FF914D]" />
           <span className="text-xs font-semibold uppercase tracking-wider text-white/50">Form Template</span>
-          <select
-            value={FORM_TEMPLATES.find(t => t.name === config.name)?.id || ""}
-            onChange={(e) => loadTemplate(e.target.value)}
-            className="rounded-lg border border-white/[0.08] bg-[#141414] px-2.5 py-1 text-xs text-white outline-none cursor-pointer focus:border-orange-500/50"
-          >
-            <option value="" disabled className="hidden">Custom Form</option>
-            {FORM_TEMPLATES.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+          <div className="w-48">
+            <DarkSelect
+              value={FORM_TEMPLATES.find(t => t.name === config.name)?.name || "Custom Form"}
+              placeholder="Select Template…"
+              options={FORM_TEMPLATES.map((t) => t.name)}
+              onChange={(name) => {
+                const found = FORM_TEMPLATES.find((t) => t.name === name);
+                if (found) {
+                  loadTemplate(found.id);
+                }
+              }}
+            />
+          </div>
         </div>
 
         <div className="flex rounded-lg border border-white/[0.07] bg-[#121212] p-0.5">
@@ -272,17 +275,17 @@ export default function FormBuilder({ value, onChange }: FormBuilderProps) {
 
                           <div>
                             <label className="mb-1 block text-[10px] uppercase tracking-wider text-white/40 font-semibold">Semantic Analytics Map</label>
-                            <select
-                              value={field.semanticType}
-                              onChange={(e) => updateField(field.id, { semanticType: e.target.value as SemanticType })}
-                              className={`${fieldClass} cursor-pointer`}
-                            >
-                              {SEMANTIC_TYPES.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
+                            <DarkSelect
+                              value={SEMANTIC_TYPES.find((s) => s.value === field.semanticType)?.label || ""}
+                              placeholder="Select…"
+                              options={SEMANTIC_TYPES.map((s) => s.label)}
+                              onChange={(label) => {
+                                const found = SEMANTIC_TYPES.find((s) => s.label === label);
+                                if (found) {
+                                  updateField(field.id, { semanticType: found.value });
+                                }
+                              }}
+                            />
                           </div>
                         </div>
 
@@ -362,15 +365,25 @@ export default function FormBuilder({ value, onChange }: FormBuilderProps) {
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <span className="text-[10px] text-white/30 block mb-1">Field Importance</span>
-                              <select
-                                value={field.importance || "nice-to-have"}
-                                onChange={(e) => updateField(field.id, { importance: e.target.value as any })}
-                                className={`${fieldClass} py-1.5 cursor-pointer`}
-                              >
-                                <option value="nice-to-have">Nice to have</option>
-                                <option value="required">Required</option>
-                                <option value="critical">Critical</option>
-                              </select>
+                              <DarkSelect
+                                value={
+                                  field.importance === "required"
+                                    ? "Required"
+                                    : field.importance === "critical"
+                                    ? "Critical"
+                                    : "Nice to have"
+                                }
+                                placeholder="Select…"
+                                options={["Nice to have", "Required", "Critical"]}
+                                onChange={(val) => {
+                                  const importanceMap: Record<string, "nice-to-have" | "required" | "critical"> = {
+                                    "Nice to have": "nice-to-have",
+                                    "Required": "required",
+                                    "Critical": "critical",
+                                  };
+                                  updateField(field.id, { importance: importanceMap[val] });
+                                }}
+                              />
                             </div>
                             <div>
                               <span className="text-[10px] text-white/30 block mb-1">Target Answer (Optional validation/scoring)</span>
@@ -451,12 +464,18 @@ export default function FormBuilder({ value, onChange }: FormBuilderProps) {
                   )}
 
                   {field.type === "select" && (
-                    <select disabled className={`${fieldClass} cursor-default`}>
-                      <option value="">Choose option</option>
-                      {(field.options || []).map((o) => (
-                        <option key={o}>{o}</option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full rounded-xl border border-white/[0.08] bg-[#121212] px-3.5 py-2.5 text-sm text-left opacity-60 cursor-not-allowed flex items-center justify-between"
+                      >
+                        <span className="truncate text-white/40">Choose option</span>
+                        <span className="shrink-0 ml-2 text-white/20">
+                          <IconChevronDown size={15} />
+                        </span>
+                      </button>
+                    </div>
                   )}
 
                   {field.type === "multi-select" && (

@@ -161,8 +161,10 @@ export const ThemeToggleButton = ({
     <button
       type="button"
       className={cn(
-        "theme-switcher-button flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-white/60 hover:bg-white/10 hover:text-white transition-all duration-200",
-        !isDark && "text-gray-500 hover:bg-gray-100 hover:text-gray-900",
+        "theme-switcher-button flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl transition-all duration-200",
+        isDark
+          ? "text-white/60 hover:bg-white/10 hover:text-white"
+          : "text-gray-500 hover:bg-gray-100 hover:text-gray-900",
         className,
       )}
       onClick={toggleTheme}

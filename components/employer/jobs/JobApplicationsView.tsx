@@ -30,8 +30,7 @@ import {
   IconFileText,
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
-import type { CandidateProfile, ScreeningStatus } from "@/types/employer/applicant";
-import StartChatModal from "@/components/shared/chat/StartChatModal";
+import type { CandidateProfile, EmployerCandidateChatTarget, ScreeningStatus } from "@/types/employer/applicant";
 
 type EmailAudience = "all" | "shortlisted" | "rejected" | "manual";
 
@@ -51,8 +50,7 @@ interface JobApplicationsViewProps {
   jobs: EmployerJob[];
   onBack: () => void;
   onOpenKanban?: (jobId: string) => void;
-  /** Called when user wants to navigate to Messages tab after starting a chat */
-  onOpenMessages?: () => void;
+  onOpenCandidateChat?: (target: EmployerCandidateChatTarget) => void;
 }
 
 const getSortLabel = (val: string) => {
@@ -112,10 +110,9 @@ const emailTemplates: EmailTemplate[] = [
   },
 ];
 
-export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban, onOpenMessages }: JobApplicationsViewProps) {
+export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban, onOpenCandidateChat }: JobApplicationsViewProps) {
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
-  const [chatModalApplicant, setChatModalApplicant] = useState<CandidateProfile | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [noteText, setNoteText] = useState("");
   const [ratingFilter, setRatingFilter] = useState("all");
@@ -931,7 +928,14 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                 </button>
                 <button
                   type="button"
-                  onClick={() => setChatModalApplicant(selectedApplicant)}
+                  onClick={() => onOpenCandidateChat?.({
+                    applicationId: selectedApplicant.id,
+                    jobId: job.id,
+                    jobTitle: job.title,
+                    companyName: job.company || "Your Company",
+                    talentName: selectedApplicant.name,
+                    talentEmail: selectedApplicant.email,
+                  })}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#FF914D] transition-colors hover:text-[#ffae73] cursor-pointer"
                 >
                   <IconMessage size={14} />
@@ -1520,21 +1524,6 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
           </motion.div>
         )}
       </AnimatePresence>
-      {chatModalApplicant && (
-        <StartChatModal
-          isOpen={true}
-          onClose={() => setChatModalApplicant(null)}
-          onSuccess={() => { setChatModalApplicant(null); onOpenMessages?.(); }}
-          applicationId={chatModalApplicant.id}
-          jobId={job.id}
-          jobTitle={job.title}
-          companyName={job.company || "Your Company"}
-          talentName={chatModalApplicant.name}
-          talentEmail={chatModalApplicant.email}
-          initiatedBy="employer"
-          isDark={true}
-        />
-      )}
     </motion.div>
   );
 }

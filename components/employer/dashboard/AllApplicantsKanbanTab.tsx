@@ -23,7 +23,7 @@ import {
   IconFileText,
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/types/employer/job";
-import { ApplicantPipelineStage, CandidateProfile } from "@/types/employer/applicant";
+import { ApplicantPipelineStage, CandidateProfile, EmployerCandidateChatTarget } from "@/types/employer/applicant";
 import {
   calculateAtsScore,
   getApplicantsForJob,
@@ -32,7 +32,6 @@ import {
   updateApplicantPipelineStage,
   updateApplicantRating,
 } from "@/lib/employer/services/applicants.service";
-import StartChatModal from "@/components/shared/chat/StartChatModal";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
@@ -55,12 +54,11 @@ interface AllApplicantsKanbanTabProps {
   initialJobId?: string | null;
   initialStage?: ApplicantPipelineStage | null;
   onJobChange?: (jobId: string) => void;
-  /** Called when user wants to navigate to Messages tab after starting a chat */
-  onOpenMessages?: () => void;
+  onOpenCandidateChat?: (target: EmployerCandidateChatTarget) => void;
   jobsLoading?: boolean;
 }
 
-export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStage, onJobChange, onOpenMessages, jobsLoading = false }: AllApplicantsKanbanTabProps) {
+export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStage, onJobChange, onOpenCandidateChat, jobsLoading = false }: AllApplicantsKanbanTabProps) {
   const firstJobId = jobs[0]?.id ?? "";
   const [selectedJobId, setSelectedJobId] = useState(initialJobId && jobs.some((job) => job.id === initialJobId) ? initialJobId : firstJobId);
   const [visibleStages, setVisibleStages] = useState<ApplicantPipelineStage[]>(
@@ -70,7 +68,6 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
   const [isLoadingApplicants, setIsLoadingApplicants] = useState(true);
   const isLoading = jobsLoading || isLoadingApplicants;
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
-  const [chatModal, setChatModal] = useState<{ applicant: CandidateProfile; job: EmployerJob } | null>(null);
   const [draggedApplicantId, setDraggedApplicantId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<ApplicantPipelineStage | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -270,22 +267,7 @@ export default function AllApplicantsKanbanTab({ jobs, initialJobId, initialStag
         </div>
       </section>
 
-      <AnimatePresence>{selectedApplicant && selectedJob && <CandidateSlideOver candidate={selectedApplicant} job={selectedJob} visibleStages={visibleStages} onClose={() => setSelectedApplicant(null)} onMove={moveApplicant} noteText={noteText} onNoteTextChange={setNoteText} onSaveNote={saveNote} onSaveRating={saveRating} onMessageApplicant={(applicant, job) => setChatModal({ applicant, job })} />}</AnimatePresence>
-      {chatModal && (
-        <StartChatModal
-          isOpen={true}
-          onClose={() => setChatModal(null)}
-          onSuccess={() => { setChatModal(null); onOpenMessages?.() }}
-          applicationId={chatModal.applicant.id}
-          jobId={chatModal.job.id}
-          jobTitle={chatModal.job.title}
-          companyName={chatModal.job.company || "Your Company"}
-          talentName={chatModal.applicant.name}
-          talentEmail={chatModal.applicant.email}
-          initiatedBy="employer"
-          isDark={true}
-        />
-      )}
+      <AnimatePresence>{selectedApplicant && selectedJob && <CandidateSlideOver candidate={selectedApplicant} job={selectedJob} visibleStages={visibleStages} onClose={() => setSelectedApplicant(null)} onMove={moveApplicant} noteText={noteText} onNoteTextChange={setNoteText} onSaveNote={saveNote} onSaveRating={saveRating} onMessageApplicant={(applicant, job) => onOpenCandidateChat?.({ applicationId: applicant.id, jobId: job.id, jobTitle: job.title, companyName: job.company || "Your Company", talentName: applicant.name, talentEmail: applicant.email })} />}</AnimatePresence>
     </motion.div>
   );
 }

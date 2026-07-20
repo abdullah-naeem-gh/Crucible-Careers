@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const pageParam = searchParams.get('page')
+  const statusFilter = searchParams.get('status')
   const isPaginated = pageParam !== null
 
   // Fetch jobs for this employer
@@ -20,6 +21,12 @@ export async function GET(request: NextRequest) {
     .select('*', { count: 'exact' })
     .eq('employer_id', user.id)
     .order('created_at', { ascending: false })
+
+  if (statusFilter === 'active') {
+    query = query.eq('status', 'Active')
+  } else if (statusFilter === 'inactive') {
+    query = query.in('status', ['Paused', 'Closed', 'Draft'])
+  }
 
   let page = 1
   let limit = 10
