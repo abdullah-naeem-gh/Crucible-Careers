@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   IconAlertTriangle,
   IconBell,
+  IconCheck,
   IconChevronRight,
   IconDownload,
   IconLock,
