@@ -48,6 +48,22 @@ export async function POST(request: NextRequest) {
     const githubVerifiedUsername = githubLinkChanged ? null : (payload.githubVerifiedUsername ?? null)
     const githubVerifiedAt = githubLinkChanged ? null : (payload.githubVerifiedAt ?? null)
 
+    if (githubLinkChanged) {
+      try {
+        const { data: identitiesData } = await supabase.auth.getUserIdentities()
+        const githubIdentity = identitiesData?.identities.find((identity) => identity.provider === 'github')
+        if (githubIdentity) {
+          const { error: unlinkError } = await supabase.auth.unlinkIdentity(githubIdentity)
+          // Supabase refuses to unlink a user's only identity (they'd be locked
+          // out) — that's fine, just leave it linked; our own verified fields
+          // are already cleared above regardless.
+          if (unlinkError) console.error('Failed to unlink GitHub identity:', unlinkError)
+        }
+      } catch (err) {
+        console.error('Failed to unlink GitHub identity:', err)
+      }
+    }
+
     // 2. Upsert Talent Profile
     const { data: profile, error: profileError } = await supabase
       .from('talent_profiles')
