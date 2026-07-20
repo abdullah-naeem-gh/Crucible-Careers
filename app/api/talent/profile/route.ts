@@ -65,6 +65,8 @@ export async function GET(request: NextRequest) {
       hourlyRate: profile.hourly_rate || '',
       linkedin: profile.linkedin || '',
       github: profile.github || '',
+      githubVerifiedUsername: profile.github_verified_username || undefined,
+      githubVerifiedAt: profile.github_verified_at || undefined,
       portfolio: profile.portfolio || '',
       introVideoUrl: profile.intro_video_url || '',
       resumeFilename: profile.resume_filename || '',
