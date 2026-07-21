@@ -17,6 +17,8 @@ import {
   IconChevronRight,
   IconChevronLeft,
   IconRotate,
+  IconSparkles,
+  IconLoader2,
 } from "@tabler/icons-react";
 
 interface JobFormProps {
@@ -268,6 +270,50 @@ export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFo
   const [responsibilities, setResponsibilities] = useState(initialData?.responsibilities?.join("\n") || "");
   const [requirements, setRequirements] = useState(initialData?.requirements?.join("\n") || "");
 
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [aiMessage, setAiMessage] = useState<{ type: "error" | "info"; text: string } | null>(null);
+
+  const generateWithAi = async () => {
+    if (!title.trim() || isGeneratingAi) return;
+    setIsGeneratingAi(true);
+    setAiMessage(null);
+    try {
+      const res = await fetch("/api/employer/jobs/ai-suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Couldn't generate suggestions right now.");
+
+      let filledAny = false;
+      if (!description.trim() && data.description) {
+        setDescription(data.description);
+        filledAny = true;
+      }
+      if (!responsibilities.trim() && Array.isArray(data.responsibilities) && data.responsibilities.length > 0) {
+        setResponsibilities(data.responsibilities.join("\n"));
+        filledAny = true;
+      }
+      if (!requirements.trim() && Array.isArray(data.requirements) && data.requirements.length > 0) {
+        setRequirements(data.requirements.join("\n"));
+        filledAny = true;
+      }
+      if (!tags.trim() && Array.isArray(data.tags) && data.tags.length > 0) {
+        setTags(data.tags.join(", "));
+        filledAny = true;
+      }
+
+      if (!filledAny) {
+        setAiMessage({ type: "info", text: "All fields already have content — clear a field to regenerate it." });
+      }
+    } catch (err) {
+      setAiMessage({ type: "error", text: err instanceof Error ? err.message : "Couldn't generate suggestions right now." });
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
   // Step 2 states: Form Builder config
   const [formConfig, setFormConfig] = useState<FormConfig>(
     initialData?.formConfig || FORM_TEMPLATES.find((t) => t.id === "engineering") || FORM_TEMPLATES[0]
@@ -286,6 +332,7 @@ export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFo
     setResponsibilities(initialData?.responsibilities?.join("\n") || "");
     setRequirements(initialData?.requirements?.join("\n") || "");
     setFormConfig(initialData?.formConfig || FORM_TEMPLATES.find((t) => t.id === "engineering") || FORM_TEMPLATES[0]);
+    setAiMessage(null);
     setDir(-1);
     setActiveStep("details");
   };
@@ -361,9 +408,24 @@ export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFo
                   {/* Section: Basic Info */}
                   <FormSection icon={<IconBriefcase size={14} />} title="Basic Information" index={0}>
                     <div>
-                      <label className={labelClass}>
-                        Job Title <span className="text-[#FF6B00]">*</span>
-                      </label>
+                      <div className="flex items-center justify-between gap-2">
+                        <label className={labelClass}>
+                          Job Title <span className="text-[#FF6B00]">*</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={generateWithAi}
+                          disabled={title.trim().length < 3 || isGeneratingAi}
+                          className={`mb-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                            title.trim().length < 3 || isGeneratingAi
+                              ? "text-white/20 cursor-not-allowed"
+                              : "text-[#FF6B00] hover:bg-[#FF6B00]/10 cursor-pointer"
+                          }`}
+                        >
+                          {isGeneratingAi ? <IconLoader2 size={12} className="animate-spin" /> : <IconSparkles size={12} />}
+                          Generate with AI
+                        </button>
+                      </div>
                       <input
                         required
                         value={title}
@@ -371,6 +433,11 @@ export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFo
                         className={fieldClass}
                         placeholder="e.g., Senior Frontend Engineer"
                       />
+                      {aiMessage && (
+                        <p className={`mt-1.5 text-[11px] ${aiMessage.type === "error" ? "text-red-400" : "text-white/40"}`}>
+                          {aiMessage.text}
+                        </p>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>

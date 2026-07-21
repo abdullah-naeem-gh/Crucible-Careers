@@ -36,8 +36,23 @@ export async function GET() {
     console.error('Error fetching employer logos:', profilesError)
   }
 
+  const jobIds = jobs.map((job) => job.id)
+
+  const { data: apps, error: appsError } = await supabase
+    .from('applications')
+    .select('job_id')
+    .in('job_id', jobIds)
+
+  if (appsError) {
+    console.error('Error fetching application counts:', appsError)
+  }
+
   const companyById = new Map((companies ?? []).map((c) => [c.id, c.company]))
   const logoById = new Map((employerProfiles ?? []).map((p) => [p.id, p.logo_url]))
+  const applicantCountByJob = new Map<string, number>()
+  ;(apps ?? []).forEach((a) => {
+    applicantCountByJob.set(a.job_id, (applicantCountByJob.get(a.job_id) ?? 0) + 1)
+  })
 
   const result: ScrapedJob[] = jobs.map((job) => ({
     _id: job.id,
@@ -56,6 +71,7 @@ export async function GET() {
     requirements: job.requirements || [],
     tags: job.tags || [],
     posted_at: job.created_at,
+    applicantCount: applicantCountByJob.get(job.id) ?? 0,
   }))
 
   return NextResponse.json(result)

@@ -165,6 +165,16 @@ function getMatchScore(jobId: string): number {
   return 65 + (Math.abs(hash) % 34)
 }
 
+function formatApplicantCount(count: number): { value: string; label: string } {
+  if (count === 0) return { value: 'New', label: '' }
+  if (count < 10) return { value: 'Less than 10', label: 'Applicants' }
+  if (count < 25) return { value: '10+', label: 'Applicants' }
+  if (count < 50) return { value: '25+', label: 'Applicants' }
+  if (count < 100) return { value: '50+', label: 'Applicants' }
+  if (count < 500) return { value: '100+', label: 'Applicants' }
+  return { value: '500+', label: 'Applicants' }
+}
+
 export default function JobBrowser({ jobs, isLoading = false }: Props) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(jobs[0]?._id ?? null)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -618,7 +628,10 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
 
             <div className="my-6 grid grid-cols-2 gap-3">
               <MiniMetric label="Match Score" value={`${getMatchScore(selectedJob._id)}%`} accent="text-[#FF914D]" />
-              <MiniMetric label="Applicants" value={getMatchScore(selectedJob._id) - 40} accent="text-sky-500" />
+              {(() => {
+                const applicants = formatApplicantCount(selectedJob.applicantCount ?? 0)
+                return <MiniMetric label={applicants.label} value={applicants.value} accent="text-sky-500" />
+              })()}
             </div>
 
             {selectedJob.description && (
@@ -676,10 +689,11 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
 }
 
 function MiniMetric({ label, value, accent }: { label: string; value: string | number; accent: string }) {
+  const isLong = typeof value === 'string' && value.length > 5
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white/50 p-3 text-center shadow-[inset_1px_1px_4px_rgba(0,0,0,0.02)]">
-      <div className={`text-lg font-semibold ${accent}`}>{value}</div>
-      <div className="mt-1 text-[11px] text-gray-500">{label}</div>
+    <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white/50 p-3 text-center shadow-[inset_1px_1px_4px_rgba(0,0,0,0.02)]">
+      <div className={`flex h-7 items-center justify-center font-semibold ${isLong ? 'text-sm' : 'text-lg'} ${accent}`}>{value}</div>
+      {label && <div className="mt-1 text-[11px] text-gray-500">{label}</div>}
     </div>
   )
 }
