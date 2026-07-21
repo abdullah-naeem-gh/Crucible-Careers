@@ -7,7 +7,7 @@ export async function GET() {
 
   const { data: jobs, error } = await supabase
     .from('jobs')
-    .select('id, employer_id, title, location, location_type, type, salary_range, tags, description, created_at')
+    .select('id, employer_id, title, location, location_type, type, salary_range, tags, description, responsibilities, requirements, created_at')
     .eq('status', 'Active')
     .order('created_at', { ascending: false })
 
@@ -41,6 +41,8 @@ export async function GET() {
     url: `/apply/${job.id}`,
     source: 'Crucible',
     description: job.description,
+    responsibilities: job.responsibilities || [],
+    requirements: job.requirements || [],
     tags: job.tags || [],
     posted_at: job.created_at,
   }))

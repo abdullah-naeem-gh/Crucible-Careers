@@ -620,6 +620,34 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
               </div>
             )}
 
+            {!!selectedJob.responsibilities?.length && (
+              <div className="mb-6">
+                <h2 className="mb-3 text-sm font-semibold text-gray-900">Responsibilities</h2>
+                <ul className="space-y-2.5">
+                  {selectedJob.responsibilities.map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm leading-relaxed text-gray-600">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF6B00]" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {!!selectedJob.requirements?.length && (
+              <div className="mb-6">
+                <h2 className="mb-3 text-sm font-semibold text-gray-900">Requirements</h2>
+                <ul className="space-y-2.5">
+                  {selectedJob.requirements.map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm leading-relaxed text-gray-600">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF6B00]" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {selectedJob.tags.length > 0 && (
               <div className="mb-6">
                 <h2 className="mb-3 text-sm font-semibold text-gray-900">Skills & Technologies</h2>

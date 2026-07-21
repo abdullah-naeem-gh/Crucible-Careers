@@ -10,6 +10,8 @@ export interface ScrapedJob {
   url: string
   source: string
   description: string | null
+  responsibilities?: string[]
+  requirements?: string[]
   tags: string[]
   posted_at: string | null
 }
