@@ -35,6 +35,28 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // Already-logged-in visitors hitting a public-only page (marketing landing,
+  // portal picker, or either login screen) should go straight to their
+  // dashboard instead of seeing it again.
+  const isPublicOnlyPage =
+    pathname === '/' ||
+    pathname === '/gateway' ||
+    pathname === '/employer' ||
+    pathname === '/talent/login' ||
+    pathname === '/employer/login'
+
+  if (isPublicOnlyPage && user) {
+    const role = user.user_metadata?.role as string | undefined
+    if (role === 'talent' || role === 'employer') {
+      return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url))
+    }
+    // No role yet — /gateway is the correct place for them, don't redirect
+    // to itself (that would loop forever).
+    if (pathname !== '/gateway') {
+      return NextResponse.redirect(new URL('/gateway', request.url))
+    }
+  }
+
   const isTalentProtected =
     pathname.startsWith('/talent/dashboard') ||
     pathname.startsWith('/talent/onboarding')
@@ -68,6 +90,11 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
+    '/gateway',
+    '/employer',
+    '/talent/login',
+    '/employer/login',
     '/talent/dashboard/:path*',
     '/employer/dashboard/:path*',
     '/talent/onboarding/:path*',

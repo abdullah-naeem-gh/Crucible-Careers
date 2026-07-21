@@ -402,8 +402,12 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
                       >
                         <div className="flex items-stretch justify-between gap-4">
                           <div className="flex items-start gap-4 min-w-0">
-                            <div className="h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-100 flex items-center justify-center text-[#FF6B00] font-bold text-xl shadow-sm">
-                              {job.company.charAt(0).toUpperCase()}
+                            <div className="h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-100 flex items-center justify-center text-[#FF6B00] font-bold text-xl shadow-sm overflow-hidden">
+                              {job.companyLogo ? (
+                                <img src={job.companyLogo} alt={job.company} className="h-full w-full object-cover" />
+                              ) : (
+                                job.company.charAt(0).toUpperCase()
+                              )}
                             </div>
                             <div className="min-w-0 flex flex-col justify-center">
                               <div className="text-base font-semibold text-gray-900 leading-tight truncate">
@@ -545,8 +549,12 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`}>
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-100 flex items-center justify-center text-[#FF6B00] font-bold text-lg shadow-sm hover:shadow-md transition-shadow">
-                      {selectedJob.company.charAt(0).toUpperCase()}
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-100 flex items-center justify-center text-[#FF6B00] font-bold text-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                      {selectedJob.companyLogo ? (
+                        <img src={selectedJob.companyLogo} alt={selectedJob.company} className="h-full w-full object-cover" />
+                      ) : (
+                        selectedJob.company.charAt(0).toUpperCase()
+                      )}
                     </div>
                   </Link>
                   <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`} className="text-base font-semibold text-gray-900 hover:text-[#FF6B00] transition-colors">
@@ -617,6 +625,34 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
               <div className="mb-6">
                 <h2 className="mb-3 text-sm font-semibold text-gray-900">Job Description</h2>
                 <p className="text-sm leading-relaxed text-gray-600 whitespace-pre-line">{selectedJob.description}</p>
+              </div>
+            )}
+
+            {!!selectedJob.responsibilities?.length && (
+              <div className="mb-6">
+                <h2 className="mb-3 text-sm font-semibold text-gray-900">Responsibilities</h2>
+                <ul className="space-y-2.5">
+                  {selectedJob.responsibilities.map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm leading-relaxed text-gray-600">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF6B00]" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {!!selectedJob.requirements?.length && (
+              <div className="mb-6">
+                <h2 className="mb-3 text-sm font-semibold text-gray-900">Requirements</h2>
+                <ul className="space-y-2.5">
+                  {selectedJob.requirements.map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm leading-relaxed text-gray-600">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF6B00]" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
