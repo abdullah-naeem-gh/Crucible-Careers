@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { DashboardThemeSwitcher, useDashboardTheme } from "@/components/shared/theme/DashboardThemeProvider";
 import ChatNotificationBell from "@/components/shared/chat/ChatNotificationBell";
 import { subscribeChatChanges, getTotalUnread } from "@/lib/shared/chat/chat.service";
+import { logout } from "@/lib/shared/auth/actions";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 import {
@@ -70,6 +72,7 @@ export default function EmployerSidebar({
 }: EmployerSidebarProps) {
   const [showNoJobsPrompt, setShowNoJobsPrompt] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
+  const router = useRouter();
   const { theme } = useDashboardTheme();
   const isDarkTheme = theme === "dark";
   const collapseBtnClass = `transition-colors cursor-pointer rounded-full flex items-center justify-center ${
@@ -85,6 +88,17 @@ export default function EmployerSidebar({
     refresh()
     return subscribeChatChanges(refresh)
   }, []);
+
+  const handleLogout = async (event: React.MouseEvent) => {
+    event.preventDefault();
+    localStorage.removeItem("recruiter_jobs");
+    try {
+      await logout();
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+    router.push("/");
+  };
 
   useEffect(() => {
     if (!expandedReady || jobCount > 0) {
@@ -213,7 +227,7 @@ export default function EmployerSidebar({
           </button>
           <Link
             href="/"
-            onClick={() => localStorage.removeItem("recruiter_jobs")}
+            onClick={handleLogout}
             className="rounded-xl border border-white/10 bg-white/[0.035] px-4 py-2.5 text-center text-sm text-white/60"
           >
             Logout
@@ -242,7 +256,7 @@ export default function EmployerSidebar({
         )}
 
         <div className={railMode ? "mt-auto hidden flex-col items-center gap-3 text-xs text-white/35 lg:flex" : `${showNoJobsPrompt ? "mt-4" : "mt-auto"} hidden items-center justify-end text-xs text-white/35 lg:flex`}>
-          <Link href="/" onClick={() => localStorage.removeItem("recruiter_jobs")} title="Logout" className={railMode ? "grid h-8 w-8 place-items-center rounded-full text-white/42 transition-colors hover:text-red-300" : "transition-colors hover:text-red-300"}>
+          <Link href="/" onClick={handleLogout} title="Logout" className={railMode ? "grid h-8 w-8 place-items-center rounded-full text-white/42 transition-colors hover:text-red-300" : "transition-colors hover:text-red-300"}>
             {railMode ? <IconLogout size={18} stroke={1.8} /> : "Logout"}
           </Link>
         </div>

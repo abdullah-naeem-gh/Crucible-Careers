@@ -15,6 +15,7 @@ export interface ScrapedJob {
   requirements?: string[]
   tags: string[]
   posted_at: string | null
+  applicantCount?: number
 }
 
 export interface SavedJob {
