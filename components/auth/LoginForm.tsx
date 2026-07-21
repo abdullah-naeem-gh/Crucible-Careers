@@ -50,7 +50,7 @@ export default function LoginForm({ userType, onSubmit, isLoading = false, onGoo
       transition={{ duration: 0.6 }}
       className="w-full max-w-md mx-auto"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         <div>
           <label htmlFor="email" className={`block text-sm font-medium mb-1 ${isDarkTheme ? 'text-white' : 'text-gray-700'}`}>
             Email Address *
@@ -62,7 +62,7 @@ export default function LoginForm({ userType, onSubmit, isLoading = false, onGoo
             onChange={(e) => handleInputChange('email', e.target.value)}
             variants={inputVariants}
             whileFocus="focus"
-            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+            className={`w-full min-w-0 px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all sm:px-4 sm:py-3 ${
               errors.email 
                 ? 'border-red-300 focus:ring-red-200' 
                 : isDarkTheme 
@@ -93,7 +93,7 @@ export default function LoginForm({ userType, onSubmit, isLoading = false, onGoo
             onChange={(e) => handleInputChange('password', e.target.value)}
             variants={inputVariants}
             whileFocus="focus"
-            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+            className={`w-full min-w-0 px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all sm:px-4 sm:py-3 ${
               errors.password 
                 ? 'border-red-300 focus:ring-red-200' 
                 : isDarkTheme 
@@ -124,7 +124,7 @@ export default function LoginForm({ userType, onSubmit, isLoading = false, onGoo
           disabled={isLoading}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className={`w-full py-3 px-6 rounded-lg font-semibold text-base transition-all ${
+          className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-all sm:px-6 sm:py-3 sm:text-base ${
             isLoading
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-gradient-to-r from-[#FF6B00] to-[#FF914D] hover:shadow-lg'
