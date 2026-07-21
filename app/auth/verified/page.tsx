@@ -12,6 +12,10 @@ function VerifiedContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = useState(false)
+  // Only a brand-new account creation shows the "You're In!" splash — an
+  // existing user signing back in (via Google or otherwise) should land on
+  // their dashboard immediately, with no celebratory interstitial.
+  const [isNewSignup, setIsNewSignup] = useState(false)
 
   useEffect(() => {
     const redirectUser = async () => {
@@ -27,9 +31,11 @@ function VerifiedContent() {
 
         let role: UserRole | undefined = userWithProfile.profile?.role
         let firstName = userWithProfile.profile?.first_name || ''
+        let newSignup = false
 
         if (!role && portal) {
           // Brand-new Google sign-up — assign the role for the portal they signed up through.
+          newSignup = true
           const res = await fetch('/api/auth/set-role', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -56,7 +62,12 @@ function VerifiedContent() {
           ? `/${role}/dashboard`
           : `/${role}/onboarding?name=${encodeURIComponent(firstName)}`
 
-        setTimeout(() => router.push(nextPath), 1500)
+        if (newSignup) {
+          setIsNewSignup(true)
+          setTimeout(() => router.push(nextPath), 1500)
+        } else {
+          router.replace(nextPath)
+        }
       } catch (err) {
         console.error('Failed to complete sign-in:', err)
         setError(true)
@@ -85,31 +96,43 @@ function VerifiedContent() {
         className="relative z-10 bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/40 text-center max-w-md w-full mx-4"
       >
         {!error ? (
-          <>
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 20 }}
-              className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
-            >
-              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </motion.div>
+          isNewSignup ? (
+            <>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 20 }}
+                className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
+              >
+                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </motion.div>
 
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">You're In!</h1>
-            <p className="text-gray-600 mb-8">
-              We're setting up your account. Redirecting you now...
-            </p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">You're In!</h1>
+              <p className="text-gray-600 mb-8">
+                We're setting up your account. Redirecting you now...
+              </p>
 
-            <div className="flex justify-center">
+              <div className="flex justify-center">
+                <div className="flex gap-2">
+                  <motion.div className="w-3 h-3 bg-[#FF6B00] rounded-full" animate={{ y: [-5, 5, -5] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} />
+                  <motion.div className="w-3 h-3 bg-[#FF6B00] rounded-full" animate={{ y: [-5, 5, -5] }} transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} />
+                  <motion.div className="w-3 h-3 bg-[#FF6B00] rounded-full" animate={{ y: [-5, 5, -5] }} transition={{ duration: 1, repeat: Infinity, delay: 0.4 }} />
+                </div>
+              </div>
+            </>
+          ) : (
+            // Returning sign-in — no celebratory splash, just a brief neutral
+            // loading state while router.replace() takes effect.
+            <div className="flex justify-center py-4">
               <div className="flex gap-2">
                 <motion.div className="w-3 h-3 bg-[#FF6B00] rounded-full" animate={{ y: [-5, 5, -5] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} />
                 <motion.div className="w-3 h-3 bg-[#FF6B00] rounded-full" animate={{ y: [-5, 5, -5] }} transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} />
                 <motion.div className="w-3 h-3 bg-[#FF6B00] rounded-full" animate={{ y: [-5, 5, -5] }} transition={{ duration: 1, repeat: Infinity, delay: 0.4 }} />
               </div>
             </div>
-          </>
+          )
         ) : (
           <>
             <motion.div
