@@ -27,13 +27,24 @@ export async function GET() {
     console.error('Error fetching employer company names:', companiesError)
   }
 
+  const { data: employerProfiles, error: profilesError } = await supabase
+    .from('employer_profiles')
+    .select('id, logo_url')
+    .in('id', employerIds)
+
+  if (profilesError) {
+    console.error('Error fetching employer logos:', profilesError)
+  }
+
   const companyById = new Map((companies ?? []).map((c) => [c.id, c.company]))
+  const logoById = new Map((employerProfiles ?? []).map((p) => [p.id, p.logo_url]))
 
   const result: ScrapedJob[] = jobs.map((job) => ({
     _id: job.id,
     employerId: job.employer_id,
     title: job.title,
     company: companyById.get(job.employer_id) || 'Unknown Company',
+    companyLogo: logoById.get(job.employer_id) || null,
     location: job.location,
     locationType: job.location_type ? (job.location_type.toLowerCase() as ScrapedJob['locationType']) : null,
     type: job.type ? (job.type.toLowerCase() as ScrapedJob['type']) : null,
