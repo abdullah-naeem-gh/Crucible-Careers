@@ -31,6 +31,8 @@ import {
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
 import type { CandidateProfile, EmployerCandidateChatTarget, ScreeningStatus } from "@/types/employer/applicant";
+import { hasDedicatedDisplay } from "@/lib/shared/formFieldDisplay";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type EmailAudience = "all" | "shortlisted" | "rejected" | "manual";
 
@@ -112,6 +114,7 @@ const emailTemplates: EmailTemplate[] = [
 
 export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban, onOpenCandidateChat }: JobApplicationsViewProps) {
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
+  const [isLoadingApplicants, setIsLoadingApplicants] = useState(true);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [noteText, setNoteText] = useState("");
@@ -167,13 +170,15 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
   // Load applicants
   useEffect(() => {
     if (!job) return;
+    setIsLoadingApplicants(true);
     fetch(`/api/employer/jobs/${jobId}/applicants`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data: CandidateProfile[]) => {
         setApplicants(data);
         setSelectedApplicant(data[0] || null);
       })
-      .catch((err) => console.error("Failed to load applicants", err));
+      .catch((err) => console.error("Failed to load applicants", err))
+      .finally(() => setIsLoadingApplicants(false));
   }, [jobId, job]);
 
   const patchApplicant = async (applicantId: string, patch: { status?: string; rating?: number | null; note?: string | null }) => {
@@ -739,7 +744,9 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
 
         {/* Scrollable applicant card list */}
         <div className="min-h-0 flex-1 space-y-3 overflow-auto p-5 custom-scrollbar">
-          {filteredApplicants.length > 0 ? (
+          {isLoadingApplicants ? (
+            Array.from({ length: 5 }).map((_, i) => <ApplicantCardSkeleton key={i} />)
+          ) : filteredApplicants.length > 0 ? (
             filteredApplicants.map((applicant) => {
               const score = applicant.atsScore ?? 0;
               const isSelected = selectedApplicant?.id === applicant.id;
@@ -876,7 +883,9 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
 
       {/* ── Right Panel: Candidate Profile details ── */}
       <section className={`${surface} min-h-[38rem] overflow-auto p-6 lg:col-span-4 lg:min-h-0 custom-scrollbar`}>
-        {selectedApplicant ? (
+        {isLoadingApplicants ? (
+          <CandidateDetailSkeleton />
+        ) : selectedApplicant ? (
           <motion.div
             key={selectedApplicant.id}
             initial={{ opacity: 0, x: 8 }}
@@ -1002,10 +1011,21 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
             </div>
 
             {/* About / Bio */}
-            <div>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Candidate Bio</h3>
-              <p className="text-sm leading-relaxed text-white/60">{selectedApplicant.bio}</p>
-            </div>
+            {selectedApplicant.bio && (
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Candidate Bio</h3>
+                <p className="text-sm leading-relaxed text-white/60">{selectedApplicant.bio}</p>
+              </div>
+            )}
+
+            {/* Cover Letter — the answer to this specific application's Cover
+                Letter question, distinct from the candidate's general bio above. */}
+            {selectedApplicant.coverLetter && (
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Cover Letter</h3>
+                <p className="text-sm leading-relaxed text-white/60 whitespace-pre-line">{selectedApplicant.coverLetter}</p>
+              </div>
+            )}
 
             {/* Skills & tags matching */}
             <div>
@@ -1088,12 +1108,18 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
               </div>
             </div>
 
-            {/* Custom form answers section */}
-            {selectedApplicant.customAnswers && selectedApplicant.customAnswers.length > 0 && (
+            {/* Custom form answers section — anything not already shown in a
+                dedicated section above (Quick Facts, Skills, Resume, Links,
+                Bio), so a field never silently disappears just because it
+                isn't "custom" but also isn't one of the handful with its own
+                display treatment. */}
+            {(() => {
+              const extraAnswers = (selectedApplicant.customAnswers ?? []).filter((ans) => !hasDedicatedDisplay(ans.semanticType));
+              return extraAnswers.length > 0 && (
               <div className="border-t border-white/[0.07] pt-5">
                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Questionnaire Answers</h3>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {selectedApplicant.customAnswers.map((ans) => (
+                  {extraAnswers.map((ans) => (
                     <div key={ans.fieldId} className={`${insetSurface} p-4 sm:col-span-2`}>
                       <div className="text-[10px] font-semibold uppercase tracking-wider text-white/35 mb-1">{ans.label}</div>
                       <div className="text-sm font-medium text-white/80 whitespace-pre-line">
@@ -1109,7 +1135,8 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                   ))}
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* Work History */}
             {selectedApplicant.experience && selectedApplicant.experience.length > 0 && (
@@ -1124,35 +1151,19 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                           {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
                         </span>
                       </div>
-                      <div className="text-xs text-white/50 font-medium mt-0.5">{exp.company}</div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-xs text-white/50 font-medium">{exp.company}</span>
+                        {exp.verificationStatus === 'verified' && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-300">
+                            <IconCheck size={10} /> Verified
+                          </span>
+                        )}
+                      </div>
                       {exp.description && (
                         <p className="text-xs text-white/40 mt-2 leading-relaxed whitespace-pre-line">
                           {exp.description}
                         </p>
                       )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Education History */}
-            {selectedApplicant.educationList && selectedApplicant.educationList.length > 0 && (
-              <div className="border-t border-white/[0.07] pt-5">
-                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Education</h3>
-                <div className="space-y-3">
-                  {selectedApplicant.educationList.map((edu) => (
-                    <div key={edu.id} className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-3.5">
-                      <div className="flex flex-wrap items-center justify-between gap-1">
-                        <h4 className="text-sm font-bold text-white/90">{edu.degree}</h4>
-                        {(edu.startYear || edu.endYear) && (
-                          <span className="text-[10px] text-white/45 font-medium">
-                            {edu.startYear} - {edu.endYear}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-white/55 mt-0.5">{edu.school}</div>
-                      {edu.field && <div className="text-[11px] text-white/40">Field: {edu.field}</div>}
                     </div>
                   ))}
                 </div>
@@ -1570,6 +1581,58 @@ function AutoCriterionRow({
           className="h-9 w-20 rounded-lg border border-gray-200 bg-white px-2 text-sm font-semibold text-gray-800 outline-none disabled:cursor-not-allowed disabled:opacity-35 focus:border-orange-500/40 dark:border-white/[0.08] dark:bg-[#121212] dark:text-white/70"
         />
         <span className="min-w-[6.5rem] text-xs text-gray-500 dark:text-white/35">{suffix}</span>
+      </div>
+    </div>
+  );
+}
+
+function ApplicantCardSkeleton() {
+  return (
+    <div className="w-full rounded-2xl border border-white/[0.065] bg-[#141414] p-4 shadow-[6px_6px_16px_rgba(0,0,0,0.24)]">
+      <div className="flex items-start gap-4">
+        <Skeleton className="h-12 w-12 shrink-0 rounded-xl" />
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <Skeleton className="h-4 w-32 rounded" />
+            <Skeleton className="h-3.5 w-20 rounded" />
+          </div>
+          <Skeleton className="h-3 w-40 rounded" />
+          <div className="mt-2 flex gap-3">
+            <Skeleton className="h-3 w-24 rounded" />
+            <Skeleton className="h-3 w-28 rounded" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CandidateDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start gap-4 border-b border-white/[0.07] pb-5">
+        <Skeleton className="h-16 w-16 shrink-0 rounded-2xl" />
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <Skeleton className="h-5 w-40 rounded" />
+          <Skeleton className="h-3.5 w-56 rounded" />
+          <Skeleton className="h-5 w-28 rounded-lg" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-start gap-2.5">
+            <Skeleton className="h-5 w-5 shrink-0 rounded" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <Skeleton className="h-2.5 w-14 rounded" />
+              <Skeleton className="h-3.5 w-32 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <Skeleton className="h-24 w-full rounded-2xl" />
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-24 rounded" />
+        <Skeleton className="h-16 w-full rounded" />
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+export type ExperienceVerificationStatus = 'none' | 'pending' | 'verified' | 'rejected'
+
 export interface TalentExperience {
   id: string // UUID
   company: string
@@ -8,7 +10,16 @@ export interface TalentExperience {
   current: boolean
   description: string
   previousSalary?: string
-  payslipVerified?: boolean
+  verificationStatus?: ExperienceVerificationStatus
+  verificationRequestId?: string
+  verificationRejectionReason?: string
+  verificationRequestedAt?: string
+  /** Only meaningful when status is 'rejected' — whether a detail has been
+   *  changed (and saved) since the rejection, so a resend is allowed. */
+  verificationCanResend?: boolean
+  /** Only meaningful when status is 'rejected' — true if this employer has
+   *  blacklisted the talent, in which case resend is never possible. */
+  verificationBlacklisted?: boolean
 }
 
 export interface TalentEducation {
@@ -36,6 +47,7 @@ export interface TalentProfile {
   lastName: string
   headline: string
   email: string
+  phone?: string
   location: string
   photoUrl: string | null
   overview: string

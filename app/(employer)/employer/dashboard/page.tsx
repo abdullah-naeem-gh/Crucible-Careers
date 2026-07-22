@@ -17,10 +17,11 @@ import JobForm from "@/components/employer/dashboard/JobForm";
 import MessagesTab from "@/components/shared/chat/MessagesTab";
 import EmployerChatDrawer from "@/components/employer/chat/EmployerChatDrawer";
 import RankingTab from "@/components/employer/dashboard/RankingTab";
+import VerificationRequestsTab from "@/components/employer/dashboard/VerificationRequestsTab";
 import { getEmployerProfile, saveEmployerProfile } from "@/lib/employer/services/profile.service";
 import { CompanyProfile } from "@/types/employer/profile";
 
-type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking";
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking" | "verification";
 
 const DEFAULT_PROFILE: CompanyProfile = {
   name: "TechCorp",
@@ -60,7 +61,7 @@ function EmployerDashboardContent() {
   const requestedStage = searchParams.get("stage") as ApplicantPipelineStage | null;
   const onboarded = searchParams.get("onboarded");
   const initialTab: EmployerTab =
-    requestedTab === "jobs" || requestedTab === "applicants" || requestedTab === "analytics" || requestedTab === "profile" || requestedTab === "messages" || requestedTab === "ranking"
+    requestedTab === "jobs" || requestedTab === "applicants" || requestedTab === "analytics" || requestedTab === "profile" || requestedTab === "messages" || requestedTab === "ranking" || requestedTab === "verification"
       ? (requestedTab as EmployerTab)
       : "overview";
 
@@ -424,6 +425,11 @@ function EmployerDashboardContent() {
             {(visitedTabs.has("ranking") || activeTab === "ranking") && (
               <PersistentTabPanel active={activeTab === "ranking"}>
                 <RankingTab jobs={jobs} company={company} />
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has("verification") || activeTab === "verification") && (
+              <PersistentTabPanel active={activeTab === "verification"}>
+                <VerificationRequestsTab />
               </PersistentTabPanel>
             )}
           </motion.div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { IconBell, IconMessage, IconMessageCircle } from '@tabler/icons-react'
+import { IconBell, IconMessage, IconMessageCircle, IconCheck, IconX } from '@tabler/icons-react'
 import type { ChatParticipantRole, ChatConversation } from '@/types/shared/chat'
 import {
   listConversations,
@@ -10,9 +10,16 @@ import {
   markConversationRead,
   subscribeChatChanges,
 } from '@/lib/shared/chat/chat.service'
+import {
+  getUnacknowledgedVerificationItems,
+  acknowledgeVerifications,
+  subscribeVerificationChanges,
+  type VerificationNotificationItem,
+} from '@/lib/talent/services/experienceVerification.service'
 import { useDashboardTheme } from '@/components/shared/theme/DashboardThemeProvider'
 
-function fmtTime(iso: string) {
+function fmtTime(iso: string | null) {
+  if (!iso) return ''
   const d = new Date(iso)
   const now = new Date()
   const diffMs = now.getTime() - d.getTime()
@@ -27,9 +34,11 @@ interface ChatNotificationBellProps {
   isDark?: boolean
   /** Called when a notification item is clicked — navigate to messages tab */
   onOpenMessages: (conversationId?: string) => void
+  /** Talent only — called when a verification-update item is clicked, to navigate to the Profile tab */
+  onOpenProfile?: () => void
 }
 
-export default function ChatNotificationBell({ role, isDark = true, onOpenMessages }: ChatNotificationBellProps) {
+export default function ChatNotificationBell({ role, isDark = true, onOpenMessages, onOpenProfile }: ChatNotificationBellProps) {
   let activeTheme: 'light' | 'dark' = 'light'
   try {
     const context = useDashboardTheme()
@@ -42,18 +51,30 @@ export default function ChatNotificationBell({ role, isDark = true, onOpenMessag
   const [open, setOpen] = useState(false)
   const [totalUnread, setTotalUnread] = useState(0)
   const [conversations, setConversations] = useState<ChatConversation[]>([])
+  const [verificationItems, setVerificationItems] = useState<VerificationNotificationItem[]>([])
   const popupRef = useRef<HTMLDivElement>(null)
 
   const refresh = useCallback(async () => {
-    const [unread, convs] = await Promise.all([getTotalUnread(role), listConversations()])
-    setTotalUnread(unread)
+    const [unread, convs, verifications] = await Promise.all([
+      getTotalUnread(role),
+      listConversations(),
+      role === 'talent' ? getUnacknowledgedVerificationItems() : Promise.resolve([]),
+    ])
+    setTotalUnread(unread + verifications.length)
     setConversations(convs)
+    setVerificationItems(verifications)
   }, [role])
 
   useEffect(() => {
     refresh()
-    return subscribeChatChanges(() => { refresh() })
-  }, [refresh])
+    const unsubscribeChat = subscribeChatChanges(() => { refresh() })
+    if (role !== 'talent') return unsubscribeChat
+    const unsubscribeVerification = subscribeVerificationChanges(() => { refresh() })
+    return () => {
+      unsubscribeChat()
+      unsubscribeVerification()
+    }
+  }, [refresh, role])
 
   // Click-outside to close
   useEffect(() => {
@@ -75,6 +96,17 @@ export default function ChatNotificationBell({ role, isDark = true, onOpenMessag
       await refresh()
     } catch (e) {
       console.error('Failed to mark conversation read', e)
+    }
+  }
+
+  const handleVerificationItemClick = async () => {
+    setOpen(false)
+    onOpenProfile?.()
+    try {
+      await acknowledgeVerifications()
+      await refresh()
+    } catch (e) {
+      console.error('Failed to acknowledge verification updates', e)
     }
   }
 
@@ -207,8 +239,39 @@ export default function ChatNotificationBell({ role, isDark = true, onOpenMessag
                 </>
               )}
 
+              {/* Verification updates (talent only) */}
+              {verificationItems.length > 0 && (
+                <>
+                  <div className={`px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider font-semibold ${textMuted}`}>
+                    Verification Updates
+                  </div>
+                  {verificationItems.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={handleVerificationItemClick}
+                      className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors ${hoverBg}`}
+                    >
+                      <div className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center ${
+                        item.status === 'verified' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-red-500/15 text-red-500'
+                      }`}>
+                        {item.status === 'verified' ? <IconCheck size={16} /> : <IconX size={16} />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className={`text-xs font-semibold ${textPri}`}>
+                          {item.role} at {item.company}
+                        </div>
+                        <div className={`text-[11px] ${textSec} truncate mt-0.5`}>
+                          {item.status === 'verified' ? 'Verified by the employer' : `Rejected${item.rejectionReason ? `: ${item.rejectionReason}` : ''}`}
+                        </div>
+                        <div className={`text-[10px] ${textMuted} mt-0.5`}>{fmtTime(item.respondedAt)}</div>
+                      </div>
+                    </button>
+                  ))}
+                </>
+              )}
+
               {/* Empty state */}
-              {pendingRequests.length === 0 && unreadConvs.length === 0 && (
+              {pendingRequests.length === 0 && unreadConvs.length === 0 && verificationItems.length === 0 && (
                 <div className={`flex flex-col items-center justify-center gap-2 py-10 ${textMuted}`}>
                   <IconBell size={28} strokeWidth={1.3} />
                   <p className="text-xs">You're all caught up</p>

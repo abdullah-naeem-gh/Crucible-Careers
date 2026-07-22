@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
+import { createSupabaseAdminClient } from '@/lib/shared/supabase/admin'
+import { snapshotOf, snapshotsEqual, type ExperienceSnapshot } from '@/lib/talent/services/experienceSnapshot'
 import type { TalentProfile, TalentExperience, TalentEducation, TalentProject } from '@/types/talent/profile'
 
 export async function GET(request: NextRequest) {
@@ -47,6 +49,23 @@ export async function GET(request: NextRequest) {
       }, { status: 200 })
     }
 
+    const { data: verifications } = await supabase
+      .from('talent_experience_verifications')
+      .select('id, experience_id, status, rejection_reason, requested_at, snapshot, employer_id')
+      .eq('talent_id', user.id)
+    const verificationByExperienceId = new Map((verifications ?? []).map((v) => [v.experience_id, v]))
+
+    // employer_talent_blacklist RLS only lets the employer read their own
+    // rows (a talent shouldn't normally see they're blacklisted), but the
+    // badge needs to say so explicitly once rejected — so this one read has
+    // to go through the admin client rather than the session-scoped one.
+    const admin = createSupabaseAdminClient()
+    const { data: blacklistRows } = await admin
+      .from('employer_talent_blacklist')
+      .select('employer_id')
+      .eq('talent_id', user.id)
+    const blacklistedEmployerIds = new Set((blacklistRows ?? []).map((b) => b.employer_id))
+
     // Map database relations back to TalentProfile interface
     const mappedProfile: TalentProfile = {
       id: profile.id,
@@ -54,6 +73,7 @@ export async function GET(request: NextRequest) {
       lastName: baseProfile?.last_name || '',
       headline: profile.headline || '',
       email: profile.email || '',
+      phone: profile.phone || '',
       location: profile.location || '',
       photoUrl: profile.photo_url || null,
       overview: profile.overview || '',
@@ -73,18 +93,36 @@ export async function GET(request: NextRequest) {
       resumeUrl: profile.resume_url || '',
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
-      experience: (profile.talent_experiences || []).map((e: any): TalentExperience => ({
-        id: e.id,
-        company: e.company,
-        role: e.role,
-        location: e.location || '',
-        startDate: e.start_date || '',
-        endDate: e.end_date || '',
-        current: e.current || false,
-        description: e.description || '',
-        previousSalary: e.previous_salary || '',
-        payslipVerified: e.payslip_verified || false,
-      })),
+      experience: (profile.talent_experiences || []).map((e: any): TalentExperience => {
+        const verification = verificationByExperienceId.get(e.id)
+        const canResendAfterEdit = verification?.status === 'rejected'
+          ? !snapshotsEqual(verification.snapshot as ExperienceSnapshot, snapshotOf({
+              role: e.role,
+              location: e.location,
+              startDate: e.start_date,
+              endDate: e.end_date,
+              current: e.current,
+              description: e.description,
+            }))
+          : undefined
+        return {
+          id: e.id,
+          company: e.company,
+          role: e.role,
+          location: e.location || '',
+          startDate: e.start_date || '',
+          endDate: e.end_date || '',
+          current: e.current || false,
+          description: e.description || '',
+          previousSalary: e.previous_salary || '',
+          verificationStatus: verification?.status || 'none',
+          verificationRequestId: verification?.id || undefined,
+          verificationRejectionReason: verification?.rejection_reason || undefined,
+          verificationRequestedAt: verification?.requested_at || undefined,
+          verificationCanResend: canResendAfterEdit,
+          verificationBlacklisted: verification ? blacklistedEmployerIds.has(verification.employer_id) : undefined,
+        }
+      }),
       education: (profile.talent_educations || []).map((e: any): TalentEducation => ({
         id: e.id,
         school: e.school,

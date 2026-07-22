@@ -125,7 +125,8 @@ function VerifiedContent() {
           ) : (
             // Returning sign-in — no celebratory splash, just a brief neutral
             // loading state while router.replace() takes effect.
-            <div className="flex justify-center py-4">
+            <div className="flex flex-col items-center gap-3 py-4">
+              <p className="text-sm font-medium text-gray-600">Logging you in...</p>
               <div className="flex gap-2">
                 <motion.div className="w-3 h-3 bg-[#FF6B00] rounded-full" animate={{ y: [-5, 5, -5] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} />
                 <motion.div className="w-3 h-3 bg-[#FF6B00] rounded-full" animate={{ y: [-5, 5, -5] }} transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} />
