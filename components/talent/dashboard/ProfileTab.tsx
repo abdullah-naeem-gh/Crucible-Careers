@@ -335,7 +335,7 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
         <div className="space-y-5 xl:col-span-7">
           <PreviewSection title="Overview">
             {profile.overview ? (
-              <p className="whitespace-pre-line text-sm leading-relaxed text-gray-600 dark:text-white/55">{profile.overview}</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-white/55">{profile.overview}</p>
             ) : (
               <p className="text-xs italic text-gray-400 dark:text-white/20">No professional overview summary provided yet.</p>
             )}
@@ -356,7 +356,7 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
                     {(item.location || item.description) && (
                       <div className="mt-3 space-y-2">
                         {item.location && <div className="text-[11px] text-gray-500 dark:text-white/35">{item.location}</div>}
-                        {item.description && <p className="text-xs leading-relaxed text-gray-600 dark:text-white/50">{item.description}</p>}
+                        {item.description && <p className="whitespace-pre-wrap text-xs leading-relaxed text-gray-600 dark:text-white/50">{item.description}</p>}
                       </div>
                     )}
                   </div>
@@ -379,7 +379,7 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
                       )}
                       <div className="min-w-0 flex-1">
                         <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{item.title || 'Project title'}</h4>
-                        {item.description && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-600 dark:text-white/45">{item.description}</p>}
+                        {item.description && <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-xs leading-relaxed text-gray-600 dark:text-white/45">{item.description}</p>}
                         <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-medium text-[#FF6B00]">
                           {item.link && <a href={normalizeUrl(item.link)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1">Link <IconExternalLink size={12} /></a>}
                           {item.videoUrl && <span className="inline-flex items-center gap-1"><IconVideo size={12} /> Video</span>}

@@ -268,14 +268,14 @@ export default function CompaniesTab() {
             {/* About */}
             <div className="border-t border-gray-200 pt-5">
               <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">About Company</h3>
-              <p className="text-xs text-gray-600 leading-relaxed">{selectedCompany.about || 'No description provided.'}</p>
+              <p className="whitespace-pre-wrap text-xs text-gray-600 leading-relaxed">{selectedCompany.about || 'No description provided.'}</p>
             </div>
 
             {/* Culture */}
             {selectedCompany.culture && (
               <div className="border-t border-gray-200 pt-5">
                 <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Culture & Worklife</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">{selectedCompany.culture}</p>
+                <p className="whitespace-pre-wrap text-xs text-gray-600 leading-relaxed">{selectedCompany.culture}</p>
               </div>
             )}
 

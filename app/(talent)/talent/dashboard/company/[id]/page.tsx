@@ -102,14 +102,14 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
                   {/* About */}
                   <div>
                     <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">About Us</h3>
-                    <p className="text-xs text-gray-600 leading-relaxed">{company.about || 'No description provided.'}</p>
+                    <p className="whitespace-pre-wrap text-xs text-gray-600 leading-relaxed">{company.about || 'No description provided.'}</p>
                   </div>
 
                   {/* Culture */}
                   {company.culture && (
                     <div className="border-t border-gray-100 pt-5">
                       <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Culture & Values</h3>
-                      <p className="text-xs text-gray-600 leading-relaxed">{company.culture}</p>
+                      <p className="whitespace-pre-wrap text-xs text-gray-600 leading-relaxed">{company.culture}</p>
                     </div>
                   )}
 
