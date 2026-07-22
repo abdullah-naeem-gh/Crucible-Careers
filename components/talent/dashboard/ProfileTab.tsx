@@ -24,6 +24,8 @@ import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import LocationPicker from '@/components/ui/LocationPicker'
 import { Skeleton } from '@/components/ui/Skeleton'
+import MonthYearPicker from '@/components/talent/profile/MonthYearPicker'
+import { formatProfileMonthYear } from '@/lib/shared/profileDates'
 
 interface ProfileTabProps {
   profile: TalentProfile | null
@@ -351,7 +353,7 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
                         <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{item.role || 'Role title'}</h4>
                         <div className="mt-1 text-xs font-medium text-[#FF6B00]">{item.company || 'Company'}</div>
                       </div>
-                      <span className="text-[11px] text-gray-500 dark:text-white/35">{item.startDate || 'Start'} - {item.current ? 'Present' : item.endDate || 'End'}</span>
+                      <span className="text-[11px] text-gray-500 dark:text-white/35">{formatProfileMonthYear(item.startDate) || 'Start'} - {item.current ? 'Present' : formatProfileMonthYear(item.endDate) || 'End'}</span>
                     </div>
                     {(item.location || item.description) && (
                       <div className="mt-3 space-y-2">
@@ -425,7 +427,7 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
                 {visibleEducation.map((item) => (
                   <div key={item.id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 dark:border-white/[0.06] dark:bg-white/[0.025]">
                     <div className="font-semibold text-gray-950 dark:text-white">{item.school || 'School'}</div>
-                    <div className="mt-1 text-xs text-gray-500 dark:text-white/35">{[item.degree, item.field].filter(Boolean).join(', ') || 'Degree'} - {item.startYear || 'Start'} to {item.endYear || 'End'}</div>
+                    <div className="mt-1 text-xs text-gray-500 dark:text-white/35">{[item.degree, item.field].filter(Boolean).join(', ') || 'Degree'} - {formatProfileMonthYear(item.startYear) || 'Start'} to {formatProfileMonthYear(item.endYear) || 'End'}</div>
                   </div>
                 ))}
               </div>
@@ -772,8 +774,8 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
                           <Field label="Role"><input className={fieldClass} value={item.role} onChange={(e) => updateExperience(item.id, { role: e.target.value })} /></Field>
                           <Field label="Company"><input className={fieldClass} value={item.company} onChange={(e) => updateExperience(item.id, { company: e.target.value })} /></Field>
                           <Field label="Location"><input className={fieldClass} value={item.location} onChange={(e) => updateExperience(item.id, { location: e.target.value })} /></Field>
-                          <Field label="Start"><input className={fieldClass} value={item.startDate} onChange={(e) => updateExperience(item.id, { startDate: e.target.value })} /></Field>
-                          <Field label="End"><input className={fieldClass} value={item.current ? 'Present' : item.endDate} disabled={item.current} onChange={(e) => updateExperience(item.id, { endDate: e.target.value })} /></Field>
+                          <div className="sm:col-span-2"><Field label="Start"><MonthYearPicker value={item.startDate} onChange={(startDate) => updateExperience(item.id, { startDate })} ariaLabel="Work experience start date" /></Field></div>
+                          <div className="sm:col-span-2"><Field label="End">{item.current ? <div className={`${fieldClass} cursor-not-allowed text-gray-500 opacity-70 dark:text-white/40`}>Present</div> : <MonthYearPicker value={item.endDate} onChange={(endDate) => updateExperience(item.id, { endDate })} ariaLabel="Work experience end date" />}</Field></div>
                           <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-white/45 sm:col-span-2">
                             <input type="checkbox" checked={item.current} onChange={(e) => updateExperience(item.id, { current: e.target.checked, endDate: e.target.checked ? '' : item.endDate })} className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#FF6B00] focus:ring-orange-500" />
                             Currently working here / Present
@@ -831,10 +833,8 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
                           <Field label="School"><input className={fieldClass} value={item.school} onChange={(e) => updateEducation(item.id, { school: e.target.value })} /></Field>
                           <Field label="Degree"><input className={fieldClass} value={item.degree} onChange={(e) => updateEducation(item.id, { degree: e.target.value })} /></Field>
                           <Field label="Field"><input className={fieldClass} value={item.field} onChange={(e) => updateEducation(item.id, { field: e.target.value })} /></Field>
-                          <div className="grid grid-cols-2 gap-3">
-                            <Field label="From"><input className={fieldClass} value={item.startYear} onChange={(e) => updateEducation(item.id, { startYear: e.target.value })} placeholder="2020" /></Field>
-                            <Field label="To"><input className={fieldClass} value={item.endYear} onChange={(e) => updateEducation(item.id, { endYear: e.target.value })} placeholder="2024" /></Field>
-                          </div>
+                          <div className="sm:col-span-2"><Field label="From"><MonthYearPicker value={item.startYear} onChange={(startYear) => updateEducation(item.id, { startYear })} ariaLabel="Education start date" maxYear={new Date().getFullYear() + 10} /></Field></div>
+                          <div className="sm:col-span-2"><Field label="To"><MonthYearPicker value={item.endYear} onChange={(endYear) => updateEducation(item.id, { endYear })} ariaLabel="Education end date" maxYear={new Date().getFullYear() + 10} /></Field></div>
                           <div className="sm:col-span-2"><Field label="Description"><textarea className={fieldClass} rows={2} value={item.description || ''} onChange={(e) => updateEducation(item.id, { description: e.target.value })} placeholder="Notable achievements, coursework, or clubs." /></Field></div>
                         </div>
                       </div>

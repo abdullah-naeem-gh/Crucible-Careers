@@ -31,6 +31,7 @@ import {
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
 import type { CandidateProfile, EmployerCandidateChatTarget, ScreeningStatus } from "@/types/employer/applicant";
+import { formatProfileMonthYear } from "@/lib/shared/profileDates";
 
 type EmailAudience = "all" | "shortlisted" | "rejected" | "manual";
 
@@ -1121,7 +1122,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                       <div className="flex flex-wrap items-center justify-between gap-1">
                         <h4 className="text-sm font-bold text-white/90">{exp.role}</h4>
                         <span className="text-[10px] text-[#FF914D] font-semibold bg-orange-500/10 px-2 py-0.5 rounded">
-                          {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
+                          {formatProfileMonthYear(exp.startDate)} - {exp.current ? 'Present' : formatProfileMonthYear(exp.endDate)}
                         </span>
                       </div>
                       <div className="text-xs text-white/50 font-medium mt-0.5">{exp.company}</div>
@@ -1147,7 +1148,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                         <h4 className="text-sm font-bold text-white/90">{edu.degree}</h4>
                         {(edu.startYear || edu.endYear) && (
                           <span className="text-[10px] text-white/45 font-medium">
-                            {edu.startYear} - {edu.endYear}
+                            {formatProfileMonthYear(edu.startYear || '')} - {formatProfileMonthYear(edu.endYear || '')}
                           </span>
                         )}
                       </div>

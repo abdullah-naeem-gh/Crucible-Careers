@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { IconPlus, IconCheck, IconLoader2, IconFileText } from '@tabler/icons-react'
 import type { TalentExperience } from '@/types/talent/profile'
+import MonthYearPicker from '@/components/talent/profile/MonthYearPicker'
 
 const L = 'mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-gray-400'
 const F = 'w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 transition-all'
@@ -98,18 +99,25 @@ export default function OnboardingStep5({ experience, onChange }: Props) {
                   onChange={(e) => update(item.id, { company: e.target.value })}
                   placeholder="TechCorp" />
               </div>
-              <div>
+              <div className="col-span-2">
                 <label className={L}>Start</label>
-                <input className={F} value={item.startDate}
-                  onChange={(e) => update(item.id, { startDate: e.target.value })}
-                  placeholder="2022" />
+                <MonthYearPicker
+                  value={item.startDate}
+                  onChange={(startDate) => update(item.id, { startDate })}
+                  ariaLabel="Work experience start date"
+                />
               </div>
-              <div>
+              <div className="col-span-2">
                 <label className={L}>End</label>
-                <input className={F} value={item.current ? 'Present' : item.endDate}
-                  disabled={item.current}
-                  onChange={(e) => update(item.id, { endDate: e.target.value })}
-                  placeholder="2024" />
+                {item.current ? (
+                  <div className={`${F} cursor-not-allowed text-gray-500 opacity-70`}>Present</div>
+                ) : (
+                  <MonthYearPicker
+                    value={item.endDate}
+                    onChange={(endDate) => update(item.id, { endDate })}
+                    ariaLabel="Work experience end date"
+                  />
+                )}
               </div>
               <label className="col-span-2 inline-flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
                 <input type="checkbox" checked={item.current}
