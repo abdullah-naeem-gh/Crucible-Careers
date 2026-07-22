@@ -32,6 +32,7 @@ import {
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
 import type { CandidateProfile, EmployerCandidateChatTarget, ScreeningStatus } from "@/types/employer/applicant";
 import { hasDedicatedDisplay } from "@/lib/shared/formFieldDisplay";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type EmailAudience = "all" | "shortlisted" | "rejected" | "manual";
 
@@ -113,6 +114,7 @@ const emailTemplates: EmailTemplate[] = [
 
 export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban, onOpenCandidateChat }: JobApplicationsViewProps) {
   const [applicants, setApplicants] = useState<CandidateProfile[]>([]);
+  const [isLoadingApplicants, setIsLoadingApplicants] = useState(true);
   const [selectedApplicant, setSelectedApplicant] = useState<CandidateProfile | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [noteText, setNoteText] = useState("");
@@ -168,13 +170,15 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
   // Load applicants
   useEffect(() => {
     if (!job) return;
+    setIsLoadingApplicants(true);
     fetch(`/api/employer/jobs/${jobId}/applicants`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data: CandidateProfile[]) => {
         setApplicants(data);
         setSelectedApplicant(data[0] || null);
       })
-      .catch((err) => console.error("Failed to load applicants", err));
+      .catch((err) => console.error("Failed to load applicants", err))
+      .finally(() => setIsLoadingApplicants(false));
   }, [jobId, job]);
 
   const patchApplicant = async (applicantId: string, patch: { status?: string; rating?: number | null; note?: string | null }) => {
@@ -740,7 +744,9 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
 
         {/* Scrollable applicant card list */}
         <div className="min-h-0 flex-1 space-y-3 overflow-auto p-5 custom-scrollbar">
-          {filteredApplicants.length > 0 ? (
+          {isLoadingApplicants ? (
+            Array.from({ length: 5 }).map((_, i) => <ApplicantCardSkeleton key={i} />)
+          ) : filteredApplicants.length > 0 ? (
             filteredApplicants.map((applicant) => {
               const score = applicant.atsScore ?? 0;
               const isSelected = selectedApplicant?.id === applicant.id;
@@ -877,7 +883,9 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
 
       {/* ── Right Panel: Candidate Profile details ── */}
       <section className={`${surface} min-h-[38rem] overflow-auto p-6 lg:col-span-4 lg:min-h-0 custom-scrollbar`}>
-        {selectedApplicant ? (
+        {isLoadingApplicants ? (
+          <CandidateDetailSkeleton />
+        ) : selectedApplicant ? (
           <motion.div
             key={selectedApplicant.id}
             initial={{ opacity: 0, x: 8 }}
@@ -1573,6 +1581,58 @@ function AutoCriterionRow({
           className="h-9 w-20 rounded-lg border border-gray-200 bg-white px-2 text-sm font-semibold text-gray-800 outline-none disabled:cursor-not-allowed disabled:opacity-35 focus:border-orange-500/40 dark:border-white/[0.08] dark:bg-[#121212] dark:text-white/70"
         />
         <span className="min-w-[6.5rem] text-xs text-gray-500 dark:text-white/35">{suffix}</span>
+      </div>
+    </div>
+  );
+}
+
+function ApplicantCardSkeleton() {
+  return (
+    <div className="w-full rounded-2xl border border-white/[0.065] bg-[#141414] p-4 shadow-[6px_6px_16px_rgba(0,0,0,0.24)]">
+      <div className="flex items-start gap-4">
+        <Skeleton className="h-12 w-12 shrink-0 rounded-xl" />
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <Skeleton className="h-4 w-32 rounded" />
+            <Skeleton className="h-3.5 w-20 rounded" />
+          </div>
+          <Skeleton className="h-3 w-40 rounded" />
+          <div className="mt-2 flex gap-3">
+            <Skeleton className="h-3 w-24 rounded" />
+            <Skeleton className="h-3 w-28 rounded" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CandidateDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start gap-4 border-b border-white/[0.07] pb-5">
+        <Skeleton className="h-16 w-16 shrink-0 rounded-2xl" />
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <Skeleton className="h-5 w-40 rounded" />
+          <Skeleton className="h-3.5 w-56 rounded" />
+          <Skeleton className="h-5 w-28 rounded-lg" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-start gap-2.5">
+            <Skeleton className="h-5 w-5 shrink-0 rounded" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <Skeleton className="h-2.5 w-14 rounded" />
+              <Skeleton className="h-3.5 w-32 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <Skeleton className="h-24 w-full rounded-2xl" />
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-24 rounded" />
+        <Skeleton className="h-16 w-full rounded" />
       </div>
     </div>
   );
