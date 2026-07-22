@@ -82,6 +82,17 @@ const NavBar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoginMenuOpen, setIsLoginMenuOpen] = useState(false);
   const loginMenuRef = useRef<HTMLDivElement | null>(null);
+  const loginMenuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openLoginMenu = () => {
+    if (loginMenuCloseTimerRef.current) clearTimeout(loginMenuCloseTimerRef.current);
+    setIsLoginMenuOpen(true);
+  };
+
+  const closeLoginMenu = () => {
+    if (loginMenuCloseTimerRef.current) clearTimeout(loginMenuCloseTimerRef.current);
+    loginMenuCloseTimerRef.current = setTimeout(() => setIsLoginMenuOpen(false), 120);
+  };
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(getScrollTop() > 20);
@@ -108,6 +119,11 @@ const NavBar = () => {
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [isLoginMenuOpen]);
+
+  useEffect(() => () => {
+    if (loginMenuCloseTimerRef.current) clearTimeout(loginMenuCloseTimerRef.current);
+  }, []);
+
   const scrollToFAQ = () => {
     document.getElementById("faq-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -217,7 +233,16 @@ const NavBar = () => {
               </motion.button>
             </Link>
 
-            <div ref={loginMenuRef} style={{ position: "relative", zIndex: 60 }}>
+            <div
+              ref={loginMenuRef}
+              style={{ position: "relative", zIndex: 60 }}
+              onPointerEnter={openLoginMenu}
+              onPointerLeave={closeLoginMenu}
+              onFocusCapture={openLoginMenu}
+              onBlurCapture={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeLoginMenu();
+              }}
+            >
               <motion.button
                 style={{
                   position: "relative",
@@ -238,10 +263,10 @@ const NavBar = () => {
                 aria-label="Open sign in options"
                 aria-expanded={isLoginMenuOpen}
                 aria-haspopup="menu"
-                onClick={() => setIsLoginMenuOpen((open) => !open)}
+                onClick={openLoginMenu}
                 initial="rest"
                 whileHover="hover"
-                animate="rest"
+                animate={isLoginMenuOpen ? "hover" : "rest"}
               >
                 <motion.div
                   style={{ position: "absolute", inset: 0, borderRadius: 9999, backgroundColor: "white" }}
