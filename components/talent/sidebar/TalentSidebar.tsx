@@ -8,6 +8,7 @@ import { logout } from '@/lib/shared/auth/actions'
 import { IconBriefcase, IconBuilding, IconFileDescription, IconBookmark, IconUser, IconAward, IconSettings, IconChevronLeft, IconChevronRight, IconLogout, IconMessage } from '@tabler/icons-react'
 import ChatNotificationBell from '@/components/shared/chat/ChatNotificationBell'
 import { subscribeChatChanges, getTotalUnread } from '@/lib/shared/chat/chat.service'
+import { subscribeVerificationChanges, getUnacknowledgedVerificationCount } from '@/lib/talent/services/experienceVerification.service'
 import { Skeleton } from '@/components/ui/Skeleton'
 
 const TAB_ICONS: Record<string, React.ComponentType<any>> = { jobs: IconBriefcase, companies: IconBuilding, applications: IconFileDescription, saved: IconBookmark, profile: IconUser, exams: IconAward, messages: IconMessage, settings: IconSettings }
@@ -56,6 +57,7 @@ export default function TalentSidebar({
   const pathname = usePathname()
   const router = useRouter()
   const [chatUnread, setChatUnread] = useState(unreadMessages)
+  const [verificationUnread, setVerificationUnread] = useState(0)
   const { theme } = useDashboardTheme()
   const isDarkTheme = theme === 'dark'
   const collapseBtnClass = `transition-colors cursor-pointer rounded-full flex items-center justify-center ${
@@ -72,6 +74,12 @@ export default function TalentSidebar({
     const refresh = () => { getTotalUnread('talent').then(setChatUnread) }
     refresh()
     return subscribeChatChanges(refresh)
+  }, [])
+
+  useEffect(() => {
+    const refresh = () => { getUnacknowledgedVerificationCount().then(setVerificationUnread) }
+    refresh()
+    return subscribeVerificationChanges(refresh)
   }, [])
 
   const handleLogout = async (event: React.MouseEvent) => {
@@ -124,6 +132,7 @@ export default function TalentSidebar({
             onOpenMessages={(convId) => {
               if (onTabChange) onTabChange('messages')
             }}
+            onOpenProfile={() => { if (onTabChange) onTabChange('profile') }}
           />
           <DashboardThemeSwitcher />
           <button
@@ -167,7 +176,7 @@ export default function TalentSidebar({
             </div>
           )}
         </div>
-      <nav className={railMode ? 'flex w-full flex-col items-center gap-1.5 text-sm' : 'space-y-1.5 text-sm'}>{renderTab('profile', 'Profile', undefined, profileNeedsSetup ? 'Set-up Now' : undefined)}{renderTab('jobs', 'Jobs', jobCount, undefined, jobCountLoading)}{renderTab('companies', 'Companies')}{renderTab('applications', 'Applications', applicationCount, undefined, applicationCountLoading)}{renderTab('saved', 'Saved', savedCount, undefined, savedCountLoading)}{renderTab('exams', 'Exams & Badges')}{renderTab('messages', 'Messages', chatUnread > 0 ? chatUnread : undefined)}{renderTab('settings', 'Settings')}</nav>
+      <nav className={railMode ? 'flex w-full flex-col items-center gap-1.5 text-sm' : 'space-y-1.5 text-sm'}>{renderTab('profile', 'Profile', verificationUnread > 0 ? verificationUnread : undefined, profileNeedsSetup ? 'Set-up Now' : undefined)}{renderTab('jobs', 'Jobs', jobCount, undefined, jobCountLoading)}{renderTab('companies', 'Companies')}{renderTab('applications', 'Applications', applicationCount, undefined, applicationCountLoading)}{renderTab('saved', 'Saved', savedCount, undefined, savedCountLoading)}{renderTab('exams', 'Exams & Badges')}{renderTab('messages', 'Messages', chatUnread > 0 ? chatUnread : undefined)}{renderTab('settings', 'Settings')}</nav>
       <div className="mt-6 grid grid-cols-2 gap-2 lg:hidden"><Link href={onTabChange ? '#' : '/talent/dashboard/profile'} onClick={(event) => { if (onTabChange) { event.preventDefault(); onTabChange('profile') } }} className="rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-4 py-2.5 text-center text-sm font-medium text-white">Profile</Link><a href="#" onClick={handleLogout} className="rounded-xl border border-gray-200 bg-white/60 px-4 py-2.5 text-center text-sm text-gray-600 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/60">Logout</a></div>
       {expandedReady && <div className="mt-auto hidden rounded-2xl border border-orange-200 bg-gradient-to-br from-[#FF6B00]/10 to-[#FF914D]/10 p-4 dark:border-orange-500/20 dark:from-orange-500/10 dark:to-orange-400/[0.035] lg:block"><div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">Profile Completion</div><div className="my-2 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-white/10"><div className="h-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] transition-all duration-500" style={{ width: `${profileCompletion}%` }} /></div><div className="mb-4 text-xs leading-relaxed text-gray-600 dark:text-white/45">{profileCompletion}% complete. Keep building to stand out!</div><Link href={onTabChange ? '#' : '/talent/dashboard/profile'} onClick={(event) => { if (onTabChange) { event.preventDefault(); onTabChange('profile') } }} className="inline-block rounded-lg bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-3 py-2 text-xs font-medium text-white shadow-[0_8px_20px_rgba(255,107,0,0.2)]">{profileNeedsSetup ? 'Set Up Profile' : 'Update Profile'}</Link></div>}
       <div className={railMode ? 'mt-auto hidden flex-col items-center gap-3 text-xs text-gray-400 dark:text-white/35 lg:flex' : 'mt-4 hidden items-center justify-between text-xs text-gray-400 dark:text-white/35 lg:flex'}>{expandedReady && <Link href="/gateway" className="transition-colors hover:text-gray-700 dark:hover:text-white/70">Gateway</Link>}<a href="#" onClick={handleLogout} title={railMode ? 'Logout' : undefined} className={railMode ? 'grid h-8 w-8 place-items-center rounded-full text-gray-400 transition-colors hover:text-red-800 dark:text-white/42 dark:hover:text-red-300' : 'transition-colors hover:text-red-800 dark:hover:text-red-300'}>{railMode ? <IconLogout size={18} stroke={1.8} /> : 'Logout'}</a></div>

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
+import { createSupabaseAdminClient } from '@/lib/shared/supabase/admin'
+import { snapshotOf } from '@/lib/talent/services/experienceSnapshot'
 import type { TalentProfile } from '@/types/talent/profile'
+
+const normalizeCompany = (s?: string) => (s || '').trim().toLowerCase()
 
 export async function POST(request: NextRequest) {
   try {
@@ -103,29 +107,123 @@ export async function POST(request: NextRequest) {
 
     const profileId = profile.id
 
+    // Snapshot pre-save state needed to decide which experiences should
+    // trigger a fresh employer-verification request, before it's wiped by
+    // the delete-all-then-reinsert below.
+    const { data: previousExperiences } = await supabase
+      .from('talent_experiences')
+      .select('id, company')
+      .eq('profile_id', profileId)
+    const previousCompanyById = new Map((previousExperiences ?? []).map((e) => [e.id, e.company]))
+
+    const { data: existingVerifications } = await supabase
+      .from('talent_experience_verifications')
+      .select('*')
+      .eq('talent_id', user.id)
+    const verificationByExperienceId = new Map((existingVerifications ?? []).map((v) => [v.experience_id, v]))
+
+    const { data: employerNames } = await supabase.from('employer_company_names').select('id, company')
+    const employerIdByName = new Map<string, string>()
+    for (const row of employerNames ?? []) {
+      const key = normalizeCompany(row.company)
+      if (key && !employerIdByName.has(key)) employerIdByName.set(key, row.id)
+    }
+
+    const { data: blacklistRows } = await supabase
+      .from('employer_talent_blacklist')
+      .select('employer_id')
+      .eq('talent_id', user.id)
+    const blacklistedEmployerIds = new Set((blacklistRows ?? []).map((b) => b.employer_id))
+
     // 2. Diff and Upsert Experiences
     // Safer than constructing an `in.(...)` filter from client-provided IDs.
     await supabase.from('talent_experiences').delete().eq('profile_id', profileId)
 
-    if (payload.experience?.length) {
-      const validExperiences = payload.experience.filter(e => e.company?.trim() || e.role?.trim())
-      if (validExperiences.length > 0) {
-        const expRows = validExperiences.map(e => ({
-          id: e.id,
-          profile_id: profileId,
-          company: e.company || 'Unknown Company',
-          role: e.role || 'Unknown Role',
-          location: e.location,
-          start_date: e.startDate,
-          end_date: e.endDate,
-          current: e.current,
-          description: e.description,
-          previous_salary: e.previousSalary,
-          payslip_verified: e.payslipVerified,
-        }))
-        const { error: expError } = await supabase.from('talent_experiences').upsert(expRows)
-        if (expError) console.error('Error upserting experiences:', expError)
+    const validExperiences = (payload.experience ?? []).filter(e => e.company?.trim() || e.role?.trim())
+
+    if (validExperiences.length > 0) {
+      const expRows = validExperiences.map(e => ({
+        id: e.id,
+        profile_id: profileId,
+        company: e.company || 'Unknown Company',
+        role: e.role || 'Unknown Role',
+        location: e.location,
+        start_date: e.startDate,
+        end_date: e.endDate,
+        current: e.current,
+        description: e.description,
+        previous_salary: e.previousSalary,
+      }))
+      const { error: expError } = await supabase.from('talent_experiences').upsert(expRows)
+      if (expError) console.error('Error upserting experiences:', expError)
+    }
+
+    // 2b. Recompute experience-verification requests. talent_experiences was
+    // just delete-all-then-reinserted above, which cascade-deletes every
+    // talent_experience_verifications row tied to it (ON DELETE CASCADE) —
+    // so untouched requests (pending/verified/rejected-unchanged) must be
+    // explicitly rewritten here too, not just the ones that change state.
+    if (validExperiences.length > 0) {
+      const admin = createSupabaseAdminClient()
+      const rowsToInsert: Record<string, unknown>[] = []
+
+      for (const e of validExperiences) {
+        const prevCompany = previousCompanyById.get(e.id)
+        const isNewId = prevCompany === undefined
+        const companyChanged = !isNewId && normalizeCompany(prevCompany) !== normalizeCompany(e.company)
+        const employerId = employerIdByName.get(normalizeCompany(e.company))
+        const existing = verificationByExperienceId.get(e.id)
+        const isBlacklisted = !!employerId && blacklistedEmployerIds.has(employerId)
+
+        if (employerId && !isBlacklisted && (isNewId || companyChanged || !existing)) {
+          // First contact with this employer for this experience row — fresh pending request.
+          rowsToInsert.push({
+            id: crypto.randomUUID(),
+            experience_id: e.id,
+            talent_id: user.id,
+            employer_id: employerId,
+            status: 'pending',
+            rejection_reason: null,
+            snapshot: snapshotOf(e),
+            requested_at: new Date().toISOString(),
+            responded_at: null,
+            talent_acknowledged_at: null,
+          })
+        } else if (companyChanged && existing && (!employerId || isBlacklisted)) {
+          // Moved away from a previously-registered employer to an
+          // unregistered/blacklisted one — drop the stale request entirely.
+        } else if (existing && !isNewId && !companyChanged) {
+          // Company is unchanged — only the company field auto-(re)sends a
+          // request. Edits to any other field (role, dates, description,
+          // etc.) never auto-send, including after a rejection; the talent
+          // must explicitly hit "Resend" for that. Preserve as-is, whatever
+          // the current status — crucially INCLUDING the original `id`,
+          // since the delete-all-then-reinsert below would otherwise mint a
+          // fresh id on every save and orphan any `verificationRequestId`
+          // the client is already holding (breaking the Resend button).
+          rowsToInsert.push({
+            id: existing.id,
+            experience_id: existing.experience_id,
+            talent_id: existing.talent_id,
+            employer_id: existing.employer_id,
+            status: existing.status,
+            rejection_reason: existing.rejection_reason,
+            snapshot: existing.snapshot,
+            requested_at: existing.requested_at,
+            responded_at: existing.responded_at,
+            talent_acknowledged_at: existing.talent_acknowledged_at,
+          })
+        }
       }
+
+      await admin.from('talent_experience_verifications').delete().eq('talent_id', user.id)
+      if (rowsToInsert.length > 0) {
+        const { error: verError } = await admin.from('talent_experience_verifications').insert(rowsToInsert)
+        if (verError) console.error('Error upserting experience verifications:', verError)
+      }
+    } else {
+      const admin = createSupabaseAdminClient()
+      await admin.from('talent_experience_verifications').delete().eq('talent_id', user.id)
     }
 
     // 3. Diff and Upsert Educations

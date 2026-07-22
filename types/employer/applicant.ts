@@ -26,6 +26,7 @@ export interface CandidateExperience {
   endDate: string;
   current?: boolean;
   description?: string;
+  verificationStatus?: "pending" | "verified" | "rejected";
 }
 
 export interface CandidateEducation {

@@ -1124,7 +1124,14 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                           {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
                         </span>
                       </div>
-                      <div className="text-xs text-white/50 font-medium mt-0.5">{exp.company}</div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-xs text-white/50 font-medium">{exp.company}</span>
+                        {exp.verificationStatus === 'verified' && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-300">
+                            <IconCheck size={10} /> Verified
+                          </span>
+                        )}
+                      </div>
                       {exp.description && (
                         <p className="text-xs text-white/40 mt-2 leading-relaxed whitespace-pre-line">
                           {exp.description}

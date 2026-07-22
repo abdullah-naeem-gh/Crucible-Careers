@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
+import { snapshotOf, snapshotsEqual, type ExperienceSnapshot } from '@/lib/talent/services/experienceSnapshot'
 import type { TalentProfile, TalentExperience, TalentEducation, TalentProject } from '@/types/talent/profile'
 
 export async function GET(request: NextRequest) {
@@ -47,6 +48,12 @@ export async function GET(request: NextRequest) {
       }, { status: 200 })
     }
 
+    const { data: verifications } = await supabase
+      .from('talent_experience_verifications')
+      .select('id, experience_id, status, rejection_reason, requested_at, snapshot')
+      .eq('talent_id', user.id)
+    const verificationByExperienceId = new Map((verifications ?? []).map((v) => [v.experience_id, v]))
+
     // Map database relations back to TalentProfile interface
     const mappedProfile: TalentProfile = {
       id: profile.id,
@@ -73,18 +80,35 @@ export async function GET(request: NextRequest) {
       resumeUrl: profile.resume_url || '',
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
-      experience: (profile.talent_experiences || []).map((e: any): TalentExperience => ({
-        id: e.id,
-        company: e.company,
-        role: e.role,
-        location: e.location || '',
-        startDate: e.start_date || '',
-        endDate: e.end_date || '',
-        current: e.current || false,
-        description: e.description || '',
-        previousSalary: e.previous_salary || '',
-        payslipVerified: e.payslip_verified || false,
-      })),
+      experience: (profile.talent_experiences || []).map((e: any): TalentExperience => {
+        const verification = verificationByExperienceId.get(e.id)
+        const canResendAfterEdit = verification?.status === 'rejected'
+          ? !snapshotsEqual(verification.snapshot as ExperienceSnapshot, snapshotOf({
+              role: e.role,
+              location: e.location,
+              startDate: e.start_date,
+              endDate: e.end_date,
+              current: e.current,
+              description: e.description,
+            }))
+          : undefined
+        return {
+          id: e.id,
+          company: e.company,
+          role: e.role,
+          location: e.location || '',
+          startDate: e.start_date || '',
+          endDate: e.end_date || '',
+          current: e.current || false,
+          description: e.description || '',
+          previousSalary: e.previous_salary || '',
+          verificationStatus: verification?.status || 'none',
+          verificationRequestId: verification?.id || undefined,
+          verificationRejectionReason: verification?.rejection_reason || undefined,
+          verificationRequestedAt: verification?.requested_at || undefined,
+          verificationCanResend: canResendAfterEdit,
+        }
+      }),
       education: (profile.talent_educations || []).map((e: any): TalentEducation => ({
         id: e.id,
         school: e.school,

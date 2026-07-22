@@ -23,6 +23,9 @@ import { calculateCompletionPercentage } from '@/lib/talent/services/profile.ser
 import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import LocationPicker from '@/components/ui/LocationPicker'
+import CompanyAutocomplete from '@/components/talent/shared/CompanyAutocomplete'
+import ExperienceVerificationBadge from '@/components/talent/shared/ExperienceVerificationBadge'
+import { acknowledgeVerifications } from '@/lib/talent/services/experienceVerification.service'
 import { Skeleton } from '@/components/ui/Skeleton'
 
 interface ProfileTabProps {
@@ -48,7 +51,6 @@ const newExperience = (): TalentExperience => ({
   current: false,
   description: '',
   previousSalary: '',
-  payslipVerified: false,
 })
 
 const newEducation = (): TalentEducation => ({
@@ -350,6 +352,16 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
                       <div>
                         <h4 className="text-sm font-semibold text-gray-950 dark:text-white">{item.role || 'Role title'}</h4>
                         <div className="mt-1 text-xs font-medium text-[#FF6B00]">{item.company || 'Company'}</div>
+                        <div className="mt-1.5">
+                          <ExperienceVerificationBadge
+                            status={item.verificationStatus}
+                            company={item.company}
+                            verificationRequestId={item.verificationRequestId}
+                            rejectionReason={item.verificationRejectionReason}
+                            requestedAt={item.verificationRequestedAt}
+                            canResendAfterEdit={item.verificationCanResend}
+                          />
+                        </div>
                       </div>
                       <span className="text-[11px] text-gray-500 dark:text-white/35">{item.startDate || 'Start'} - {item.current ? 'Present' : item.endDate || 'End'}</span>
                     </div>
@@ -496,7 +508,6 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
   const [pendingProfilePhoto, setPendingProfilePhoto] = useState<string | null>(null)
   const [pendingProjectImage, setPendingProjectImage] = useState<{ projectId: string; imageSrc: string } | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [verifyingId, setVerifyingId] = useState<string | null>(null)
   const supabase = createBrowserSupabaseClient()
 
   const uploadToStorage = async (fileOrBlob: File | Blob, pathPrefix: string, originalName?: string) => {
@@ -529,6 +540,12 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
   useEffect(() => {
     setFormState(profile)
   }, [profile])
+
+  // Clears the sidebar's unread verification badge once the talent has
+  // actually seen their resolved (verified/rejected) requests here.
+  useEffect(() => {
+    acknowledgeVerifications()
+  }, [])
 
   const connectGithub = async () => {
     setGithubVerifyError('')
@@ -610,14 +627,6 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
   const updateProject = (id: string, updates: Partial<TalentProject>) => {
     if (!formState) return
     set('projects', formState.projects.map((item) => (item.id === id ? { ...item, ...updates } : item)))
-  }
-
-  const handleVerify = (id: string) => {
-    setVerifyingId(id)
-    setTimeout(() => {
-      updateExperience(id, { payslipVerified: true })
-      setVerifyingId(null)
-    }, 1200)
   }
 
   const addExperience = () => {
@@ -763,14 +772,28 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
                 <FormSection title="Experience" highlight={missingProfileSections.includes('Experience')} action={<button type="button" onClick={addExperience} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-[#FF6B00] hover:bg-orange-100 dark:border-orange-500/20 dark:bg-orange-500/10 dark:hover:bg-orange-500/15"><IconPlus size={14} /> Add</button>}>
                   <div className="space-y-4">
                     {formState.experience.map((item) => (
-                      <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] dark:border-white/[0.06] dark:bg-white/[0.025]">
-                        <div className="mb-3 flex items-center justify-between">
+                      <div key={item.id} className={`rounded-xl border p-4 shadow-[0_8px_20px_rgba(15,23,42,0.035)] ${
+                        item.verificationStatus === 'rejected'
+                          ? 'border-red-400 bg-red-50/30 dark:border-red-500/40 dark:bg-red-500/[0.04]'
+                          : 'border-gray-200 bg-white dark:border-white/[0.06] dark:bg-white/[0.025]'
+                      }`}>
+                        <div className="mb-3 flex items-center justify-between gap-2">
                           <span className="text-xs font-semibold text-gray-500 dark:text-white/35">Work entry</span>
-                          <button type="button" onClick={() => set('experience', formState.experience.filter((exp) => exp.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                          <div className="flex items-center gap-2">
+                            <ExperienceVerificationBadge
+                              status={item.verificationStatus}
+                              company={item.company}
+                              verificationRequestId={item.verificationRequestId}
+                              rejectionReason={item.verificationRejectionReason}
+                              requestedAt={item.verificationRequestedAt}
+                              canResendAfterEdit={item.verificationCanResend}
+                            />
+                            <button type="button" onClick={() => set('experience', formState.experience.filter((exp) => exp.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
+                          </div>
                         </div>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           <Field label="Role"><input className={fieldClass} value={item.role} onChange={(e) => updateExperience(item.id, { role: e.target.value })} /></Field>
-                          <Field label="Company"><input className={fieldClass} value={item.company} onChange={(e) => updateExperience(item.id, { company: e.target.value })} /></Field>
+                          <Field label="Company"><CompanyAutocomplete value={item.company} onChange={(v) => updateExperience(item.id, { company: v })} inputClassName={fieldClass} /></Field>
                           <Field label="Location"><input className={fieldClass} value={item.location} onChange={(e) => updateExperience(item.id, { location: e.target.value })} /></Field>
                           <Field label="Start"><input className={fieldClass} value={item.startDate} onChange={(e) => updateExperience(item.id, { startDate: e.target.value })} /></Field>
                           <Field label="End"><input className={fieldClass} value={item.current ? 'Present' : item.endDate} disabled={item.current} onChange={(e) => updateExperience(item.id, { endDate: e.target.value })} /></Field>
@@ -778,38 +801,8 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
                             <input type="checkbox" checked={item.current} onChange={(e) => updateExperience(item.id, { current: e.target.checked, endDate: e.target.checked ? '' : item.endDate })} className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#FF6B00] focus:ring-orange-500" />
                             Currently working here / Present
                           </label>
-                          <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-gray-100 pt-3 mt-1 dark:border-white/5">
-                            <div>
-                              <Field label="Previous Salary"><input className={fieldClass} value={item.previousSalary || ''} onChange={(e) => updateExperience(item.id, { previousSalary: e.target.value })} placeholder="e.g. $80,000 / yr" /></Field>
-                            </div>
-                            <div className="flex flex-col justify-end">
-                              <label className={labelClass}>Verification status</label>
-                              {item.payslipVerified ? (
-                                <div className="flex items-center gap-2 h-[46px] px-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50 text-emerald-700 text-sm font-semibold dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
-                                  <IconCheck size={18} className="text-emerald-600 dark:text-emerald-400" />
-                                  <span>Verified with payslips</span>
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  disabled={verifyingId === item.id}
-                                  onClick={() => handleVerify(item.id)}
-                                  className="flex items-center justify-center gap-2 h-[46px] w-full rounded-xl border border-dashed border-orange-300 bg-orange-50/30 text-[#FF6B00] hover:bg-orange-50 hover:border-orange-400 text-xs font-semibold transition-all disabled:opacity-75 dark:border-orange-500/30 dark:bg-orange-500/5 dark:hover:bg-orange-500/10 dark:hover:border-orange-500/40"
-                                >
-                                  {verifyingId === item.id ? (
-                                    <>
-                                      <IconLoader2 size={16} className="animate-spin" />
-                                      <span>Uploading & verifying...</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <IconFileText size={16} />
-                                      <span>Verify with payslips</span>
-                                    </>
-                                  )}
-                                </button>
-                              )}
-                            </div>
+                          <div className="sm:col-span-2 border-t border-gray-100 pt-3 mt-1 dark:border-white/5">
+                            <Field label="Previous Salary"><input className={fieldClass} value={item.previousSalary || ''} onChange={(e) => updateExperience(item.id, { previousSalary: e.target.value })} placeholder="e.g. $80,000 / yr" /></Field>
                           </div>
                           <div className="sm:col-span-2"><Field label="Impact"><textarea className={fieldClass} rows={3} value={item.description} onChange={(e) => updateExperience(item.id, { description: e.target.value })} placeholder="Describe outcomes, ownership, and measurable impact." /></Field></div>
                         </div>

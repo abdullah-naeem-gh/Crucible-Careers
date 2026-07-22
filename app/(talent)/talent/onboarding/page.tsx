@@ -235,7 +235,7 @@ function OnboardingContent() {
       </div>
       <div className="absolute top-5 right-5 z-30">
         <button
-          onClick={() => router.push('/talent/dashboard?tab=jobs')}
+          onClick={() => router.push('/talent/dashboard?tab=jobs&onboarded=1')}
           className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
         >
           Skip for now →
