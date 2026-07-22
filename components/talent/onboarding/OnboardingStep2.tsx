@@ -8,6 +8,7 @@ const F = 'w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-3 text
 
 export interface Step2Data {
   headline: string
+  phone: string
   location: string
   languagesStr: string
 }
@@ -56,6 +57,20 @@ export default function OnboardingStep2({ data, onChange }: Props) {
           maxLength={100}
         />
         <p className="mt-1 text-right text-[10px] text-gray-400">{data.headline.length}/100</p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.28 }}
+      >
+        <label className={L}>Phone number</label>
+        <input
+          className={F}
+          value={data.phone}
+          onChange={(e) => set('phone', e.target.value)}
+          placeholder="+1 (555) 000-0000"
+        />
       </motion.div>
 
       <motion.div

@@ -112,6 +112,7 @@ function OnboardingContent() {
   // ── Step 2: Basics ──
   const [s2, setS2] = useState<Step2Data>({
     headline: '',
+    phone: '',
     location: '',
     languagesStr: 'English',
   })
@@ -172,6 +173,7 @@ function OnboardingContent() {
         lastName: '', // Handled by backend from auth session
         headline: s2.headline,
         email: '', // Handled by backend from auth session
+        phone: s2.phone,
         location: s2.location,
         languages: s2.languagesStr.split(',').map((l) => l.trim()).filter(Boolean),
         availability: s3.availability,
@@ -235,7 +237,7 @@ function OnboardingContent() {
       </div>
       <div className="absolute top-5 right-5 z-30">
         <button
-          onClick={() => router.push('/talent/dashboard?tab=jobs')}
+          onClick={() => router.push('/talent/dashboard?tab=jobs&onboarded=1')}
           className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
         >
           Skip for now →

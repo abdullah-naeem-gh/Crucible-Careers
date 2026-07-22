@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
-import type { ApplicantPipelineStage, CandidateProfile, ScreeningStatus } from '@/types/employer/applicant'
+import type { ApplicantPipelineStage, CandidateExperience, CandidateProfile, ScreeningStatus } from '@/types/employer/applicant'
 
 function toScreeningStatus(stage: ApplicantPipelineStage): ScreeningStatus | undefined {
   if (stage === 'applied') return undefined
@@ -54,7 +54,8 @@ export async function GET(
       appliedDate: new Date(a.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       email: snap.email || '',
       phone: snap.phone || '',
-      bio: a.cover_letter || snap.overview || '',
+      bio: snap.overview || '',
+      coverLetter: a.cover_letter || undefined,
       experienceYears: snap.experienceYears || 0,
       skills: snap.skills || [],
       education: snap.education || '',
@@ -69,11 +70,32 @@ export async function GET(
       rating: a.rating ?? undefined,
       note: a.note ?? undefined,
       atsScore: a.ats_score ?? undefined,
-      experience: snap.experience || [],
+      experience: (snap.experience || []) as CandidateExperience[],
       educationList: snap.educationList || [],
       projects: snap.projects || [],
     }
   })
+
+  // Attach verification status to each candidate's work-history entries, and
+  // drop rejected ones entirely — they must not reach the employer at all,
+  // not just be hidden client-side.
+  const allExperienceIds = Array.from(new Set(result.flatMap((c) => c.experience?.map((e) => e.id) ?? [])))
+
+  if (allExperienceIds.length > 0) {
+    const { data: verifications } = await supabase
+      .from('talent_experience_verifications')
+      .select('experience_id, status')
+      .eq('employer_id', user.id)
+      .in('experience_id', allExperienceIds)
+
+    const statusByExperienceId = new Map((verifications ?? []).map((v) => [v.experience_id, v.status]))
+
+    for (const candidate of result) {
+      candidate.experience = (candidate.experience ?? [])
+        .map((exp) => ({ ...exp, verificationStatus: statusByExperienceId.get(exp.id) as CandidateExperience['verificationStatus'] }))
+        .filter((exp) => exp.verificationStatus !== 'rejected')
+    }
+  }
 
   return NextResponse.json(result)
 }

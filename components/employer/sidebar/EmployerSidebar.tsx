@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { DashboardThemeSwitcher, useDashboardTheme } from "@/components/shared/theme/DashboardThemeProvider";
 import ChatNotificationBell from "@/components/shared/chat/ChatNotificationBell";
 import { subscribeChatChanges, getTotalUnread } from "@/lib/shared/chat/chat.service";
+import { subscribeVerificationChanges, getPendingExperienceVerificationCount } from "@/lib/employer/services/experienceVerification.service";
 import { logout } from "@/lib/shared/auth/actions";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -21,9 +22,10 @@ import {
   IconLogout,
   IconMessage,
   IconTrophy,
+  IconShieldCheck,
 } from "@tabler/icons-react";
 
-type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking";
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking" | "verification";
 
 interface EmployerSidebarProps {
   activeTab: EmployerTab;
@@ -45,6 +47,7 @@ const tabs: Array<{ key: EmployerTab; label: string }> = [
   { key: "applicants", label: "All Applicants" },
   { key: "analytics", label: "Analytics" },
   { key: "messages", label: "Messages" },
+  { key: "verification", label: "Verification Requests" },
   { key: "ranking", label: "My Ranking" },
 ];
 
@@ -56,6 +59,7 @@ const TAB_ICONS: Record<EmployerTab, React.ComponentType<any>> = {
   profile: IconBuilding,
   messages: IconMessage,
   ranking: IconTrophy,
+  verification: IconShieldCheck,
 };
 
 export default function EmployerSidebar({
@@ -72,6 +76,7 @@ export default function EmployerSidebar({
 }: EmployerSidebarProps) {
   const [showNoJobsPrompt, setShowNoJobsPrompt] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
+  const [verificationPending, setVerificationPending] = useState(0);
   const router = useRouter();
   const { theme } = useDashboardTheme();
   const isDarkTheme = theme === "dark";
@@ -87,6 +92,12 @@ export default function EmployerSidebar({
     const refresh = () => { getTotalUnread('employer').then(setChatUnread) }
     refresh()
     return subscribeChatChanges(refresh)
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => { getPendingExperienceVerificationCount().then(setVerificationPending) }
+    refresh()
+    return subscribeVerificationChanges(refresh)
   }, []);
 
   const handleLogout = async (event: React.MouseEvent) => {
@@ -181,6 +192,7 @@ export default function EmployerSidebar({
             const count = tab.key === "jobs" ? jobCount
               : tab.key === "overview" || tab.key === "applicants" ? applicationCount
               : tab.key === "messages" ? (chatUnread > 0 ? chatUnread : null)
+              : tab.key === "verification" ? (verificationPending > 0 ? verificationPending : null)
               : null;
             const IconComponent = TAB_ICONS[tab.key];
 

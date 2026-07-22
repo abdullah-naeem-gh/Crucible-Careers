@@ -222,24 +222,30 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
   const filtered = useMemo(() => {
     const q = query.toLowerCase()
 
-    return jobs.filter(j => {
-      const matchesQuery = !q || (
-        j.title.toLowerCase().includes(q) ||
-        j.company.toLowerCase().includes(q) ||
-        (j.location ?? '').toLowerCase().includes(q) ||
-        j.tags.some(t => t.toLowerCase().includes(q))
-      )
-      const matchesType = filters.jobTypes.length === 0 || (!!j.type && filters.jobTypes.includes(j.type))
-      const matchesWorkMode = filters.workModes.length === 0 || (!!j.locationType && filters.workModes.includes(j.locationType))
-      const normalizedLocation = (j.location ?? '').toLowerCase()
-      const matchesLocation = filters.locations.length === 0 || filters.locations.some(location => normalizedLocation.includes(location.toLowerCase()))
-      const matchesIndustry = matchesTagFilter(j.tags, filters.industries)
-      const matchesSeniority = matchesTagFilter(j.tags, filters.seniorityLevels)
-      const matchesSalary = matchesSalaryRange(j.salary, filters.salaryRange)
+    const isFeatured = (j: ScrapedJob) => !!j.employerId && featuredCompanies.has(j.employerId)
 
-      return matchesQuery && matchesType && matchesWorkMode && matchesLocation && matchesIndustry && matchesSeniority && matchesSalary
-    })
-  }, [jobs, query, filters])
+    return jobs
+      .filter(j => {
+        const matchesQuery = !q || (
+          j.title.toLowerCase().includes(q) ||
+          j.company.toLowerCase().includes(q) ||
+          (j.location ?? '').toLowerCase().includes(q) ||
+          j.tags.some(t => t.toLowerCase().includes(q))
+        )
+        const matchesType = filters.jobTypes.length === 0 || (!!j.type && filters.jobTypes.includes(j.type))
+        const matchesWorkMode = filters.workModes.length === 0 || (!!j.locationType && filters.workModes.includes(j.locationType))
+        const normalizedLocation = (j.location ?? '').toLowerCase()
+        const matchesLocation = filters.locations.length === 0 || filters.locations.some(location => normalizedLocation.includes(location.toLowerCase()))
+        const matchesIndustry = matchesTagFilter(j.tags, filters.industries)
+        const matchesSeniority = matchesTagFilter(j.tags, filters.seniorityLevels)
+        const matchesSalary = matchesSalaryRange(j.salary, filters.salaryRange)
+
+        return matchesQuery && matchesType && matchesWorkMode && matchesLocation && matchesIndustry && matchesSeniority && matchesSalary
+      })
+      // Featured jobs surface first; stable sort preserves the existing
+      // newest-first order within each group.
+      .sort((a, b) => Number(isFeatured(b)) - Number(isFeatured(a)))
+  }, [jobs, query, filters, featuredCompanies])
 
   const selectedJob = filtered.find(j => j._id === selectedJobId) ?? filtered[0] ?? null
 

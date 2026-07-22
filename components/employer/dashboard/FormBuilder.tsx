@@ -39,6 +39,7 @@ const SEMANTIC_TYPES: Array<{ value: SemanticType; label: string }> = [
   { value: "phone", label: "Candidate Phone" },
   { value: "location", label: "Candidate Location" },
   { value: "experience_years", label: "Years of Experience" },
+  { value: "education", label: "Candidate Education" },
   { value: "skills", label: "Candidate Skills/Keywords" },
   { value: "resume", label: "Resume/CV File" },
   { value: "cover_letter", label: "Cover Letter" },
