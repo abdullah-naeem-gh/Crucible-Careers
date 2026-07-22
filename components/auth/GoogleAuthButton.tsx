@@ -29,7 +29,7 @@ export default function GoogleAuthButton({ portal, isDarkTheme = false, onError 
     <div className="w-full">
       <div className="flex items-center gap-3 my-4">
         <div className={`flex-1 h-px ${isDarkTheme ? 'bg-white/20' : 'bg-gray-200'}`} />
-        <span className={`text-xs ${isDarkTheme ? 'text-white/50' : 'text-gray-400'}`}>or continue with</span>
+        <span className={`whitespace-nowrap text-xs ${isDarkTheme ? 'text-white/50' : 'text-gray-400'}`}>or continue with</span>
         <div className={`flex-1 h-px ${isDarkTheme ? 'bg-white/20' : 'bg-gray-200'}`} />
       </div>
 
@@ -39,7 +39,7 @@ export default function GoogleAuthButton({ portal, isDarkTheme = false, onError 
         disabled={isLoading}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className={`w-full py-3 px-6 rounded-lg font-semibold text-sm flex items-center justify-center gap-3 border transition-all ${
+        className={`flex w-full items-center justify-center gap-3 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all sm:px-6 sm:py-3 ${
           isLoading ? 'cursor-not-allowed opacity-60' : ''
         } ${
           isDarkTheme

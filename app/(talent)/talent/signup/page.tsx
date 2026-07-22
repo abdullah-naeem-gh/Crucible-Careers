@@ -33,9 +33,9 @@ export default function TalentSignUp() {
   }
 
   return (
-    <main className="min-h-screen w-full relative overflow-hidden">
+    <main className="relative h-dvh w-full overflow-x-clip overflow-y-auto">
       {/* Background */}
-      <div className="absolute inset-0 w-full h-full z-0">
+      <div className="fixed inset-0 z-0 h-full w-full">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-gray-50" />
         {/* Soft orbs */}
         <div className="absolute inset-0 opacity-30">
@@ -54,27 +54,33 @@ export default function TalentSignUp() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex flex-col h-screen px-6">
+      <div className="relative z-10 flex min-h-dvh flex-col px-3 sm:px-6">
         {/* Navigation */}
-        <nav className="relative z-20 py-4">
+        <nav className="relative z-20 flex flex-wrap items-center justify-between gap-3 py-3 sm:py-4">
           <Link href="/gateway" className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Home
           </Link>
+          <Link
+            href="/employer/signup"
+            className="rounded-full border border-gray-200 bg-white/80 px-3 py-2 text-xs font-medium text-gray-700 shadow-sm backdrop-blur transition-colors hover:border-[#FF6B00] hover:text-[#FF6B00] sm:px-4 sm:text-sm"
+          >
+            Employer Sign Up
+          </Link>
         </nav>
 
         {/* Content */}
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex flex-1 items-start justify-center py-4 sm:py-6 lg:items-center">
         <div className="w-full max-w-5xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-8 items-center h-full">
+          <div className="grid grid-cols-1 items-center gap-6 sm:gap-8 lg:grid-cols-2">
             {/* Left Side - Content */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-center lg:text-left flex flex-col justify-center h-full"
+              className="order-2 flex flex-col justify-center text-center lg:order-1 lg:text-left"
             >
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -92,7 +98,7 @@ export default function TalentSignUp() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight"
+                className="mb-3 text-2xl font-bold leading-tight text-gray-900 sm:text-3xl lg:mb-4 lg:text-4xl"
               >
                 Join Our Elite<br />
                 <span className="text-[#FF6B00]">Talent Pool</span>
@@ -102,7 +108,7 @@ export default function TalentSignUp() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.6 }}
-                className="text-base text-gray-600 mb-6 leading-relaxed"
+                className="mb-4 text-sm leading-relaxed text-gray-600 sm:text-base lg:mb-6"
               >
                 Get matched with top opportunities through our rigorous certification process. 
                 No more cold applications — just direct introductions to hiring managers.
@@ -113,7 +119,7 @@ export default function TalentSignUp() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.8 }}
-                className="space-y-3 mb-6"
+                className="mb-4 space-y-3 lg:mb-6"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-5 h-5 bg-[#FF6B00] rounded-full flex items-center justify-center">
@@ -146,7 +152,7 @@ export default function TalentSignUp() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 1.0 }}
-                className="grid grid-cols-3 gap-4"
+                className="grid grid-cols-3 gap-2 sm:gap-4"
               >
                 <div className="text-center">
                   <div className="text-xl font-bold text-[#FF6B00]">95%</div>
@@ -168,9 +174,9 @@ export default function TalentSignUp() {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20 flex flex-col justify-center"
+              className="order-1 flex min-w-0 flex-col justify-center rounded-xl border border-white/20 bg-white/80 p-4 shadow-xl backdrop-blur-sm sm:rounded-2xl sm:p-6 lg:order-2"
             >
-              <div className="mb-6 text-center">
+              <div className="mb-4 text-center sm:mb-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-1">Create Your Account</h2>
                 <p className="text-gray-600 text-sm">Join thousands of certified professionals</p>
               </div>
@@ -188,7 +194,7 @@ export default function TalentSignUp() {
                 onGoogleError={setError}
               />
 
-              <div className="mt-6 text-center">
+              <div className="mt-4 text-center sm:mt-6">
                                   <p className="text-gray-600 text-sm">
                     Already have an account?{' '}
                     <Link href="/talent/login" className="text-[#FF6B00] hover:underline font-medium">

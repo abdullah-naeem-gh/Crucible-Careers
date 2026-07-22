@@ -1,8 +1,9 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { IconPlus, IconBrandLinkedin, IconBrandGithub, IconWorld, IconVideo } from '@tabler/icons-react'
+import { IconPlus, IconBrandLinkedin, IconBrandGithub, IconWorld, IconVideo, IconCheck } from '@tabler/icons-react'
 import type { TalentProject } from '@/types/talent/profile'
+import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
 
 const L = 'mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-gray-400'
 const F = 'w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 transition-all'
@@ -21,6 +22,7 @@ export interface Step7Data {
   github: string
   portfolio: string
   introVideoUrl: string
+  githubVerifiedUsername?: string
 }
 
 interface Props {
@@ -37,6 +39,19 @@ export default function OnboardingStep7({ data, onChange }: Props) {
 
   const removeProject = (id: string) =>
     set('projects', data.projects.filter((p) => p.id !== id))
+
+  const connectGithub = async () => {
+    const supabase = createBrowserSupabaseClient()
+    const { data: resData, error } = await supabase.auth.linkIdentity({
+      provider: 'github',
+      options: { redirectTo: `${window.location.origin}/api/auth/callback?next=/talent/onboarding` },
+    })
+    if (error) {
+      console.error('GitHub verify error:', error.message)
+    } else if (resData?.url) {
+      window.location.href = resData.url
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -64,27 +79,48 @@ export default function OnboardingStep7({ data, onChange }: Props) {
       {/* Links */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
         <label className={L}>Links</label>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="relative">
-            <IconBrandLinkedin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
-            <input className={F + ' pl-8'} value={data.linkedin}
-              onChange={(e) => set('linkedin', e.target.value)}
-              placeholder="linkedin.com/in/..." />
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative">
+              <IconBrandLinkedin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none" />
+              <input className={F + ' pl-8'} value={data.linkedin}
+                onChange={(e) => set('linkedin', e.target.value)}
+                placeholder="linkedin.com/in/..." />
+            </div>
+            <div className="relative">
+              <IconWorld size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#FF6B00] pointer-events-none" />
+              <input className={F + ' pl-8'} value={data.portfolio}
+                onChange={(e) => set('portfolio', e.target.value)}
+                placeholder="your-site.com" />
+            </div>
           </div>
-          <div className="relative">
-            <IconBrandGithub size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
-            <input className={F + ' pl-8'} value={data.github}
-              onChange={(e) => set('github', e.target.value)}
-              placeholder="github.com/..." />
+
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <IconBrandGithub size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none z-10" />
+              <input className={F + ' pl-8'} value={data.github}
+                onChange={(e) => set('github', e.target.value)}
+                placeholder="github.com/..." />
+            </div>
+            {data.githubVerifiedUsername ? (
+              <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-xs font-semibold text-emerald-700">
+                <IconCheck size={14} />
+                <span>Verified @{data.githubVerifiedUsername}</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={connectGithub}
+                className="flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-dashed border-orange-300 bg-orange-50/50 px-3.5 py-3 text-xs font-semibold text-[#FF6B00] transition-all hover:border-orange-400 hover:bg-orange-100"
+              >
+                <IconBrandGithub size={15} />
+                <span>Verify with GitHub</span>
+              </button>
+            )}
           </div>
+
           <div className="relative">
-            <IconWorld size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#FF6B00]" />
-            <input className={F + ' pl-8'} value={data.portfolio}
-              onChange={(e) => set('portfolio', e.target.value)}
-              placeholder="your-site.com" />
-          </div>
-          <div className="relative">
-            <IconVideo size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#FF6B00]" />
+            <IconVideo size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#FF6B00] pointer-events-none" />
             <input className={F + ' pl-8'} value={data.introVideoUrl}
               onChange={(e) => set('introVideoUrl', e.target.value)}
               placeholder="Loom or YouTube link" />
