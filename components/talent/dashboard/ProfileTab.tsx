@@ -360,6 +360,7 @@ function ProfilePreview({ profile }: { profile: TalentProfile }) {
                             rejectionReason={item.verificationRejectionReason}
                             requestedAt={item.verificationRequestedAt}
                             canResendAfterEdit={item.verificationCanResend}
+                            isBlacklisted={item.verificationBlacklisted}
                           />
                         </div>
                       </div>
@@ -744,6 +745,7 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
                     <Field label="First name" required><input className={fieldClass} value={formState.firstName} onChange={(e) => set('firstName', e.target.value)} /></Field>
                     <Field label="Last name" required><input className={fieldClass} value={formState.lastName} onChange={(e) => set('lastName', e.target.value)} /></Field>
                     <div className="sm:col-span-2"><Field label="Email" required><input type="email" className={fieldClass + " disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:dark:bg-white/5"} value={formState.email} disabled onChange={(e) => set('email', e.target.value)} /></Field></div>
+                    <div className="sm:col-span-2"><Field label="Phone number"><input className={fieldClass} value={formState.phone || ''} onChange={(e) => set('phone', e.target.value)} placeholder="+1 (555) 000-0000" /></Field></div>
                     <div className="sm:col-span-2"><Field label="Headline" required><input className={fieldClass} value={formState.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Frontend engineer building polished SaaS apps" /></Field></div>
                     <div className="sm:col-span-2">
                       <Field label="Location">
@@ -787,6 +789,7 @@ export default function ProfileTab({ profile, onProfileChange, isLoading = false
                               rejectionReason={item.verificationRejectionReason}
                               requestedAt={item.verificationRequestedAt}
                               canResendAfterEdit={item.verificationCanResend}
+                              isBlacklisted={item.verificationBlacklisted}
                             />
                             <button type="button" onClick={() => set('experience', formState.experience.filter((exp) => exp.id !== item.id))} className="text-xs font-medium text-red-500">Remove</button>
                           </div>

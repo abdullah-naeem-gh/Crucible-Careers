@@ -13,6 +13,7 @@ export function createBlankTalentProfile(overrides: Partial<TalentProfileDraft> 
     lastName: '',
     headline: '',
     email: '',
+    phone: '',
     location: '',
     photoUrl: null,
     overview: '',

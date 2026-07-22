@@ -29,7 +29,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'This request cannot be resent.' }, { status: 400 })
   }
 
-  const { data: blacklistRow } = await supabase
+  // employer_talent_blacklist RLS only lets the employer read their own
+  // rows, so this check must go through the admin client — the talent's own
+  // session client would silently see zero rows and never actually block.
+  const admin = createSupabaseAdminClient()
+  const { data: blacklistRow } = await admin
     .from('employer_talent_blacklist')
     .select('id')
     .eq('employer_id', existing.employer_id)
@@ -39,8 +43,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (blacklistRow) {
     return NextResponse.json({ error: 'This employer is no longer accepting verification requests from you.' }, { status: 403 })
   }
-
-  const admin = createSupabaseAdminClient()
 
   if (existing.status === 'pending') {
     const elapsed = Date.now() - new Date(existing.requested_at).getTime()

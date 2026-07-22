@@ -56,6 +56,10 @@ export interface CandidateProfile {
   email: string;
   phone: string;
   bio: string;
+  /** The candidate's answer to this specific application's Cover Letter
+   *  question, if the form asked for one — distinct from `bio` (the
+   *  candidate's general profile overview, unrelated to this application). */
+  coverLetter?: string;
   experienceYears: number;
   skills: string[];
   education: string;

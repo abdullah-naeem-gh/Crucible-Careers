@@ -31,6 +31,7 @@ import {
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
 import type { CandidateProfile, EmployerCandidateChatTarget, ScreeningStatus } from "@/types/employer/applicant";
+import { hasDedicatedDisplay } from "@/lib/shared/formFieldDisplay";
 
 type EmailAudience = "all" | "shortlisted" | "rejected" | "manual";
 
@@ -1002,10 +1003,21 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
             </div>
 
             {/* About / Bio */}
-            <div>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Candidate Bio</h3>
-              <p className="text-sm leading-relaxed text-white/60">{selectedApplicant.bio}</p>
-            </div>
+            {selectedApplicant.bio && (
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Candidate Bio</h3>
+                <p className="text-sm leading-relaxed text-white/60">{selectedApplicant.bio}</p>
+              </div>
+            )}
+
+            {/* Cover Letter — the answer to this specific application's Cover
+                Letter question, distinct from the candidate's general bio above. */}
+            {selectedApplicant.coverLetter && (
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Cover Letter</h3>
+                <p className="text-sm leading-relaxed text-white/60 whitespace-pre-line">{selectedApplicant.coverLetter}</p>
+              </div>
+            )}
 
             {/* Skills & tags matching */}
             <div>
@@ -1088,12 +1100,18 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
               </div>
             </div>
 
-            {/* Custom form answers section */}
-            {selectedApplicant.customAnswers && selectedApplicant.customAnswers.length > 0 && (
+            {/* Custom form answers section — anything not already shown in a
+                dedicated section above (Quick Facts, Skills, Resume, Links,
+                Bio), so a field never silently disappears just because it
+                isn't "custom" but also isn't one of the handful with its own
+                display treatment. */}
+            {(() => {
+              const extraAnswers = (selectedApplicant.customAnswers ?? []).filter((ans) => !hasDedicatedDisplay(ans.semanticType));
+              return extraAnswers.length > 0 && (
               <div className="border-t border-white/[0.07] pt-5">
                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Questionnaire Answers</h3>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {selectedApplicant.customAnswers.map((ans) => (
+                  {extraAnswers.map((ans) => (
                     <div key={ans.fieldId} className={`${insetSurface} p-4 sm:col-span-2`}>
                       <div className="text-[10px] font-semibold uppercase tracking-wider text-white/35 mb-1">{ans.label}</div>
                       <div className="text-sm font-medium text-white/80 whitespace-pre-line">
@@ -1109,7 +1127,8 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                   ))}
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* Work History */}
             {selectedApplicant.experience && selectedApplicant.experience.length > 0 && (
@@ -1137,29 +1156,6 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                           {exp.description}
                         </p>
                       )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Education History */}
-            {selectedApplicant.educationList && selectedApplicant.educationList.length > 0 && (
-              <div className="border-t border-white/[0.07] pt-5">
-                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Education</h3>
-                <div className="space-y-3">
-                  {selectedApplicant.educationList.map((edu) => (
-                    <div key={edu.id} className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-3.5">
-                      <div className="flex flex-wrap items-center justify-between gap-1">
-                        <h4 className="text-sm font-bold text-white/90">{edu.degree}</h4>
-                        {(edu.startYear || edu.endYear) && (
-                          <span className="text-[10px] text-white/45 font-medium">
-                            {edu.startYear} - {edu.endYear}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-white/55 mt-0.5">{edu.school}</div>
-                      {edu.field && <div className="text-[11px] text-white/40">Field: {edu.field}</div>}
                     </div>
                   ))}
                 </div>

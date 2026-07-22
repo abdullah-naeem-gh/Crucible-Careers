@@ -23,3 +23,12 @@ export interface ExperienceVerificationRequest {
     previousSalary: string
   }
 }
+
+export interface BlacklistedTalent {
+  id: string
+  talentId: string
+  name: string
+  email: string
+  reason: string | null
+  createdAt: string
+}

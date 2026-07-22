@@ -115,9 +115,12 @@ export async function POST(request: NextRequest) {
     description: p.description || '',
   }))
 
+  // If the talent has no recorded education, the apply form's Education
+  // field stays editable and whatever they typed should actually be saved —
+  // otherwise it's silently discarded in favor of an empty DB-derived summary.
   const educationSummary = educationList.length > 0
     ? `${educationList[0].degree} in ${educationList[0].field} from ${educationList[0].school}`
-    : ''
+    : (standardAnswers.education || '')
 
   const skills: string[] = standardAnswers.skills || []
 

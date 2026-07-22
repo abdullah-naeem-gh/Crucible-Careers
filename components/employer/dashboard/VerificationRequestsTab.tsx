@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { IconShieldCheck, IconCheck, IconX, IconLoader2, IconMapPin, IconBriefcase } from "@tabler/icons-react";
-import type { ExperienceVerificationRequest } from "@/types/employer/verification";
+import { IconShieldCheck, IconCheck, IconX, IconLoader2, IconMapPin, IconBriefcase, IconUserOff, IconTrash } from "@tabler/icons-react";
+import type { BlacklistedTalent, ExperienceVerificationRequest } from "@/types/employer/verification";
 import {
   getExperienceVerificationRequests,
   approveExperienceVerification,
   rejectExperienceVerification,
+  getBlacklist,
+  removeFromBlacklist,
 } from "@/lib/employer/services/experienceVerification.service";
 
 const surface =
@@ -30,6 +32,36 @@ export default function VerificationRequestsTab() {
   const [rejectBlacklist, setRejectBlacklist] = useState(false);
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
   const [rejectError, setRejectError] = useState<string | null>(null);
+
+  const [showBlacklistModal, setShowBlacklistModal] = useState(false);
+  const [blacklist, setBlacklist] = useState<BlacklistedTalent[]>([]);
+  const [blacklistLoading, setBlacklistLoading] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const loadBlacklist = () => {
+    setBlacklistLoading(true);
+    getBlacklist().then((data) => {
+      setBlacklist(data);
+      setBlacklistLoading(false);
+    });
+  };
+
+  const openBlacklistModal = () => {
+    setShowBlacklistModal(true);
+    loadBlacklist();
+  };
+
+  const handleRemoveFromBlacklist = async (id: string) => {
+    setRemovingId(id);
+    try {
+      await removeFromBlacklist(id);
+      setBlacklist((current) => current.filter((b) => b.id !== id));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   const load = () => {
     setIsLoading(true);
@@ -83,14 +115,23 @@ export default function VerificationRequestsTab() {
 
   return (
     <div className={`${surface} p-5 flex flex-col gap-4`}>
-      <div className="flex items-center gap-2">
-        <IconShieldCheck size={18} className="text-[#FF914D]" />
-        <div>
-          <h2 className="text-sm font-semibold text-white">Experience Verification Requests</h2>
-          <p className="text-[10px] text-white/30">
-            {pendingCount > 0 ? `${pendingCount} awaiting your review` : "All caught up"}
-          </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <IconShieldCheck size={18} className="text-[#FF914D]" />
+          <div>
+            <h2 className="text-sm font-semibold text-white">Experience Verification Requests</h2>
+            <p className="text-[10px] text-white/30">
+              {pendingCount > 0 ? `${pendingCount} awaiting your review` : "All caught up"}
+            </p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={openBlacklistModal}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white/60 hover:bg-white/[0.06] hover:text-white shrink-0"
+        >
+          <IconUserOff size={13} /> Manage Blocklist
+        </button>
       </div>
 
       {isLoading ? (
@@ -223,6 +264,69 @@ export default function VerificationRequestsTab() {
                   {rejectSubmitting && <IconLoader2 size={13} className="animate-spin" />}
                   Reject
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBlacklistModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+            onClick={() => setShowBlacklistModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`${surface} w-full max-w-md p-5 flex flex-col gap-3 max-h-[80vh]`}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white">Blocklist</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowBlacklistModal(false)}
+                  className="grid h-7 w-7 place-items-center rounded-lg border border-white/10 text-white/45 hover:bg-white/5 hover:text-white"
+                >
+                  <IconX size={13} />
+                </button>
+              </div>
+              <p className="text-[11px] text-white/30">
+                These talents can never send you a new verification request. Remove someone to let them try again.
+              </p>
+
+              <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+                {blacklistLoading ? (
+                  <div className="py-8 text-center text-xs text-white/30">Loading...</div>
+                ) : blacklist.length === 0 ? (
+                  <div className={`${insetSurface} p-4 text-center text-xs text-white/35`}>
+                    No one is blocked right now.
+                  </div>
+                ) : (
+                  blacklist.map((b) => (
+                    <div key={b.id} className={`${insetSurface} p-3 flex items-center justify-between gap-3`}>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-white truncate">{b.name}</div>
+                        <div className="text-[11px] text-white/40 truncate">{b.email}</div>
+                        {b.reason && <div className="mt-1 text-[10px] text-white/30 truncate">Reason: {b.reason}</div>}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={removingId === b.id}
+                        onClick={() => handleRemoveFromBlacklist(b.id)}
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] font-semibold text-white/60 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
+                      >
+                        {removingId === b.id ? <IconLoader2 size={12} className="animate-spin" /> : <IconTrash size={12} />}
+                        Remove
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </motion.div>
           </motion.div>

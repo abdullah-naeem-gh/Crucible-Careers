@@ -1,5 +1,5 @@
 import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
-import type { ExperienceVerificationRequest } from '@/types/employer/verification'
+import type { BlacklistedTalent, ExperienceVerificationRequest } from '@/types/employer/verification'
 
 export async function getExperienceVerificationRequests(): Promise<ExperienceVerificationRequest[]> {
   try {
@@ -40,6 +40,26 @@ export async function rejectExperienceVerification(id: string, reason: string, b
 export async function getPendingExperienceVerificationCount(): Promise<number> {
   const requests = await getExperienceVerificationRequests()
   return requests.filter((r) => r.status === 'pending').length
+}
+
+export async function getBlacklist(): Promise<BlacklistedTalent[]> {
+  try {
+    const res = await fetch('/api/employer/blacklist')
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.blacklist ?? []
+  } catch (err) {
+    console.error('getBlacklist error:', err)
+    return []
+  }
+}
+
+export async function removeFromBlacklist(id: string): Promise<void> {
+  const res = await fetch(`/api/employer/blacklist/${id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error || 'Failed to remove from blocklist')
+  }
 }
 
 /** Subscribe to realtime changes on this employer's verification requests. */

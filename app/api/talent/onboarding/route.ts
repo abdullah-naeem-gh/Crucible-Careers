@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         headline: payload.headline,
         email: payload.email || user.email || '',
+        phone: payload.phone,
         location: payload.location,
         photo_url: payload.photoUrl,
         overview: payload.overview,
@@ -129,7 +130,14 @@ export async function POST(request: NextRequest) {
       if (key && !employerIdByName.has(key)) employerIdByName.set(key, row.id)
     }
 
-    const { data: blacklistRows } = await supabase
+    // employer_talent_blacklist RLS only lets the employer read their own
+    // rows (deliberately — a talent shouldn't be able to see they're
+    // blacklisted). The server-side enforcement check still needs accurate
+    // data regardless, so this has to go through the admin client rather
+    // than the talent's own session-scoped client, which would silently
+    // return zero rows here and make the whole blacklist gate a no-op.
+    const admin = createSupabaseAdminClient()
+    const { data: blacklistRows } = await admin
       .from('employer_talent_blacklist')
       .select('employer_id')
       .eq('talent_id', user.id)
@@ -164,7 +172,6 @@ export async function POST(request: NextRequest) {
     // so untouched requests (pending/verified/rejected-unchanged) must be
     // explicitly rewritten here too, not just the ones that change state.
     if (validExperiences.length > 0) {
-      const admin = createSupabaseAdminClient()
       const rowsToInsert: Record<string, unknown>[] = []
 
       for (const e of validExperiences) {
@@ -222,7 +229,6 @@ export async function POST(request: NextRequest) {
         if (verError) console.error('Error upserting experience verifications:', verError)
       }
     } else {
-      const admin = createSupabaseAdminClient()
       await admin.from('talent_experience_verifications').delete().eq('talent_id', user.id)
     }
 

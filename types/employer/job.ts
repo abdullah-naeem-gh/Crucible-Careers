@@ -18,6 +18,7 @@ export type SemanticType =
   | "phone"
   | "location"
   | "experience_years"
+  | "education"
   | "skills"
   | "portfolio"
   | "linkedin"

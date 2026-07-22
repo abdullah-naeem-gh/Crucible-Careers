@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { IconInfoCircle, IconCheck, IconLoader2 } from '@tabler/icons-react'
 import type { ExperienceVerificationStatus } from '@/types/talent/profile'
 import { resendVerificationRequest } from '@/lib/talent/services/experienceVerification.service'
@@ -16,6 +17,9 @@ export interface ExperienceVerificationBadgeProps {
   /** Only relevant when status is 'rejected' — true once a detail has been
    *  changed AND saved since the rejection, so a resend is actually allowed. */
   canResendAfterEdit?: boolean
+  /** Only relevant when status is 'rejected' — true if this employer has
+   *  blacklisted the talent, in which case resend is never possible. */
+  isBlacklisted?: boolean
   onResent?: () => void
 }
 
@@ -26,21 +30,53 @@ export default function ExperienceVerificationBadge({
   rejectionReason,
   requestedAt,
   canResendAfterEdit,
+  isBlacklisted,
   onResent,
 }: ExperienceVerificationBadgeProps) {
   const [open, setOpen] = useState(false)
   const [resending, setResending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [localOverride, setLocalOverride] = useState<{ status: 'pending'; requestedAt: string } | null>(null)
-  const wrapperRef = useRef<HTMLDivElement>(null)
+  const [coords, setCoords] = useState<{ bottom: number; left: number } | null>(null)
+  const [mounted, setMounted] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => setMounted(true), [])
+
+  const POPUP_WIDTH = 320
+
+  const positionPopup = () => {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect()
+      const maxLeft = window.innerWidth - POPUP_WIDTH - 8
+      setCoords({ bottom: window.innerHeight - r.top + 8, left: Math.max(8, Math.min(r.left, maxLeft)) })
+    }
+  }
+
+  const toggle = () => {
+    if (!open) positionPopup()
+    setOpen((v) => !v)
+  }
 
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
-      if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (!triggerRef.current?.contains(target) && !popupRef.current?.contains(target)) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    window.addEventListener('scroll', positionPopup, true)
+    window.addEventListener('resize', positionPopup)
+    return () => {
+      window.removeEventListener('scroll', positionPopup, true)
+      window.removeEventListener('resize', positionPopup)
+    }
   }, [open])
 
   // Once the parent eventually refetches and passes down real, changed
@@ -69,8 +105,8 @@ export default function ExperienceVerificationBadge({
   // Pending resend is cooldown-gated; a rejected request stays disabled
   // until the talent has changed a detail AND saved (server-computed, since
   // it has to compare against the actually-saved row, not in-progress form
-  // state the server has never seen).
-  const canResend = !!verificationRequestId && (isPending ? daysLeft <= 0 : !!canResendAfterEdit)
+  // state the server has never seen). A blacklisted talent can never resend.
+  const canResend = !isBlacklisted && !!verificationRequestId && (isPending ? daysLeft <= 0 : !!canResendAfterEdit)
 
   const handleResend = async () => {
     if (!verificationRequestId) return
@@ -88,7 +124,7 @@ export default function ExperienceVerificationBadge({
   }
 
   return (
-    <div ref={wrapperRef} className="relative inline-flex items-center gap-1">
+    <div className="relative inline-flex items-center gap-1">
       <span
         className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
           isPending
@@ -99,18 +135,23 @@ export default function ExperienceVerificationBadge({
         {isPending ? 'Verification Pending' : 'Rejected'}
       </span>
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         className={`transition-colors ${isPending ? 'text-amber-500 hover:text-amber-700' : 'text-red-400 hover:text-red-600'}`}
       >
         <IconInfoCircle size={15} />
       </button>
 
-      {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-xl border border-gray-200 bg-white p-3 text-left shadow-lg">
+      {mounted && open && coords && createPortal(
+        <div
+          ref={popupRef}
+          style={{ position: 'fixed', bottom: coords.bottom, left: coords.left, zIndex: 99999 }}
+          className="w-80 max-w-[90vw] rounded-xl border border-gray-200 bg-white p-4 text-left shadow-[0_16px_48px_rgba(0,0,0,0.14)]"
+        >
           {isPending ? (
             <>
-              <p className="text-xs text-gray-600">
+              <p className="text-sm text-gray-600">
                 A verification request was sent to <strong>{company}</strong>.
               </p>
               {canResend ? (
@@ -118,43 +159,53 @@ export default function ExperienceVerificationBadge({
                   type="button"
                   disabled={resending}
                   onClick={handleResend}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-60"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-60"
                 >
                   {resending && <IconLoader2 size={12} className="animate-spin" />}
                   Resend Request
                 </button>
               ) : (
-                <p className="mt-1.5 text-[11px] text-gray-400">
+                <p className="mt-2 text-xs text-gray-400">
                   You can resend in {daysLeft} day{daysLeft === 1 ? '' : 's'}.
                 </p>
               )}
-              {error && <p className="mt-1.5 text-[11px] text-red-500">{error}</p>}
+              {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
             </>
           ) : (
             <>
-              <p className="text-xs font-semibold text-gray-700">Rejected by {company}</p>
-              <p className="mt-1 text-xs text-gray-500">{rejectionReason || 'No reason provided.'}</p>
-              <p className="mt-1.5 text-[11px] text-gray-400">
-                Change a detail and save your profile — once it's saved, you can resend below.
-              </p>
-              <button
-                type="button"
-                disabled={!canResend || resending}
-                onClick={handleResend}
-                title={!canResend ? 'Change a detail and save your profile first' : undefined}
-                className={`mt-2 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
-                  canResend
-                    ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60'
-                    : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                {resending && <IconLoader2 size={12} className="animate-spin" />}
-                Resend Request
-              </button>
-              {error && <p className="mt-1.5 text-[11px] text-red-500">{error}</p>}
+              <p className="text-sm font-semibold text-gray-800">Rejected by {company}</p>
+              <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Rejection Reason:</p>
+              <p className="mt-1 text-xs text-gray-600">{rejectionReason || 'No reason provided.'}</p>
+              {isBlacklisted ? (
+                <p className="mt-3 text-xs font-medium text-gray-500">
+                  You can no longer send verification requests to this company.
+                </p>
+              ) : (
+                <>
+                  <p className="mt-3 text-[11px] text-gray-400">
+                    Change a detail and save your profile — once it's saved, you can resend below.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={!canResend || resending}
+                    onClick={handleResend}
+                    title={!canResend ? 'Change a detail and save your profile first' : undefined}
+                    className={`mt-2 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      canResend
+                        ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60'
+                        : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {resending && <IconLoader2 size={12} className="animate-spin" />}
+                    Resend Request
+                  </button>
+                </>
+              )}
+              {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
             </>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

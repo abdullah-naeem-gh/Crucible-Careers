@@ -13,9 +13,17 @@ import { FormConfig, FormField, EmployerJob } from '@/types/employer/job'
 import { FORM_TEMPLATES } from '@/lib/shared/formTemplates'
 import { loadTalentProfile } from '@/lib/talent/services/profile.service'
 import { computeExperienceYears } from '@/lib/shared/experienceYears'
+import { formatEducationSummary } from '@/lib/shared/educationSummary'
 import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
 import type { TalentProfile } from '@/types/talent/profile'
 import { addReview } from '@/lib/employer/ranking/reviews'
+
+// Rejected experience entries don't count toward years-of-experience — same
+// filter computeExperienceYears() applies internally, mirrored here so the
+// lock check and the "is there any real data" prefill check agree with it.
+function hasCountedExperience(profile: TalentProfile | null): boolean {
+  return !!profile?.experience?.some((exp) => exp.verificationStatus !== 'rejected')
+}
 
 function buildInitialValue(field: FormField, profile: TalentProfile | null): any {
   if (field.type === 'multi-select') {
@@ -31,10 +39,14 @@ function buildInitialValue(field: FormField, profile: TalentProfile | null): any
       return profile ? `${profile.firstName} ${profile.lastName}`.trim() : ''
     case 'email':
       return profile?.email || ''
+    case 'phone':
+      return profile?.phone || ''
     case 'location':
       return profile?.location || ''
     case 'experience_years':
-      return profile?.experience?.length ? computeExperienceYears(profile.experience) : ''
+      return hasCountedExperience(profile) ? computeExperienceYears(profile!.experience) : ''
+    case 'education':
+      return profile?.education?.length ? formatEducationSummary(profile.education) : ''
     case 'skills':
       if (profile?.skills?.length) {
         if (field.type === 'select' && field.options?.length) {
@@ -53,6 +65,27 @@ function buildInitialValue(field: FormField, profile: TalentProfile | null): any
       return profile?.overview || ''
     default:
       return ''
+  }
+}
+
+/** Locked (uneditable) once the profile already has real data for these
+ *  fields specifically — everything else on the form stays freely editable. */
+function isLockedByProfile(field: FormField, profile: TalentProfile | null): boolean {
+  switch (field.semanticType) {
+    case 'name':
+      return !!(profile?.firstName?.trim() || profile?.lastName?.trim())
+    case 'email':
+      return !!profile?.email?.trim()
+    case 'phone':
+      return !!profile?.phone?.trim()
+    case 'location':
+      return !!profile?.location?.trim()
+    case 'experience_years':
+      return hasCountedExperience(profile)
+    case 'education':
+      return !!profile?.education?.length
+    default:
+      return false
   }
 }
 
@@ -216,14 +249,20 @@ export default function ApplyFormPage() {
         phone: valueOf(findField('phone')),
         location: valueOf(findField('location')),
         experienceYears: Number(valueOf(findField('experience_years'))) || 0,
+        education: valueOf(findField('education')),
         skills,
         linkedin: valueOf(findField('linkedin')),
         github: valueOf(findField('github')),
         portfolio: valueOf(findField('portfolio')),
       }
 
+      // Capture every non-file answer (not just semanticType 'custom') so the
+      // employer's applicant view has a complete record of what was asked —
+      // fields already covered by a dedicated section (email, skills, etc.)
+      // are filtered back out at display time, not here. File fields can't
+      // be serialized and are already handled by the resume upload above.
       const customAnswers = formConfig.fields
-        .filter(field => field.semanticType === 'custom')
+        .filter(field => field.type !== 'file')
         .map(field => ({
           fieldId: field.id,
           label: field.label,
@@ -258,8 +297,11 @@ export default function ApplyFormPage() {
   const renderFieldInput = (field: FormField) => {
     const error = validationErrors[field.id]
     const val = fieldsData[field.id]
-    const baseInputClass = `mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white text-gray-900 transition-colors ${
-      error ? 'border-red-400 focus:ring-red-200' : 'border-gray-300'
+    const locked = isLockedByProfile(field, profile)
+    const baseInputClass = `mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 transition-colors ${
+      locked
+        ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed focus:ring-0'
+        : 'bg-white text-gray-900 ' + (error ? 'border-red-400 focus:ring-red-200' : 'border-gray-300')
     }`
 
     switch (field.type) {
@@ -270,6 +312,7 @@ export default function ApplyFormPage() {
             className={baseInputClass}
             value={val || ''}
             placeholder={field.placeholder}
+            disabled={locked}
             onChange={e => handleChange(field.id, e.target.value)}
           />
         )
@@ -280,6 +323,7 @@ export default function ApplyFormPage() {
             className={baseInputClass}
             value={val || ''}
             placeholder={field.placeholder}
+            disabled={locked}
             onChange={e => handleChange(field.id, e.target.value)}
           />
         )
@@ -290,6 +334,7 @@ export default function ApplyFormPage() {
             className={baseInputClass}
             value={val === undefined ? '' : val}
             placeholder={field.placeholder}
+            disabled={locked}
             onChange={e => handleChange(field.id, e.target.value === '' ? '' : Number(e.target.value))}
           />
         )
@@ -529,11 +574,17 @@ export default function ApplyFormPage() {
                             </div>
                           )
                         }
+                        const locked = isLockedByProfile(field, profile)
                         return (
                           <div key={field.id} className="space-y-1">
-                            <label className="block text-xs font-semibold text-gray-700">
+                            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
                               {field.label}
                               {field.required && <span className="text-orange-500 ml-0.5">*</span>}
+                              {locked && (
+                                <span className="text-[10px] font-medium text-gray-400 italic">
+                                  Locked — from your Crucible profile
+                                </span>
+                              )}
                             </label>
                             {renderFieldInput(field)}
                             {error && <span className="text-[10px] text-red-500 font-semibold block mt-1">{error}</span>}

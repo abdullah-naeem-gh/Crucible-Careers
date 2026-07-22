@@ -77,6 +77,7 @@ export default function OnboardingStep5({ experience, onChange }: Props) {
                   rejectionReason={item.verificationRejectionReason}
                   requestedAt={item.verificationRequestedAt}
                   canResendAfterEdit={item.verificationCanResend}
+                  isBlacklisted={item.verificationBlacklisted}
                 />
                 {experience.length > 1 && (
                   <button type="button" onClick={() => remove(item.id)}
