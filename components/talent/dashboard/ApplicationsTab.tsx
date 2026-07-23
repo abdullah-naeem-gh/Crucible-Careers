@@ -11,6 +11,7 @@ interface Application {
   id: string
   jobTitle: string
   company: string
+  companyVerified?: boolean
   appliedAt: string
   status: ApplicationStatus
   matchScore: number
@@ -21,6 +22,7 @@ interface ApplicationDetail {
   id: string
   jobTitle: string
   company: string
+  companyVerified?: boolean
   status: ApplicationStatus
   appliedAt: string
   matchScore: number
@@ -138,7 +140,7 @@ export default function ApplicationsTab() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs text-gray-500 mb-1 truncate">{app.company} • Applied {new Date(app.appliedAt).toLocaleDateString()}</div>
+                  <div className="mb-1 truncate text-xs text-gray-500">{app.company}{app.companyVerified && <span title="Verified company" className="ml-1 text-sky-500">✓</span>} • Applied {new Date(app.appliedAt).toLocaleDateString()}</div>
                   <h3 className="text-sm font-semibold text-gray-900 truncate">{app.jobTitle}</h3>
                 </div>
                 <StatusBadge status={app.status} className="text-[10px]" />
@@ -176,7 +178,7 @@ export default function ApplicationsTab() {
           <motion.div key={selectedAppDetail.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
             <div>
               <div className="flex items-center justify-between gap-3 mb-2">
-                <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{selectedAppDetail.company}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{selectedAppDetail.company}{selectedAppDetail.companyVerified && <span title="Verified company" className="ml-1 text-sky-500">✓</span>}</p>
                 <StatusBadge status={selectedAppDetail.status} />
               </div>
               <h2 className="text-xl font-bold text-gray-900 leading-tight">{selectedAppDetail.jobTitle}</h2>

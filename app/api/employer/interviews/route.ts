@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/shared/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/shared/supabase/admin";
+import { canAccessOwnedResource, getEmployerContext } from "@/lib/employer/server/company-context";
+import { recordCompanyAudit } from "@/lib/employer/server/company-admin";
 import { getValidAccessToken } from "@/lib/employer/calendar/tokens";
 import { createGoogleEvent } from "@/lib/employer/calendar/googleCalendar";
 import { createMicrosoftEvent } from "@/lib/employer/calendar/microsoftCalendar";
 import type { CalendarProvider } from "@/lib/employer/calendar/types";
 
 export async function GET() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const context = await getEmployerContext();
+  const supabase = createSupabaseAdminClient();
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data, error } = await supabase
+  let query = supabase
     .from("interviews")
     .select("id, scheduled_date, start_time, end_time, format, location, calendar_event_link, applications(profile_snapshot, jobs(title))")
-    .eq("employer_id", user.id)
+    .eq("company_id", context.companyId)
     .order("scheduled_date", { ascending: true });
+  if (context.role !== 'admin' && !context.permissions.viewAllApplicants) query = query.eq('organizer_user_id', context.userId)
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching interviews:", error);
@@ -43,12 +43,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const context = await getEmployerContext();
+  const supabase = createSupabaseAdminClient();
 
   const body = await request.json().catch(() => ({}));
   const { applicationId, date, startTime, endTime, format, location, timeZone } = body;
@@ -62,12 +58,13 @@ export async function POST(request: NextRequest) {
 
   const { data: application, error: applicationError } = await supabase
     .from("applications")
-    .select("id, profile_snapshot, jobs(id, title, employer_id)")
+    .select("id, profile_snapshot, jobs(id, title, company_id, created_by_user_id, assigned_to_user_id)")
     .eq("id", applicationId)
     .single();
 
   const job = application?.jobs as any;
-  if (applicationError || !application || !job || job.employer_id !== user.id) {
+  if (applicationError || !application || !job || job.company_id !== context.companyId
+    || !canAccessOwnedResource(context, job.assigned_to_user_id || job.created_by_user_id, 'manageAllApplicants')) {
     return NextResponse.json({ error: "Application not found" }, { status: 404 });
   }
 
@@ -75,7 +72,8 @@ export async function POST(request: NextRequest) {
     .from("interviews")
     .insert({
       application_id: applicationId,
-      employer_id: user.id,
+      company_id: context.companyId,
+      organizer_user_id: context.userId,
       scheduled_date: date,
       start_time: startTime,
       end_time: endTime,
@@ -101,7 +99,7 @@ export async function POST(request: NextRequest) {
 
   try {
     for (const provider of ["google", "microsoft"] as const) {
-      const accessToken = await getValidAccessToken(supabase, user.id, provider);
+      const accessToken = await getValidAccessToken(supabase, context.userId, provider);
       if (!accessToken) continue;
       hadConnection = true;
 
@@ -133,6 +131,7 @@ export async function POST(request: NextRequest) {
     if (hadConnection) calendarSyncError = err instanceof Error ? err.message : "Failed to sync to your connected calendar.";
   }
 
+  await recordCompanyAudit({ companyId: context.companyId, actorUserId: context.userId, action: 'interview.scheduled', entityType: 'interview', entityId: interview.id, metadata: { jobId: job.id } });
   return NextResponse.json(
     {
       id: interview.id,

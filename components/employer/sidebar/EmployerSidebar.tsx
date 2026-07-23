@@ -25,12 +25,13 @@ import {
   IconShieldCheck,
 } from "@tabler/icons-react";
 
-type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking" | "verification";
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking" | "verification" | "team";
 
 interface EmployerSidebarProps {
   activeTab: EmployerTab;
   company: string;
   logoUrl?: string | null;
+  verified?: boolean;
   jobCount: number;
   applicationCount: number;
   onTabChange: (tab: EmployerTab) => void;
@@ -47,6 +48,7 @@ const tabs: Array<{ key: EmployerTab; label: string }> = [
   { key: "applicants", label: "All Applicants" },
   { key: "analytics", label: "Analytics" },
   { key: "messages", label: "Messages" },
+  { key: "team", label: "Team & Access" },
   { key: "verification", label: "Verification Requests" },
   { key: "ranking", label: "My Ranking" },
 ];
@@ -60,12 +62,14 @@ const TAB_ICONS: Record<EmployerTab, React.ComponentType<any>> = {
   messages: IconMessage,
   ranking: IconTrophy,
   verification: IconShieldCheck,
+  team: IconUsers,
 };
 
 export default function EmployerSidebar({
   activeTab,
   company,
   logoUrl,
+  verified = false,
   jobCount,
   applicationCount,
   onTabChange,
@@ -178,7 +182,7 @@ export default function EmployerSidebar({
                 </>
               ) : (
                 <>
-                  <div className="font-semibold text-white">{company}</div>
+                  <div className="font-semibold text-white">{company}{verified && <span title="Verified company" className="ml-1 text-sky-400">✓</span>}</div>
                   <div className="text-xs text-white/40">Employer account</div>
                 </>
               )}

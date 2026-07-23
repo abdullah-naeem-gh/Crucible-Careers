@@ -62,13 +62,19 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/talent/onboarding')
   const isEmployerProtected =
     pathname.startsWith('/employer/dashboard') ||
-    pathname.startsWith('/employer/onboarding')
+    pathname.startsWith('/employer/onboarding') ||
+    pathname.startsWith('/employer/setup') ||
+    pathname.startsWith('/employer/invitations')
+  const isStaffProtected = pathname.startsWith('/staff')
 
   if (isTalentProtected && !user) {
     return NextResponse.redirect(new URL('/talent/login', request.url))
   }
   if (isEmployerProtected && !user) {
     return NextResponse.redirect(new URL('/employer/login', request.url))
+  }
+  if (isStaffProtected && !user) {
+    return NextResponse.redirect(new URL('/gateway', request.url))
   }
 
   // Role set at signup (`signUp()` passes it as user_metadata.role, copied by
@@ -99,5 +105,8 @@ export const config = {
     '/employer/dashboard/:path*',
     '/talent/onboarding/:path*',
     '/employer/onboarding/:path*',
+    '/employer/setup/:path*',
+    '/employer/invitations/:path*',
+    '/staff/:path*',
   ],
 }

@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/shared/supabase/admin'
+import { companyErrorResponse, getEmployerContext } from '@/lib/employer/server/company-context'
 import type { ExperienceVerificationRequest } from '@/types/employer/verification'
 
 export async function GET() {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  try {
+  const context = await getEmployerContext({ requireAdmin: true })
+  const supabase = createSupabaseAdminClient()
 
   const { data: rows, error } = await supabase
     .from('talent_experience_verifications')
     .select('id, experience_id, talent_id, status, rejection_reason, requested_at, responded_at')
-    .eq('employer_id', user.id)
+    .eq('company_id', context.companyId)
     .order('requested_at', { ascending: false })
 
   if (error) {
@@ -29,10 +26,10 @@ export async function GET() {
   // read their own rows — there's no employer-read policy on them (unlike
   // the applicant pipeline, which reads a denormalized snapshot the employer
   // already owns via the job/application). We've already authorized access
-  // above (rows scoped to employer_id = user.id), so the admin client here
+  // above (rows scoped to this company), so the admin client here
   // only ever discloses exactly the talent/experience data behind requests
   // legitimately addressed to this employer.
-  const admin = createSupabaseAdminClient()
+  const admin = supabase
 
   const { data: baseProfiles } = talentIds.length
     ? await admin.from('profiles').select('id, first_name, last_name').in('id', talentIds)
@@ -82,4 +79,7 @@ export async function GET() {
     })
 
   return NextResponse.json({ requests })
+  } catch (error) {
+    return companyErrorResponse(error)
+  }
 }

@@ -82,7 +82,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                   </Link>
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{appDetail.company}</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{appDetail.company}{appDetail.companyVerified && <span title="Verified company" className="ml-1 text-sky-500">✓</span>}</p>
                       <h1 className="mt-1 text-2xl font-semibold leading-tight">{appDetail.jobTitle}</h1>
                     </div>
                     <StatusBadge status={appDetail.status} />

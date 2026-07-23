@@ -28,7 +28,9 @@ export default function EmployerStep6({ data, onChange }: Props) {
 
       const ext = fileOrBlob.type.split('/')[1] || 'png'
       const filename = `logo-${crypto.randomUUID()}.${ext}`
-      const filePath = `${user.id}/${filename}`
+      const contextResponse = await fetch('/api/employer/context')
+      const contextBody = contextResponse.ok ? await contextResponse.json() : null
+      const filePath = `${contextBody?.context?.companyId || user.id}/${filename}`
 
       const { data, error } = await supabase.storage.from('employer-assets').upload(filePath, fileOrBlob, {
         cacheControl: '3600',

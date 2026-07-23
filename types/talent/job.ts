@@ -1,9 +1,11 @@
 export interface ScrapedJob {
   _id: string
+  companyId?: string
   employerId?: string
   title: string
   company: string
   companyLogo?: string | null
+  companyVerified?: boolean
   location: string | null
   type: 'full-time' | 'part-time' | 'contract' | 'internship' | 'remote' | null
   locationType?: 'remote' | 'hybrid' | 'on-site' | null
@@ -22,6 +24,7 @@ export interface SavedJob {
   id: string
   title: string
   company: string
+  companyVerified?: boolean
   location: string
   type: string
   salary?: string

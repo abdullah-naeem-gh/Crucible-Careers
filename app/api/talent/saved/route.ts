@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('saved_jobs')
-    .select('saved_at, jobs(id, employer_id, title, location, type, salary_range, tags, description, created_at)')
+    .select('saved_at, jobs(id, company_id, title, location, type, salary_range, tags, description, created_at)')
     .eq('talent_id', user.id)
     .order('saved_at', { ascending: false })
 
@@ -20,12 +20,12 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const employerIds = Array.from(new Set(data.map((s: any) => s.jobs?.employer_id).filter(Boolean)))
+  const employerIds = Array.from(new Set(data.map((s: any) => s.jobs?.company_id).filter(Boolean)))
   const { data: companies } = await supabase
-    .from('employer_company_names')
-    .select('id, company')
+    .from('companies')
+    .select('id, name, verification_status')
     .in('id', employerIds)
-  const companyById = new Map((companies ?? []).map((c) => [c.id, c.company]))
+  const companyById = new Map((companies ?? []).map((c) => [c.id, c]))
 
   const { data: profile } = await supabase
     .from('talent_profiles')
@@ -39,7 +39,8 @@ export async function GET() {
     .map((s: any) => ({
       id: s.jobs.id,
       title: s.jobs.title,
-      company: companyById.get(s.jobs.employer_id) || 'Unknown Company',
+      company: companyById.get(s.jobs.company_id)?.name || 'Unknown Company',
+      companyVerified: companyById.get(s.jobs.company_id)?.verification_status === 'verified',
       location: s.jobs.location || 'Remote',
       type: s.jobs.type || 'Full-time',
       salary: s.jobs.salary_range || undefined,

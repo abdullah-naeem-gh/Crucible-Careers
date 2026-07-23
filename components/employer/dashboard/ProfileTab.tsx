@@ -284,6 +284,8 @@ interface ProfileTabProps {
   profile: CompanyProfile;
   onChange: (updated: CompanyProfile) => void;
   isLoading?: boolean;
+  readOnly?: boolean;
+  companyId?: string;
 }
 
 function ProfileSkeleton() {
@@ -314,7 +316,7 @@ function ProfileSkeleton() {
   );
 }
 
-export default function ProfileTab({ profile, onChange, isLoading = false }: ProfileTabProps) {
+export default function ProfileTab({ profile, onChange, isLoading = false, readOnly = false, companyId }: ProfileTabProps) {
   const [saved, setSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formState, setFormState] = useState<CompanyProfile>(profile);
@@ -331,7 +333,7 @@ export default function ProfileTab({ profile, onChange, isLoading = false }: Pro
 
       const ext = fileOrBlob.type.split('/')[1] || 'png';
       const filename = `logo-${crypto.randomUUID()}.${ext}`;
-      const filePath = `${user.id}/${filename}`;
+      const filePath = `${companyId || user.id}/${filename}`;
 
       const { data, error } = await supabase.storage.from('employer-assets').upload(filePath, fileOrBlob, {
         cacheControl: '3600',
@@ -369,6 +371,7 @@ export default function ProfileTab({ profile, onChange, isLoading = false }: Pro
   };
 
   const handleSave = () => {
+    if (readOnly) return;
     onChange(formState);
     setSaved(true);
     setTimeout(() => setSaved(false), 2200);
@@ -383,7 +386,7 @@ export default function ProfileTab({ profile, onChange, isLoading = false }: Pro
   return (
     <ViewMotion className="grid lg:h-full lg:min-h-0 grid-cols-1 gap-5 lg:grid-cols-9 lg:gap-7">
       {/* Editor */}
-      <section className={`${surface} flex flex-col overflow-hidden lg:col-span-5 lg:h-full lg:min-h-0`}>
+      <section className={`${surface} flex flex-col overflow-hidden lg:col-span-5 lg:h-full lg:min-h-0 ${readOnly ? 'pointer-events-none opacity-75' : ''}`}>
         <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-5">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-[#FF914D]">Company Profile</p>
@@ -392,6 +395,7 @@ export default function ProfileTab({ profile, onChange, isLoading = false }: Pro
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={handleSave}
+            disabled={readOnly}
             className="rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-4 py-2 text-sm font-medium text-white shadow-[0_8px_20px_rgba(255,107,0,0.18)] cursor-pointer"
           >
             {saved ? "✓ Saved" : "Save"}

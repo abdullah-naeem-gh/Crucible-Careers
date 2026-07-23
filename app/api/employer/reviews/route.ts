@@ -1,25 +1,23 @@
 import { NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
+import { createSupabaseAdminClient } from '@/lib/shared/supabase/admin'
+import { companyErrorResponse, getEmployerContext } from '@/lib/employer/server/company-context'
 import type { CompanyReview } from '@/types/employer/ranking'
 
 export async function GET() {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  try {
+  const context = await getEmployerContext({ requireAdmin: true })
+  const supabase = createSupabaseAdminClient()
 
   const { data: companyRow } = await supabase
-    .from('employer_company_names')
-    .select('company')
-    .eq('id', user.id)
+    .from('companies')
+    .select('name')
+    .eq('id', context.companyId)
     .single()
 
   const { data: reviewRows, error } = await supabase
     .from('company_reviews')
     .select('id, talent_id, rating, comment, created_at')
-    .eq('employer_id', user.id)
+    .eq('company_id', context.companyId)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -42,7 +40,7 @@ export async function GET() {
 
   const reviews: CompanyReview[] = (reviewRows ?? []).map((r) => ({
     id: r.id,
-    companyName: companyRow?.company || 'Your Company',
+    companyName: companyRow?.name || 'Your Company',
     rating: r.rating,
     comment: r.comment || '',
     reviewerName: nameByTalentId.get(r.talent_id) || 'Anonymous',
@@ -54,4 +52,7 @@ export async function GET() {
     : 0
 
   return NextResponse.json({ reviews, averageRating })
+  } catch (error) {
+    return companyErrorResponse(error)
+  }
 }
