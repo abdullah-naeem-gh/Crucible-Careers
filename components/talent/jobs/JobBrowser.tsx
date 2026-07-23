@@ -185,7 +185,7 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
   const detailPanelRef = useRef<HTMLDivElement>(null)
   const [showFloatingApply, setShowFloatingApply] = useState(false)
   const { appliedJobIds } = useAppliedJobIds()
-  const { isSaved: isJobSaved, toggleSave } = useSavedJobs()
+  const { isSaved: isJobSaved, isPending: isSavePending, toggleSave } = useSavedJobs()
   const [featuredCompanies, setFeaturedCompanies] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -482,7 +482,9 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
                                   e.stopPropagation()
                                   toggleSaveJob(job)
                               }}
-                              className="p-1.5 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white"
+                              disabled={isSavePending(job._id)}
+                              aria-busy={isSavePending(job._id)}
+                              className="p-1.5 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white disabled:cursor-default disabled:opacity-50"
                               title={isJobSaved(job._id) ? "Saved" : "Save Job"}
                             >
                               {isJobSaved(job._id) ? (
@@ -608,7 +610,9 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
                 <button
                   type="button"
                   onClick={() => toggleSaveJob(selectedJob)}
-                  className="flex items-center justify-center p-2.5 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-500 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white"
+                  disabled={isSavePending(selectedJob._id)}
+                  aria-busy={isSavePending(selectedJob._id)}
+                  className="flex items-center justify-center p-2.5 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-500 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white disabled:cursor-default disabled:opacity-50"
                   title={isJobSaved(selectedJob._id) ? "Saved" : "Save Job"}
                 >
                   {isJobSaved(selectedJob._id) ? (

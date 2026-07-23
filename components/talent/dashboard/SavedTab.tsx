@@ -12,7 +12,7 @@ export default function SavedTab() {
   const [selectedType, setSelectedType] = useState<string>('All')
   const [selectedJobId, setSelectedJobId] = useState<string>('')
   const { appliedJobIds } = useAppliedJobIds()
-  const { savedJobs, toggleSave, loading: isLoading } = useSavedJobs()
+  const { savedJobs, isPending, toggleSave, loading: isLoading } = useSavedJobs()
 
   const companies = ['All', ...Array.from(new Set(savedJobs.map(j => j.company)))]
   const types = ['All', 'Full-time', 'Part-time', 'Contract', 'Internship']
@@ -140,7 +140,9 @@ export default function SavedTab() {
                 <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{selectedJob.company}</p>
                 <button 
                   onClick={() => handleRemove(selectedJob.id)}
-                  className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                  disabled={isPending(selectedJob.id)}
+                  aria-busy={isPending(selectedJob.id)}
+                  className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer disabled:cursor-default disabled:opacity-50"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />

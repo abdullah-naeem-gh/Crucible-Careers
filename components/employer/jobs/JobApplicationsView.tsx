@@ -31,6 +31,7 @@ import {
 } from "@tabler/icons-react";
 import { EmployerJob } from "@/components/employer/dashboard/OverviewTab";
 import type { CandidateProfile, EmployerCandidateChatTarget, ScreeningStatus } from "@/types/employer/applicant";
+import { formatProfileMonthYear } from "@/lib/shared/profileDates";
 import { hasDedicatedDisplay } from "@/lib/shared/formFieldDisplay";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -1148,7 +1149,7 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                       <div className="flex flex-wrap items-center justify-between gap-1">
                         <h4 className="text-sm font-bold text-white/90">{exp.role}</h4>
                         <span className="text-[10px] text-[#FF914D] font-semibold bg-orange-500/10 px-2 py-0.5 rounded">
-                          {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
+                          {formatProfileMonthYear(exp.startDate)} - {exp.current ? 'Present' : formatProfileMonthYear(exp.endDate)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
@@ -1164,6 +1165,29 @@ export default function JobApplicationsView({ jobId, jobs, onBack, onOpenKanban,
                           {exp.description}
                         </p>
                       )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Education History */}
+            {selectedApplicant.educationList && selectedApplicant.educationList.length > 0 && (
+              <div className="border-t border-white/[0.07] pt-5">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Education</h3>
+                <div className="space-y-3">
+                  {selectedApplicant.educationList.map((edu) => (
+                    <div key={edu.id} className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-3.5">
+                      <div className="flex flex-wrap items-center justify-between gap-1">
+                        <h4 className="text-sm font-bold text-white/90">{edu.degree}</h4>
+                        {(edu.startYear || edu.endYear) && (
+                          <span className="text-[10px] text-white/45 font-medium">
+                            {formatProfileMonthYear(edu.startYear || '')} - {formatProfileMonthYear(edu.endYear || '')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-white/55 mt-0.5">{edu.school}</div>
+                      {edu.field && <div className="text-[11px] text-white/40">Field: {edu.field}</div>}
                     </div>
                   ))}
                 </div>

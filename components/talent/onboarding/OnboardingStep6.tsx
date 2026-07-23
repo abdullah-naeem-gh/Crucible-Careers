@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { IconPlus } from '@tabler/icons-react'
 import type { TalentEducation } from '@/types/talent/profile'
+import MonthYearPicker from '@/components/talent/profile/MonthYearPicker'
 
 const L = 'mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-gray-400'
 const F = 'w-full rounded-xl border border-gray-200 bg-white/70 px-3.5 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 transition-all'
@@ -85,17 +86,23 @@ export default function OnboardingStep6({ education, onChange }: Props) {
                   onChange={(e) => update(item.id, { field: e.target.value })}
                   placeholder="Software Engineering" />
               </div>
-              <div>
+              <div className="col-span-2">
                 <label className={L}>From</label>
-                <input className={F} value={item.startYear}
-                  onChange={(e) => update(item.id, { startYear: e.target.value })}
-                  placeholder="2020" />
+                <MonthYearPicker
+                  value={item.startYear}
+                  onChange={(startYear) => update(item.id, { startYear })}
+                  ariaLabel="Education start date"
+                  maxYear={new Date().getFullYear() + 10}
+                />
               </div>
-              <div>
+              <div className="col-span-2">
                 <label className={L}>To</label>
-                <input className={F} value={item.endYear}
-                  onChange={(e) => update(item.id, { endYear: e.target.value })}
-                  placeholder="2024" />
+                <MonthYearPicker
+                  value={item.endYear}
+                  onChange={(endYear) => update(item.id, { endYear })}
+                  ariaLabel="Education end date"
+                  maxYear={new Date().getFullYear() + 10}
+                />
               </div>
             </div>
           </motion.div>

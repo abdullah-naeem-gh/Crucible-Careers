@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { IconMapPin, IconWorld, IconBrandLinkedin, IconBrandX } from "@tabler/icons-react";
+import { IconMapPin, IconWorld, IconBrandLinkedin, IconBrandX, IconCheck, IconChevronDown } from "@tabler/icons-react";
 import ImageCropModal from "@/components/ui/ImageCropModal";
 
 import { createBrowserSupabaseClient } from "@/lib/shared/supabase/client";
@@ -33,6 +33,74 @@ const SIZE_OPTIONS = [
   "501–1 000 employees",
   "1 000+ employees",
 ];
+
+function CustomSelect({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="profile-select-trigger flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10"
+      >
+        <span>{value || options[0]}</span>
+        <IconChevronDown size={16} className={`text-white/35 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="listbox"
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 6, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+            className="profile-select-menu absolute left-0 right-0 top-full z-30 max-h-60 overflow-y-auto rounded-xl shadow-[0_18px_45px_rgba(0,0,0,0.4)] ring-1 ring-white/[0.04] [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/15 hover:[&::-webkit-scrollbar-thumb]:bg-white/25 [&::-webkit-scrollbar-track]:bg-transparent"
+          >
+            {options.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="option"
+                aria-selected={option === value}
+                onClick={() => {
+                  onChange(option);
+                  setOpen(false);
+                }}
+                className={`profile-select-option flex w-full cursor-pointer items-center justify-between px-3 py-2.5 text-left text-sm ${option === value ? "profile-select-option-active font-semibold" : ""}`}
+              >
+                <span>{option}</span>
+                {option === value && <IconCheck size={15} />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function ViewMotion({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -154,7 +222,7 @@ function ProfilePreview({ profile }: { profile: CompanyProfile }) {
 
       <PreviewSection title="About us">
         {profile.overview ? (
-          <p className="text-sm leading-relaxed text-white/55">{profile.overview}</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/55">{profile.overview}</p>
         ) : (
           <p className="text-xs italic text-white/20">No company overview provided.</p>
         )}
@@ -162,7 +230,7 @@ function ProfilePreview({ profile }: { profile: CompanyProfile }) {
 
       <PreviewSection title="Culture & values">
         {profile.culture ? (
-          <p className="text-sm leading-relaxed text-white/55">{profile.culture}</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/55">{profile.culture}</p>
         ) : (
           <p className="text-xs italic text-white/20">No culture & values details specified.</p>
         )}
@@ -401,28 +469,20 @@ export default function ProfileTab({ profile, onChange, isLoading = false }: Pro
 
             <div>
               <label className={labelClass}>Industry <span className="text-red-500">*</span></label>
-              <select
+              <CustomSelect
                 value={formState.industry}
-                onChange={(e) => set("industry", e.target.value)}
-                className={`${fieldClass} cursor-pointer`}
-              >
-                {INDUSTRY_OPTIONS.map((o) => (
-                  <option key={o}>{o}</option>
-                ))}
-              </select>
+                options={INDUSTRY_OPTIONS}
+                onChange={(value) => set("industry", value)}
+              />
             </div>
 
             <div>
               <label className={labelClass}>Company size <span className="text-red-500">*</span></label>
-              <select
+              <CustomSelect
                 value={formState.companySize}
-                onChange={(e) => set("companySize", e.target.value)}
-                className={`${fieldClass} cursor-pointer`}
-              >
-                {SIZE_OPTIONS.map((o) => (
-                  <option key={o}>{o}</option>
-                ))}
-              </select>
+                options={SIZE_OPTIONS}
+                onChange={(value) => set("companySize", value)}
+              />
             </div>
 
             <div>

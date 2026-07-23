@@ -35,7 +35,7 @@ export default function CompaniesTab() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
   const { appliedJobIds } = useAppliedJobIds()
-  const { isSaved: isRoleSaved, toggleSave: toggleSaveRole } = useSavedJobs()
+  const { isSaved: isRoleSaved, isPending: isRoleSavePending, toggleSave: toggleSaveRole } = useSavedJobs()
 
   useEffect(() => {
     fetch('/api/talent/companies')
@@ -268,14 +268,14 @@ export default function CompaniesTab() {
             {/* About */}
             <div className="border-t border-gray-200 pt-5">
               <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">About Company</h3>
-              <p className="text-xs text-gray-600 leading-relaxed">{selectedCompany.about || 'No description provided.'}</p>
+              <p className="whitespace-pre-wrap text-xs text-gray-600 leading-relaxed">{selectedCompany.about || 'No description provided.'}</p>
             </div>
 
             {/* Culture */}
             {selectedCompany.culture && (
               <div className="border-t border-gray-200 pt-5">
                 <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Culture & Worklife</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">{selectedCompany.culture}</p>
+                <p className="whitespace-pre-wrap text-xs text-gray-600 leading-relaxed">{selectedCompany.culture}</p>
               </div>
             )}
 
@@ -291,7 +291,9 @@ export default function CompaniesTab() {
                         <button
                           type="button"
                           onClick={() => toggleSaveRole(role.id)}
-                          className="p-1 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white"
+                          disabled={isRoleSavePending(role.id)}
+                          aria-busy={isRoleSavePending(role.id)}
+                          className="p-1 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white disabled:cursor-default disabled:opacity-50"
                           title={isRoleSaved(role.id) ? 'Saved' : 'Save Job'}
                         >
                           {isRoleSaved(role.id) ? (

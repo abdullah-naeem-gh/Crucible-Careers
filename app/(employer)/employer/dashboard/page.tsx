@@ -20,6 +20,7 @@ import RankingTab from "@/components/employer/dashboard/RankingTab";
 import VerificationRequestsTab from "@/components/employer/dashboard/VerificationRequestsTab";
 import { getEmployerProfile, saveEmployerProfile } from "@/lib/employer/services/profile.service";
 import { CompanyProfile } from "@/types/employer/profile";
+import { IconCircleCheck, IconEye, IconPlus } from "@tabler/icons-react";
 
 type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking" | "verification";
 
@@ -72,6 +73,10 @@ function EmployerDashboardContent() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<EmployerJob | null>(null);
+  const [isSavingJob, setIsSavingJob] = useState(false);
+  const [jobSaveError, setJobSaveError] = useState<string | null>(null);
+  const [savedJob, setSavedJob] = useState<EmployerJob | null>(null);
+  const [jobSaveKind, setJobSaveKind] = useState<"created" | "updated" | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [profile, setProfile] = useState<CompanyProfile>(DEFAULT_PROFILE);
   const [viewingJobApplicantsId, setViewingJobApplicantsId] = useState<string | null>(null);
@@ -81,6 +86,31 @@ function EmployerDashboardContent() {
   const [isDesktopLayout, setIsDesktopLayout] = useState(false);
   const [expandedSidebarWidth, setExpandedSidebarWidth] = useState(360);
   const company = profile.name || "Your Company";
+
+  const closeJobForm = () => {
+    if (isSavingJob) return;
+    setIsFormOpen(false);
+    setEditingJob(null);
+    setSavedJob(null);
+    setJobSaveError(null);
+    setJobSaveKind(null);
+  };
+
+  const openNewJobForm = () => {
+    setEditingJob(null);
+    setSavedJob(null);
+    setJobSaveError(null);
+    setJobSaveKind(null);
+    setIsFormOpen(true);
+  };
+
+  const openEditJobForm = (job: EmployerJob) => {
+    setEditingJob(job);
+    setSavedJob(null);
+    setJobSaveError(null);
+    setJobSaveKind(null);
+    setIsFormOpen(true);
+  };
 
   useEffect(() => {
     const updateSidebarMetrics = () => {
@@ -175,11 +205,17 @@ function EmployerDashboardContent() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsFormOpen(false);
+      if (event.key === "Escape" && !isSavingJob) {
+        setIsFormOpen(false);
+        setEditingJob(null);
+        setSavedJob(null);
+        setJobSaveError(null);
+        setJobSaveKind(null);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [isSavingJob]);
 
   const selectedJob = useMemo(
     () => jobs.find((job) => job.id === selectedJobId) ?? null,
@@ -232,9 +268,12 @@ function EmployerDashboardContent() {
   };
 
   const saveJob = async (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "hires" | "matchScore">) => {
+    const isEditing = !!editingJob;
+    setIsSavingJob(true);
+    setJobSaveError(null);
+
     try {
-      const isEditing = !!editingJob;
-      const url = isEditing ? `/api/employer/jobs/${editingJob.id}` : "/api/employer/jobs";
+      const url = isEditing ? "/api/employer/jobs/" + editingJob.id : "/api/employer/jobs";
       const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(url, {
@@ -243,24 +282,28 @@ function EmployerDashboardContent() {
         body: JSON.stringify(job),
       });
 
-      if (res.ok) {
-        const savedJob = await res.json();
+      const responseData = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(responseData?.error || "Unable to save the job. Please try again.");
+      } else {
+        const nextSavedJob = responseData as EmployerJob;
 
         if (isEditing) {
-          setJobs((current) => current.map(j => j.id === savedJob.id ? savedJob : j));
+          setJobs((current) => current.map((currentJob) => currentJob.id === nextSavedJob.id ? nextSavedJob : currentJob));
         } else {
-          setJobs((current) => [savedJob, ...current]);
+          setJobs((current) => [nextSavedJob, ...current]);
         }
 
-        setSelectedJobId(savedJob.id);
-        setIsFormOpen(false);
+        setSelectedJobId(nextSavedJob.id);
+        setSavedJob(nextSavedJob);
+        setJobSaveKind(isEditing ? "updated" : "created");
         setEditingJob(null);
-        changeTab("jobs");
-      } else {
-        console.error("Failed to save job");
       }
     } catch (err) {
       console.error("API error", err);
+      setJobSaveError(err instanceof Error ? err.message : "Unable to save the job. Please try again.");
+    } finally {
+      setIsSavingJob(false);
     }
   };
 
@@ -339,7 +382,7 @@ function EmployerDashboardContent() {
               jobCount={analytics.totalJobs}
               applicationCount={analytics.totalApplications}
               onTabChange={changeTab}
-              onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
+              onNewJob={openNewJobForm}
               collapsed={isSidebarCollapsed}
               onCollapsedChange={setIsSidebarCollapsed}
               isLoading={!hydrated}
@@ -359,7 +402,7 @@ function EmployerDashboardContent() {
                   company={company}
                   onOpenJob={openJob}
                   onOpenApplicants={openApplicantsKanban}
-                  onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
+                  onNewJob={openNewJobForm}
                   jobsLoading={jobsLoading}
                 />
               </PersistentTabPanel>
@@ -379,8 +422,8 @@ function EmployerDashboardContent() {
                     jobs={jobs}
                     selectedJob={selectedJob}
                     onSelect={setSelectedJobId}
-                    onNewJob={() => { setEditingJob(null); setIsFormOpen(true); }}
-                    onEditJob={(job) => { setEditingJob(job); setIsFormOpen(true); }}
+                    onNewJob={openNewJobForm}
+                    onEditJob={openEditJobForm}
                     onUpdate={updateJob}
                     onRemove={removeJob}
                     onViewApplications={setViewingJobApplicantsId}
@@ -453,7 +496,7 @@ function EmployerDashboardContent() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-            onClick={() => setIsFormOpen(false)}
+            onClick={closeJobForm}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -464,15 +507,85 @@ function EmployerDashboardContent() {
             >
               <div className="flex items-center justify-between border-b border-white/[0.07] px-6 py-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">{editingJob ? "Edit Job" : "Create New Job"}</h3>
-                  <p className="text-xs text-white/35">{editingJob ? "Update an existing role for TechCorp" : "Draft or publish a job role for TechCorp"}</p>
+                  <h3 className="text-lg font-semibold text-white">
+                    {savedJob ? "Job Saved" : editingJob ? "Edit Job" : "Create New Job"}
+                  </h3>
+                  <p className="text-xs text-white/35">
+                    {savedJob ? "Your changes are safely stored" : editingJob ? "Update an existing role for " + company : "Draft or publish a job role for " + company}
+                  </p>
                 </div>
-                <button onClick={() => setIsFormOpen(false)} className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 text-white/45 cursor-pointer hover:bg-white/5 hover:text-white">
+                <button
+                  type="button"
+                  onClick={closeJobForm}
+                  disabled={isSavingJob}
+                  aria-label="Close job form"
+                  className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 text-white/45 cursor-pointer hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                >
                   ×
                 </button>
               </div>
               <div className="p-6 overflow-y-auto max-h-[75vh] custom-scrollbar">
-                <JobForm defaultCompany={company} initialData={editingJob} onSubmit={saveJob} />
+                {savedJob ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mx-auto flex min-h-[24rem] max-w-xl flex-col items-center justify-center py-8 text-center"
+                  >
+                    <div className="grid h-20 w-20 place-items-center rounded-full border border-emerald-400/20 bg-emerald-400/10 text-emerald-400">
+                      <IconCircleCheck size={42} stroke={1.6} />
+                    </div>
+                    <h4 className="mt-6 text-2xl font-semibold text-white">
+                      {jobSaveKind === "updated"
+                        ? "Job updated successfully"
+                        : savedJob.status === "Draft"
+                          ? "Draft saved successfully"
+                          : "Job published successfully"}
+                    </h4>
+                    <p className="mt-2 max-w-md text-sm leading-relaxed text-white/45">
+                      {savedJob.title} is ready in your job listings. You can review the listing and manage its applications from the Jobs tab.
+                    </p>
+                    <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedJobId(savedJob.id);
+                          closeJobForm();
+                          changeTab("jobs");
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-900/40 transition-all hover:shadow-orange-800/50"
+                      >
+                        <IconEye size={16} />
+                        View Job
+                      </button>
+                      {jobSaveKind === "created" ? (
+                        <button
+                          type="button"
+                          onClick={openNewJobForm}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.025] px-5 py-2.5 text-sm font-semibold text-white/65 transition-colors hover:bg-white/[0.05] hover:text-white"
+                        >
+                          <IconPlus size={16} />
+                          Create Another
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={closeJobForm}
+                          className="rounded-full border border-white/10 bg-white/[0.025] px-5 py-2.5 text-sm font-semibold text-white/65 transition-colors hover:bg-white/[0.05] hover:text-white"
+                        >
+                          Close
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                ) : (
+                  <JobForm
+                    defaultCompany={company}
+                    initialData={editingJob}
+                    onSubmit={saveJob}
+                    isSubmitting={isSavingJob}
+                    submitError={jobSaveError}
+                  />
+                )}
               </div>
             </motion.div>
           </motion.div>

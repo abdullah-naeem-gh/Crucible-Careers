@@ -18,7 +18,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
   const [jobCount, setJobCount] = useState(JOBS.length)
   const [appCount, setAppCount] = useState(0)
   const { appliedJobIds } = useAppliedJobIds()
-  const { savedJobs, isSaved: isRoleSaved, toggleSave: toggleSaveRole } = useSavedJobs()
+  const { savedJobs, isSaved: isRoleSaved, isPending: isRoleSavePending, toggleSave: toggleSaveRole } = useSavedJobs()
   const savedCount = savedJobs.length
 
   useEffect(() => {
@@ -102,14 +102,14 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
                   {/* About */}
                   <div>
                     <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">About Us</h3>
-                    <p className="text-xs text-gray-600 leading-relaxed">{company.about || 'No description provided.'}</p>
+                    <p className="whitespace-pre-wrap text-xs text-gray-600 leading-relaxed">{company.about || 'No description provided.'}</p>
                   </div>
 
                   {/* Culture */}
                   {company.culture && (
                     <div className="border-t border-gray-100 pt-5">
                       <h3 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2.5">Culture & Values</h3>
-                      <p className="text-xs text-gray-600 leading-relaxed">{company.culture}</p>
+                      <p className="whitespace-pre-wrap text-xs text-gray-600 leading-relaxed">{company.culture}</p>
                     </div>
                   )}
 
@@ -229,7 +229,9 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
                         <button
                           type="button"
                           onClick={() => toggleSaveRole(role.id)}
-                          className="shrink-0 p-2 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white"
+                          disabled={isRoleSavePending(role.id)}
+                          aria-busy={isRoleSavePending(role.id)}
+                          className="shrink-0 p-2 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-gray-400 hover:text-[#FF6B00] transition-colors cursor-pointer bg-white disabled:cursor-default disabled:opacity-50"
                           title={isRoleSaved(role.id) ? 'Saved' : 'Save Job'}
                         >
                           {isRoleSaved(role.id) ? (

@@ -24,7 +24,9 @@ import {
 interface JobFormProps {
   defaultCompany?: string;
   initialData?: EmployerJob | null;
-  onSubmit: (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "hires" | "matchScore">) => void;
+  onSubmit: (job: Omit<EmployerJob, "id" | "postedAt" | "applications" | "views" | "hires" | "matchScore">) => Promise<void>;
+  isSubmitting?: boolean;
+  submitError?: string | null;
 }
 
 // ─── Animation variants ────────────────────────────────────────────────────────
@@ -250,7 +252,7 @@ function StepDots({ activeStep }: { activeStep: "details" | "form" }) {
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
-export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFormProps) {
+export default function JobForm({ defaultCompany, initialData, onSubmit, isSubmitting = false, submitError }: JobFormProps) {
   const [activeStep, setActiveStep] = useState<"details" | "form">("details");
   const [dir, setDir] = useState<1 | -1>(1);
 
@@ -348,14 +350,16 @@ export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFo
     setActiveStep("details");
   };
 
-  const handleFormSubmit = (event: React.FormEvent) => {
+  const handleFormSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (isSubmitting) return;
+
     if (activeStep === "details") {
       goToForm();
       return;
     }
 
-    onSubmit({
+    await onSubmit({
       title,
       location,
       locationType,
@@ -368,7 +372,6 @@ export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFo
       requirements: requirements.split("\n").map((item) => item.trim()).filter(Boolean),
       formConfig,
     });
-    reset();
   };
 
   return (
@@ -376,7 +379,8 @@ export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFo
       {/* Animated step progress */}
       <StepDots activeStep={activeStep} />
 
-      <form onSubmit={handleFormSubmit}>
+      <form onSubmit={handleFormSubmit} aria-busy={isSubmitting}>
+        <fieldset disabled={isSubmitting} className="m-0 min-w-0 border-0 p-0">
         <div className="relative overflow-hidden -m-2 p-2">
           <AnimatePresence mode="popLayout" custom={dir}>
             <motion.div
@@ -590,6 +594,17 @@ export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFo
 
                   <FormBuilder value={formConfig} onChange={setFormConfig} />
 
+                  {submitError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      role="alert"
+                      className="rounded-xl border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-sm text-red-300"
+                    >
+                      {submitError}
+                    </motion.div>
+                  )}
+
                   {/* Navigation */}
                   <div className="flex items-center justify-between pt-4 border-t border-white/[0.07]">
                     <button
@@ -611,12 +626,22 @@ export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFo
                       </button>
                       <motion.button
                         type="submit"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.97 }}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white shadow-md shadow-orange-900/40 hover:shadow-orange-800/50 transition-all"
+                        whileHover={isSubmitting ? {} : { scale: 1.02 }}
+                        whileTap={isSubmitting ? {} : { scale: 0.97 }}
+                        disabled={isSubmitting}
+                        className="inline-flex min-w-44 items-center justify-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm bg-gradient-to-r from-[#FF6B00] to-[#FF914D] text-white shadow-md shadow-orange-900/40 hover:shadow-orange-800/50 transition-all disabled:cursor-wait disabled:opacity-75"
                       >
-                        {status === "Draft" ? "Save Draft Job" : (initialData ? "Update Job Listing" : "Publish Job Listing")}
-                        <IconChevronRight size={14} />
+                        {isSubmitting ? (
+                          <>
+                            <IconLoader2 size={14} className="animate-spin" />
+                            {initialData ? "Updating…" : status === "Draft" ? "Saving Draft…" : "Publishing…"}
+                          </>
+                        ) : (
+                          <>
+                            {status === "Draft" ? "Save Draft Job" : (initialData ? "Update Job Listing" : "Publish Job Listing")}
+                            <IconChevronRight size={14} />
+                          </>
+                        )}
                       </motion.button>
                     </div>
                   </div>
@@ -625,6 +650,7 @@ export default function JobForm({ defaultCompany, initialData, onSubmit }: JobFo
             </motion.div>
           </AnimatePresence>
         </div>
+        </fieldset>
       </form>
     </div>
   );

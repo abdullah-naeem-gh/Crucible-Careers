@@ -10,6 +10,8 @@ import ChatNotificationBell from '@/components/shared/chat/ChatNotificationBell'
 import { subscribeChatChanges, getTotalUnread } from '@/lib/shared/chat/chat.service'
 import { subscribeVerificationChanges, getUnacknowledgedVerificationCount } from '@/lib/talent/services/experienceVerification.service'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { calculateCompletionPercentage, loadTalentProfile } from '@/lib/talent/services/profile.service'
+import type { TalentProfileLoadResult } from '@/lib/talent/services/profile.service'
 
 const TAB_ICONS: Record<string, React.ComponentType<any>> = { jobs: IconBriefcase, companies: IconBuilding, applications: IconFileDescription, saved: IconBookmark, profile: IconUser, exams: IconAward, messages: IconMessage, settings: IconSettings }
 
@@ -40,8 +42,8 @@ export default function TalentSidebar({
   jobCount = 4,
   applicationCount = 12,
   savedCount = 5,
-  profileNeedsSetup = false,
-  profileCompletion = 0,
+  profileNeedsSetup,
+  profileCompletion,
   profileFirstName,
   profileLastName,
   profileEmail,
@@ -60,6 +62,15 @@ export default function TalentSidebar({
   const [verificationUnread, setVerificationUnread] = useState(0)
   const { theme } = useDashboardTheme()
   const isDarkTheme = theme === 'dark'
+  const shouldLoadProfile =
+    profileNeedsSetup === undefined &&
+    profileCompletion === undefined &&
+    profileFirstName === undefined &&
+    profileLastName === undefined &&
+    profileEmail === undefined &&
+    profilePhotoUrl === undefined
+  const [loadedProfile, setLoadedProfile] = useState<TalentProfileLoadResult | null>(null)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(shouldLoadProfile)
   const collapseBtnClass = `transition-colors cursor-pointer rounded-full flex items-center justify-center ${
     isDarkTheme
       ? "text-white/45 hover:bg-white/10 hover:text-white"
@@ -67,8 +78,41 @@ export default function TalentSidebar({
   }`
   const expandedReady = !collapsed
   const railMode = collapsed
-  const initials = profileFirstName || profileLastName ? `${profileFirstName?.charAt(0) || ''}${profileLastName?.charAt(0) || ''}`.toUpperCase() : 'AJ'
-  const name = profileFirstName || profileLastName ? `${profileFirstName || ''} ${profileLastName || ''}`.trim() : 'Alex Johnson'
+  const resolvedFirstName = profileFirstName ?? loadedProfile?.firstName ?? loadedProfile?.profile?.firstName ?? ''
+  const resolvedLastName = profileLastName ?? loadedProfile?.lastName ?? loadedProfile?.profile?.lastName ?? ''
+  const resolvedEmail = profileEmail ?? loadedProfile?.profile?.email ?? ''
+  const resolvedPhotoUrl = profilePhotoUrl !== undefined ? profilePhotoUrl : loadedProfile?.profile?.photoUrl ?? null
+  const resolvedProfileCompletion = profileCompletion ?? calculateCompletionPercentage(loadedProfile?.profile ?? null)
+  const resolvedProfileNeedsSetup = profileNeedsSetup ?? (loadedProfile ? !loadedProfile.profile : false)
+  const identityLoading = isLoading || isLoadingProfile
+  const initials = resolvedFirstName || resolvedLastName
+    ? `${resolvedFirstName.charAt(0)}${resolvedLastName.charAt(0)}`.toUpperCase()
+    : 'T'
+  const name = resolvedFirstName || resolvedLastName
+    ? `${resolvedFirstName} ${resolvedLastName}`.trim()
+    : 'Talent'
+
+  useEffect(() => {
+    if (!shouldLoadProfile) {
+      setIsLoadingProfile(false)
+      return
+    }
+
+    let cancelled = false
+    setIsLoadingProfile(true)
+
+    loadTalentProfile()
+      .then((result) => {
+        if (!cancelled) setLoadedProfile(result)
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingProfile(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [shouldLoadProfile])
 
   useEffect(() => {
     const refresh = () => { getTotalUnread('talent').then(setChatUnread) }
@@ -147,11 +191,11 @@ export default function TalentSidebar({
       )}
       <div className={`flex min-h-0 w-full flex-1 flex-col ${railMode ? 'items-center' : 'min-w-[232px]'}`}>
         <div className={railMode ? 'mt-12 mb-5 flex flex-col items-center gap-2' : 'mb-7 flex items-center gap-3'}>
-          {isLoading ? (
+          {identityLoading ? (
             <Skeleton className={railMode ? 'h-8 w-8 shrink-0 rounded-full' : 'h-11 w-11 shrink-0 rounded-full'} />
-          ) : profilePhotoUrl ? (
+          ) : resolvedPhotoUrl ? (
             <img
-              src={profilePhotoUrl}
+              src={resolvedPhotoUrl}
               alt="Profile photo"
               className={railMode ? 'h-8 w-8 shrink-0 rounded-full object-cover shadow-[0_8px_18px_rgba(255,107,0,0.2)]' : 'h-11 w-11 shrink-0 rounded-full object-cover shadow-[0_8px_24px_rgba(255,107,0,0.24)]'}
             />
@@ -162,7 +206,7 @@ export default function TalentSidebar({
           )}
           {expandedReady && (
             <div className="min-w-0">
-              {isLoading ? (
+              {identityLoading ? (
                 <>
                   <Skeleton className="mb-1.5 h-3.5 w-24 rounded" />
                   <Skeleton className="h-3 w-32 rounded" />
@@ -170,15 +214,17 @@ export default function TalentSidebar({
               ) : (
                 <>
                   <div className="truncate pr-2 font-semibold text-gray-900 dark:text-white">{name}</div>
-                  <div className="truncate pr-2 text-xs text-gray-500 dark:text-white/40">{profileEmail || 'Talent account'}</div>
+                  {resolvedEmail && (
+                    <div className="truncate pr-2 text-xs text-gray-500 dark:text-white/40">{resolvedEmail}</div>
+                  )}
                 </>
               )}
             </div>
           )}
         </div>
-      <nav className={railMode ? 'flex w-full flex-col items-center gap-1.5 text-sm' : 'space-y-1.5 text-sm'}>{renderTab('profile', 'Profile', verificationUnread > 0 ? verificationUnread : undefined, profileNeedsSetup ? 'Set-up Now' : undefined)}{renderTab('jobs', 'Jobs', jobCount, undefined, jobCountLoading)}{renderTab('companies', 'Companies')}{renderTab('applications', 'Applications', applicationCount, undefined, applicationCountLoading)}{renderTab('saved', 'Saved', savedCount, undefined, savedCountLoading)}{renderTab('exams', 'Exams & Badges')}{renderTab('messages', 'Messages', chatUnread > 0 ? chatUnread : undefined)}{renderTab('settings', 'Settings')}</nav>
+      <nav className={railMode ? 'flex w-full flex-col items-center gap-1.5 text-sm' : 'space-y-1.5 text-sm'}>{renderTab('profile', 'Profile', verificationUnread > 0 ? verificationUnread : undefined, resolvedProfileNeedsSetup ? 'Set-up Now' : undefined)}{renderTab('jobs', 'Jobs', jobCount, undefined, jobCountLoading)}{renderTab('companies', 'Companies')}{renderTab('applications', 'Applications', applicationCount, undefined, applicationCountLoading)}{renderTab('saved', 'Saved', savedCount, undefined, savedCountLoading)}{renderTab('exams', 'Exams & Badges')}{renderTab('messages', 'Messages', chatUnread > 0 ? chatUnread : undefined)}{renderTab('settings', 'Settings')}</nav>
       <div className="mt-6 grid grid-cols-2 gap-2 lg:hidden"><Link href={onTabChange ? '#' : '/talent/dashboard/profile'} onClick={(event) => { if (onTabChange) { event.preventDefault(); onTabChange('profile') } }} className="rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-4 py-2.5 text-center text-sm font-medium text-white">Profile</Link><a href="#" onClick={handleLogout} className="rounded-xl border border-gray-200 bg-white/60 px-4 py-2.5 text-center text-sm text-gray-600 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/60">Logout</a></div>
-      {expandedReady && <div className="mt-auto hidden rounded-2xl border border-orange-200 bg-gradient-to-br from-[#FF6B00]/10 to-[#FF914D]/10 p-4 dark:border-orange-500/20 dark:from-orange-500/10 dark:to-orange-400/[0.035] lg:block"><div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">Profile Completion</div><div className="my-2 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-white/10"><div className="h-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] transition-all duration-500" style={{ width: `${profileCompletion}%` }} /></div><div className="mb-4 text-xs leading-relaxed text-gray-600 dark:text-white/45">{profileCompletion}% complete. Keep building to stand out!</div><Link href={onTabChange ? '#' : '/talent/dashboard/profile'} onClick={(event) => { if (onTabChange) { event.preventDefault(); onTabChange('profile') } }} className="inline-block rounded-lg bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-3 py-2 text-xs font-medium text-white shadow-[0_8px_20px_rgba(255,107,0,0.2)]">{profileNeedsSetup ? 'Set Up Profile' : 'Update Profile'}</Link></div>}
+      {expandedReady && <div className="mt-auto hidden rounded-2xl border border-orange-200 bg-gradient-to-br from-[#FF6B00]/10 to-[#FF914D]/10 p-4 dark:border-orange-500/20 dark:from-orange-500/10 dark:to-orange-400/[0.035] lg:block"><div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">Profile Completion</div><div className="my-2 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-white/10"><div className="h-full bg-gradient-to-r from-[#FF6B00] to-[#FF914D] transition-all duration-500" style={{ width: `${resolvedProfileCompletion}%` }} /></div><div className="mb-4 text-xs leading-relaxed text-gray-600 dark:text-white/45">{resolvedProfileCompletion}% complete. Keep building to stand out!</div><Link href={onTabChange ? '#' : '/talent/dashboard/profile'} onClick={(event) => { if (onTabChange) { event.preventDefault(); onTabChange('profile') } }} className="inline-block rounded-lg bg-gradient-to-r from-[#FF6B00] to-[#FF914D] px-3 py-2 text-xs font-medium text-white shadow-[0_8px_20px_rgba(255,107,0,0.2)]">{resolvedProfileNeedsSetup ? 'Set Up Profile' : 'Update Profile'}</Link></div>}
       <div className={railMode ? 'mt-auto hidden flex-col items-center gap-3 text-xs text-gray-400 dark:text-white/35 lg:flex' : 'mt-4 hidden items-center justify-between text-xs text-gray-400 dark:text-white/35 lg:flex'}>{expandedReady && <Link href="/gateway" className="transition-colors hover:text-gray-700 dark:hover:text-white/70">Gateway</Link>}<a href="#" onClick={handleLogout} title={railMode ? 'Logout' : undefined} className={railMode ? 'grid h-8 w-8 place-items-center rounded-full text-gray-400 transition-colors hover:text-red-800 dark:text-white/42 dark:hover:text-red-300' : 'transition-colors hover:text-red-800 dark:hover:text-red-300'}>{railMode ? <IconLogout size={18} stroke={1.8} /> : 'Logout'}</a></div>
     </div>
     </motion.aside>
