@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { getCurrentUser, logout } from '@/lib/shared/auth/actions'
 import { loadTalentProfile } from '@/lib/talent/services/profile.service'
+import { isSafeRedirectPath } from '@/lib/shared/safeRedirect'
 import type { UserRole } from '@/types/shared/auth'
 
 function VerifiedContent() {
@@ -56,14 +57,17 @@ function VerifiedContent() {
           return
         }
 
+        const redirect = searchParams.get('redirect')
         let nextPath: string
         if (role === 'employer') {
           const contextResponse = await fetch('/api/employer/context')
-          nextPath = contextResponse.ok ? '/employer/dashboard' : '/employer/setup'
+          nextPath = contextResponse.ok
+            ? (isSafeRedirectPath(redirect) ? redirect : '/employer/dashboard')
+            : '/employer/setup'
         } else {
           const roleProfile = await loadTalentProfile()
           nextPath = roleProfile
-            ? '/talent/dashboard'
+            ? (isSafeRedirectPath(redirect) ? redirect : '/talent/dashboard')
             : `/talent/onboarding?name=${encodeURIComponent(firstName)}`
         }
 

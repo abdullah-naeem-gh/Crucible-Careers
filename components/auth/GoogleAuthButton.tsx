@@ -9,15 +9,16 @@ interface GoogleAuthButtonProps {
   portal: UserRole
   isDarkTheme?: boolean
   onError?: (message: string) => void
+  redirectTo?: string
 }
 
-export default function GoogleAuthButton({ portal, isDarkTheme = false, onError }: GoogleAuthButtonProps) {
+export default function GoogleAuthButton({ portal, isDarkTheme = false, onError, redirectTo }: GoogleAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleClick = async () => {
     setIsLoading(true)
     try {
-      await signInWithGoogle(portal)
+      await signInWithGoogle(portal, redirectTo)
       // Browser is redirected to Google — component stays "loading" until then.
     } catch (err) {
       setIsLoading(false)

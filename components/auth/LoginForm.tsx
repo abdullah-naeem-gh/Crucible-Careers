@@ -9,6 +9,7 @@ interface LoginFormProps {
   onSubmit: (formData: LoginFormData) => void
   isLoading?: boolean
   onGoogleError?: (message: string) => void
+  redirectTo?: string
 }
 
 export interface LoginFormData {
@@ -16,7 +17,7 @@ export interface LoginFormData {
   password: string
 }
 
-export default function LoginForm({ userType, onSubmit, isLoading = false, onGoogleError }: LoginFormProps) {
+export default function LoginForm({ userType, onSubmit, isLoading = false, onGoogleError, redirectTo }: LoginFormProps) {
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: ''
@@ -148,7 +149,7 @@ export default function LoginForm({ userType, onSubmit, isLoading = false, onGoo
         </p>
       </form>
 
-      <GoogleAuthButton portal={userType} isDarkTheme={isDarkTheme} onError={onGoogleError} />
+      <GoogleAuthButton portal={userType} isDarkTheme={isDarkTheme} onError={onGoogleError} redirectTo={redirectTo} />
     </motion.div>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   IconFileText,
@@ -17,6 +17,8 @@ import { formatEducationSummary } from '@/lib/shared/educationSummary'
 import { createBrowserSupabaseClient } from '@/lib/shared/supabase/client'
 import type { TalentProfile } from '@/types/talent/profile'
 import { addReview } from '@/lib/employer/ranking/reviews'
+import { getCurrentUser, logout } from '@/lib/shared/auth/actions'
+import AuthRequiredModal from '@/components/shared/modal/AuthRequiredModal'
 
 // Rejected experience entries don't count toward years-of-experience — same
 // filter computeExperienceYears() applies internally, mirrored here so the
@@ -91,8 +93,10 @@ function isLockedByProfile(field: FormField, profile: TalentProfile | null): boo
 
 export default function ApplyFormPage() {
   const params = useParams()
+  const router = useRouter()
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug
 
+  const [authGate, setAuthGate] = useState<'signed-out' | 'wrong-role' | null>(null)
   const [job, setJob] = useState<EmployerJob | null>(null)
   const [jobNotFound, setJobNotFound] = useState(false)
   const [profile, setProfile] = useState<TalentProfile | null>(null)
@@ -129,6 +133,29 @@ export default function ApplyFormPage() {
       setProfileLoading(false)
     })
   }, [])
+
+  // Validate the visitor is an authenticated talent user — this link may
+  // have been shared publicly, so anyone (logged out, or an employer) can
+  // land here directly.
+  useEffect(() => {
+    getCurrentUser().then((user) => {
+      if (!user) {
+        setAuthGate('signed-out')
+      } else if (user.profile?.role === 'employer') {
+        setAuthGate('wrong-role')
+      } else {
+        setAuthGate(null)
+      }
+    })
+  }, [])
+
+  const handleAuthModalPrimaryAction = async () => {
+    const redirectTarget = `/apply/${slug}`
+    if (authGate === 'wrong-role') {
+      await logout()
+    }
+    router.push(`/talent/login?redirect=${encodeURIComponent(redirectTarget)}`)
+  }
 
   const formConfig = useMemo<FormConfig>(() => {
     if (job?.formConfig) return job.formConfig
@@ -462,6 +489,14 @@ export default function ApplyFormPage() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
+      {authGate && (
+        <AuthRequiredModal
+          isOpen
+          variant={authGate}
+          onClose={() => setAuthGate(null)}
+          onPrimaryAction={handleAuthModalPrimaryAction}
+        />
+      )}
       <header className="border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
           <Link href="/" className="text-xl font-semibold tracking-tight">Crucible</Link>
