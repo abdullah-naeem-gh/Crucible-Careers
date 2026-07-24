@@ -212,7 +212,7 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
   const renderConvItem = (conv: ChatConversation, showActions = false) => {
     const isSelected = selectedId === conv.id
     const unread     = role === 'talent' ? conv.unreadByTalent : conv.unreadByEmployer
-    const otherName  = role === 'talent' ? conv.companyName : conv.talentName
+    const otherName  = role === 'talent' ? (conv.recruiterName || conv.companyName) : conv.talentName
     const preview    = conv.requestState === 'accepted'
       ? (messages.find(m => m.conversationId === conv.id) ? '' : conv.initialMessage)
       : conv.initialMessage
@@ -315,7 +315,8 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
     }
 
     const convMessages = messages.filter(m => m.conversationId === selectedConv.id)
-    const otherName = role === 'talent' ? selectedConv.companyName : selectedConv.talentName
+    const otherName = role === 'talent' ? (selectedConv.recruiterName || selectedConv.companyName) : selectedConv.talentName
+    const otherAvatar = role === 'talent' ? selectedConv.recruiterAvatarUrl : null
     const canSend = selectedConv.requestState === 'accepted'
     const isIncomingRequest = selectedConv.requestState === 'pending' && selectedConv.initiatedBy !== role
 
@@ -323,12 +324,13 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
       <div className="flex flex-col h-full">
         {/* Thread header */}
         <div className={`flex items-center gap-3 px-5 py-4 border-b ${divider} shrink-0`}>
-          <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] flex items-center justify-center text-sm font-semibold text-white shadow-[0_4px_12px_rgba(255,107,0,0.2)]">
-            {otherName.charAt(0).toUpperCase()}
+          <div className="relative h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF914D] flex items-center justify-center overflow-visible text-sm font-semibold text-white shadow-[0_4px_12px_rgba(255,107,0,0.2)]">
+            {otherAvatar ? <img src={otherAvatar} alt="" className="h-full w-full rounded-full object-cover" /> : otherName.charAt(0).toUpperCase()}
+            {role === 'talent' && selectedConv.companyLogoUrl && <img src={selectedConv.companyLogoUrl} alt="" className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-[#171717] bg-white object-cover" />}
           </div>
           <div className="min-w-0 flex-1">
             <div className={`text-sm font-semibold ${textPri}`}>{otherName}</div>
-            <div className={`text-[10px] ${textSec}`}>{selectedConv.jobTitle} · {selectedConv.companyName}</div>
+            <div className={`text-[10px] ${textSec}`}>{selectedConv.jobTitle} · {selectedConv.companyName}{selectedConv.companyVerified ? ' ✓' : ''}</div>
           </div>
           {selectedConv.requestState === 'pending' && (
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
@@ -391,6 +393,7 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
           {/* Always show the initial message as the first bubble */}
           <div className={`flex ${selectedConv.initiatedBy === role ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[72%] ${selectedConv.initiatedBy === role ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
+              {selectedConv.initiatedBy !== role && role === 'talent' && <div className={`px-1 text-[10px] ${textSec}`}>{selectedConv.recruiterName} · {selectedConv.companyName}{selectedConv.companyVerified ? ' ✓' : ''}</div>}
               <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
                 selectedConv.initiatedBy === role
                   ? 'bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-white rounded-br-sm'
@@ -410,6 +413,7 @@ export default function MessagesTab({ role, myDisplayName, initialConversationId
             return (
               <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[72%] ${isMine ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
+                  {!isMine && msg.senderName && <div className={`px-1 text-[10px] ${textSec}`}>{msg.senderName}{msg.senderCompanyName ? ` · ${msg.senderCompanyName}` : ''}{msg.senderCompanyVerified ? ' ✓' : ''}</div>}
                   <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
                     isMine
                       ? 'bg-gradient-to-br from-[#FF6B00] to-[#FF914D] text-white rounded-br-sm'

@@ -25,7 +25,7 @@ export async function POST(
   // client-supplied employer id.
   const { data: application, error: applicationError } = await supabase
     .from('applications')
-    .select('id, talent_id, jobs(employer_id)')
+    .select('id, talent_id, jobs(company_id)')
     .eq('id', applicationId)
     .single()
 
@@ -33,7 +33,7 @@ export async function POST(
     return NextResponse.json({ error: 'Application not found' }, { status: 404 })
   }
 
-  const employerId = (application.jobs as any)?.employer_id
+  const employerId = (application.jobs as any)?.company_id
   if (!employerId) {
     return NextResponse.json({ error: 'Application not found' }, { status: 404 })
   }
@@ -42,7 +42,7 @@ export async function POST(
     .from('company_reviews')
     .insert({
       application_id: applicationId,
-      employer_id: employerId,
+      company_id: employerId,
       talent_id: user.id,
       rating,
       comment,

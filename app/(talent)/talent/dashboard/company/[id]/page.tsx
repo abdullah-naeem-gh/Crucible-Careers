@@ -89,7 +89,10 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ id: s
                     </div>
                     <div>
                       <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">Profile</p>
-                      <h1 className="text-xl font-bold text-gray-900 leading-tight">{company.name}</h1>
+                      <h1 className="flex items-center gap-1.5 text-xl font-bold leading-tight text-gray-900">
+                        {company.name}
+                        {company.verified && <span title="Verified by Crucible Careers" className="text-base text-sky-500">✓</span>}
+                      </h1>
                       {company.tagline && (
                         <p className="text-xs text-gray-500 font-medium mt-0.5">{company.tagline}</p>
                       )}

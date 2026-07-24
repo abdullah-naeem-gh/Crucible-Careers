@@ -9,12 +9,13 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { copyToClipboard } from "@/lib/shared/clipboard";
 
 const JOBS_PER_PAGE = 10;
-type JobFilter = "all" | "active" | "inactive";
+type JobFilter = "all" | "active" | "inactive" | "archived";
 
 const jobFilters: { label: string; value: JobFilter }[] = [
   { label: "All", value: "all" },
   { label: "Active", value: "active" },
-  { label: "Archived / Drafted", value: "inactive" },
+  { label: "Paused / Drafted", value: "inactive" },
+  { label: "Archived", value: "archived" },
 ];
 
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
@@ -103,7 +104,8 @@ interface JobsTabProps {
   onNewJob: () => void;
   onEditJob: (job: EmployerJob) => void;
   onUpdate: (id: string, updates: Partial<EmployerJob>) => void;
-  onRemove: (id: string) => void;
+  onRemove: (id: string, hard?: boolean) => void;
+  canHardDelete?: boolean;
   onViewApplications: (id: string) => void;
 }
 
@@ -115,6 +117,7 @@ export default function JobsTab({
   onEditJob,
   onUpdate,
   onRemove,
+  canHardDelete = false,
   onViewApplications,
 }: JobsTabProps) {
   const [isFormPreviewOpen, setIsFormPreviewOpen] = useState(false);
@@ -358,7 +361,7 @@ export default function JobsTab({
                   onClick={() => setJobToDelete(selectedJob.id)} 
                   className="rounded-lg border border-red-500/15 bg-red-500/[0.07] px-3 py-2 text-xs text-red-300 cursor-pointer hover:bg-red-500/10"
                 >
-                  Delete
+                  Archive
                 </button>
               </div>
             </div>
@@ -461,8 +464,8 @@ export default function JobsTab({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-white">Delete Job</h3>
-              <p className="mb-6 text-sm text-white/50">Are you sure you want to delete this job? This action cannot be undone and will permanently remove the listing and all associated applications.</p>
+              <h3 className="mb-2 text-lg font-semibold text-white">Remove Job</h3>
+              <p className="mb-6 text-sm text-white/50">Archiving removes the job from talent views while preserving company history. Admins may permanently delete it and its dependent data.</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setJobToDelete(null)}
@@ -475,10 +478,19 @@ export default function JobsTab({
                     onRemove(jobToDelete);
                     setJobToDelete(null);
                   }}
+                  className="flex-1 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 cursor-pointer"
+                >
+                  Archive Job
+                </button>
+                {canHardDelete && <button
+                  onClick={() => {
+                    if (window.confirm('Permanently delete this job and its dependent data?')) onRemove(jobToDelete, true);
+                    setJobToDelete(null);
+                  }}
                   className="flex-1 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(239,68,68,0.2)] transition-colors hover:bg-red-600 cursor-pointer"
                 >
-                  Delete Job
-                </button>
+                  Delete
+                </button>}
               </div>
             </motion.div>
           </motion.div>

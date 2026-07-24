@@ -1,21 +1,19 @@
 import { NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/shared/supabase/admin'
+import { companyErrorResponse, getEmployerContext } from '@/lib/employer/server/company-context'
+import { recordCompanyAudit } from '@/lib/employer/server/company-admin'
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  try {
+  const context = await getEmployerContext({ requireAdmin: true })
+  const supabase = createSupabaseAdminClient()
 
   const { data: existing, error: fetchError } = await supabase
     .from('talent_experience_verifications')
-    .select('id, talent_id, employer_id, status')
+    .select('id, talent_id, company_id, status')
     .eq('id', id)
-    .eq('employer_id', user.id)
+    .eq('company_id', context.companyId)
     .single()
 
   if (fetchError || !existing) {
@@ -29,7 +27,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
 
-  const admin = createSupabaseAdminClient()
+  const admin = supabase
 
   if (action === 'approve') {
     const { error } = await admin
@@ -37,6 +35,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       .update({ status: 'verified', rejection_reason: null, responded_at: new Date().toISOString(), talent_acknowledged_at: null })
       .eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    await recordCompanyAudit({ companyId: context.companyId, actorUserId: context.userId, action: 'experience_verification.approved', entityType: 'verification', entityId: id })
     return NextResponse.json({ success: true })
   }
 
@@ -55,9 +54,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body?.blacklist) {
     const { error: blacklistError } = await admin
       .from('employer_talent_blacklist')
-      .upsert({ employer_id: user.id, talent_id: existing.talent_id, reason }, { onConflict: 'employer_id,talent_id' })
+      .upsert({ company_id: context.companyId, acted_by_user_id: context.userId, talent_id: existing.talent_id, reason }, { onConflict: 'company_id,talent_id' })
     if (blacklistError) console.error('Error blacklisting talent:', blacklistError)
   }
 
+  await recordCompanyAudit({ companyId: context.companyId, actorUserId: context.userId, action: 'experience_verification.rejected', entityType: 'verification', entityId: id, metadata: { blacklisted: Boolean(body?.blacklist) } })
   return NextResponse.json({ success: true })
+  } catch (error) {
+    return companyErrorResponse(error)
+  }
 }

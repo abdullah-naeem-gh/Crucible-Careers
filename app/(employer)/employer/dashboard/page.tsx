@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import EmployerSidebar from "@/components/employer/sidebar/EmployerSidebar";
 import JobApplicationsView from "@/components/employer/jobs/JobApplicationsView";
@@ -18,11 +18,13 @@ import MessagesTab from "@/components/shared/chat/MessagesTab";
 import EmployerChatDrawer from "@/components/employer/chat/EmployerChatDrawer";
 import RankingTab from "@/components/employer/dashboard/RankingTab";
 import VerificationRequestsTab from "@/components/employer/dashboard/VerificationRequestsTab";
+import TeamAccessTab from "@/components/employer/dashboard/TeamAccessTab";
 import { getEmployerProfile, saveEmployerProfile } from "@/lib/employer/services/profile.service";
 import { CompanyProfile } from "@/types/employer/profile";
+import type { EmployerContext } from "@/types/employer/company";
 import { IconCircleCheck, IconEye, IconPlus } from "@tabler/icons-react";
 
-type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking" | "verification";
+type EmployerTab = "overview" | "jobs" | "applicants" | "analytics" | "profile" | "messages" | "ranking" | "verification" | "team";
 
 const DEFAULT_PROFILE: CompanyProfile = {
   name: "TechCorp",
@@ -47,10 +49,20 @@ const DEFAULT_PROFILE: CompanyProfile = {
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 
 function PersistentTabPanel({ active, children }: { active: boolean; children: React.ReactNode }) {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <div className={active ? "h-full" : "hidden"} aria-hidden={!active}>
+    <motion.div
+      initial={{ opacity: 0, y: reduceMotion ? 0 : 12, scale: reduceMotion ? 1 : 0.995 }}
+      animate={active
+        ? { opacity: 1, y: 0, scale: 1 }
+        : { opacity: 0, y: reduceMotion ? 0 : 12, scale: reduceMotion ? 1 : 0.995 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      className={active ? "h-full" : "hidden"}
+      aria-hidden={!active}
+    >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -62,7 +74,7 @@ function EmployerDashboardContent() {
   const requestedStage = searchParams.get("stage") as ApplicantPipelineStage | null;
   const onboarded = searchParams.get("onboarded");
   const initialTab: EmployerTab =
-    requestedTab === "jobs" || requestedTab === "applicants" || requestedTab === "analytics" || requestedTab === "profile" || requestedTab === "messages" || requestedTab === "ranking" || requestedTab === "verification"
+    requestedTab === "jobs" || requestedTab === "applicants" || requestedTab === "analytics" || requestedTab === "profile" || requestedTab === "messages" || requestedTab === "ranking" || requestedTab === "verification" || requestedTab === "team"
       ? (requestedTab as EmployerTab)
       : "overview";
 
@@ -79,6 +91,7 @@ function EmployerDashboardContent() {
   const [jobSaveKind, setJobSaveKind] = useState<"created" | "updated" | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [profile, setProfile] = useState<CompanyProfile>(DEFAULT_PROFILE);
+  const [employerContext, setEmployerContext] = useState<EmployerContext | null>(null);
   const [viewingJobApplicantsId, setViewingJobApplicantsId] = useState<string | null>(null);
   const [candidateChatTarget, setCandidateChatTarget] = useState<EmployerCandidateChatTarget | null>(null);
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
@@ -156,6 +169,8 @@ function EmployerDashboardContent() {
     // Fetch profile from API
     const loadProfile = async () => {
       try {
+        const contextResponse = await fetch('/api/employer/context');
+        if (contextResponse.ok) setEmployerContext((await contextResponse.json()).context);
         const { profile: dbProfile, name } = await getEmployerProfile();
         if (dbProfile) {
           setProfile(dbProfile);
@@ -165,7 +180,7 @@ function EmployerDashboardContent() {
           if (name) setProfile((prev) => ({ ...prev, name }));
           if (!onboarded) {
             // First visit with no profile → redirect to onboarding
-            router.replace("/employer/onboarding");
+            router.replace("/employer/setup");
           }
         }
       } catch (err) {
@@ -324,12 +339,12 @@ function EmployerDashboardContent() {
     }
   };
 
-  const removeJob = async (id: string) => {
+  const removeJob = async (id: string, hard = false) => {
     setJobs((current) => current.filter((job) => job.id !== id));
     if (selectedJobId === id) setSelectedJobId(null);
 
     try {
-      const res = await fetch(`/api/employer/jobs/${id}`, {
+      const res = await fetch(`/api/employer/jobs/${id}${hard ? "?hard=true" : ""}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -379,6 +394,7 @@ function EmployerDashboardContent() {
               activeTab={activeTab}
               company={company}
               logoUrl={profile.logoUrl}
+              verified={employerContext?.verificationStatus === "verified"}
               jobCount={analytics.totalJobs}
               applicationCount={analytics.totalApplications}
               onTabChange={changeTab}
@@ -426,6 +442,7 @@ function EmployerDashboardContent() {
                     onEditJob={openEditJobForm}
                     onUpdate={updateJob}
                     onRemove={removeJob}
+                    canHardDelete={employerContext?.role === "admin"}
                     onViewApplications={setViewingJobApplicantsId}
                   />
                 )}
@@ -453,7 +470,7 @@ function EmployerDashboardContent() {
             )}
             {(visitedTabs.has("profile") || activeTab === "profile") && (
               <PersistentTabPanel active={activeTab === "profile"}>
-                <ProfileTab profile={profile} onChange={handleProfileChange} isLoading={!hydrated} />
+                <ProfileTab profile={profile} onChange={handleProfileChange} isLoading={!hydrated} readOnly={employerContext?.role === "recruiter"} companyId={employerContext?.companyId} />
               </PersistentTabPanel>
             )}
             {(visitedTabs.has("messages") || activeTab === "messages") && (
@@ -473,6 +490,11 @@ function EmployerDashboardContent() {
             {(visitedTabs.has("verification") || activeTab === "verification") && (
               <PersistentTabPanel active={activeTab === "verification"}>
                 <VerificationRequestsTab />
+              </PersistentTabPanel>
+            )}
+            {(visitedTabs.has("team") || activeTab === "team") && (
+              <PersistentTabPanel active={activeTab === "team"}>
+                <TeamAccessTab />
               </PersistentTabPanel>
             )}
           </motion.div>

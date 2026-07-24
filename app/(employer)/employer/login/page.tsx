@@ -28,7 +28,8 @@ export default function EmployerLogin() {
         return
       }
 
-      router.push('/employer/dashboard')
+      const requestedNext = new URLSearchParams(window.location.search).get('next')
+      router.push(requestedNext?.startsWith('/employer/') ? requestedNext : '/employer/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please check your credentials.')
     } finally {

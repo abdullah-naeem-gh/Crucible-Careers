@@ -12,6 +12,7 @@ export default function EmployerSignUp() {
   const router = useRouter()
 
   const [error, setError] = useState('')
+  const [employerMode, setEmployerMode] = useState<'company' | 'recruiter' | null>(null)
 
   const handleSubmit = async (formData: SignUpFormData) => {
     setIsLoading(true)
@@ -21,9 +22,11 @@ export default function EmployerSignUp() {
         email: formData.email,
         password: formData.password,
         role: 'employer',
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        firstName: employerMode === 'recruiter' ? formData.firstName : undefined,
+        lastName: employerMode === 'recruiter' ? formData.lastName : undefined,
         company: formData.company,
+        employerIntent: employerMode === 'recruiter' ? 'join_company' : 'create_company',
+        companyJoinEmail: formData.companyJoinEmail,
       })
       router.push(`/employer/check-email?email=${encodeURIComponent(formData.email)}`)
     } catch (err) {
@@ -188,12 +191,27 @@ export default function EmployerSignUp() {
                 </div>
               )}
 
+              {!employerMode ? (
+                <div className="space-y-3">
+                  <button type="button" onClick={() => setEmployerMode('company')} className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-orange-500/40 hover:bg-orange-500/[0.06]">
+                    <div className="text-sm font-semibold text-white">My company is joining for the first time</div>
+                    <p className="mt-1 text-xs leading-relaxed text-white/45">Create the company workspace and become its owner-admin.</p>
+                  </button>
+                  <button type="button" onClick={() => setEmployerMode('recruiter')} className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-orange-500/40 hover:bg-orange-500/[0.06]">
+                    <div className="text-sm font-semibold text-white">I’m a recruiter joining an existing company</div>
+                    <p className="mt-1 text-xs leading-relaxed text-white/45">Request affiliation using the company’s Crucible account email.</p>
+                  </button>
+                </div>
+              ) : <>
+              <button type="button" onClick={() => setEmployerMode(null)} className="mb-3 text-xs font-semibold text-white/45 hover:text-white">← Change account type</button>
               <SignUpForm
                 userType="employer"
+                employerMode={employerMode}
                 onSubmit={handleSubmit}
                 isLoading={isLoading}
                 onGoogleError={setError}
               />
+              </>}
 
               <div className="mt-4 text-center sm:mt-6">
                                   <p className="text-gray-300 text-sm">

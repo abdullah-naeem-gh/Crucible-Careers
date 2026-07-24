@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { getCurrentUser, logout } from '@/lib/shared/auth/actions'
 import { loadTalentProfile } from '@/lib/talent/services/profile.service'
-import { getEmployerProfile } from '@/lib/employer/services/profile.service'
 import { isSafeRedirectPath } from '@/lib/shared/safeRedirect'
 import type { UserRole } from '@/types/shared/auth'
 
@@ -58,11 +57,19 @@ function VerifiedContent() {
           return
         }
 
-        const roleProfile = role === 'employer' ? await getEmployerProfile() : await loadTalentProfile()
         const redirect = searchParams.get('redirect')
-        const nextPath = roleProfile
-          ? (isSafeRedirectPath(redirect) ? redirect : `/${role}/dashboard`)
-          : `/${role}/onboarding?name=${encodeURIComponent(firstName)}`
+        let nextPath: string
+        if (role === 'employer') {
+          const contextResponse = await fetch('/api/employer/context')
+          nextPath = contextResponse.ok
+            ? (isSafeRedirectPath(redirect) ? redirect : '/employer/dashboard')
+            : '/employer/setup'
+        } else {
+          const roleProfile = await loadTalentProfile()
+          nextPath = roleProfile
+            ? (isSafeRedirectPath(redirect) ? redirect : '/talent/dashboard')
+            : `/talent/onboarding?name=${encodeURIComponent(firstName)}`
+        }
 
         if (newSignup) {
           setIsNewSignup(true)

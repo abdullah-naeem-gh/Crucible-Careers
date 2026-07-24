@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/shared/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/shared/supabase/admin";
+import { getEmployerContext } from "@/lib/employer/server/company-context";
+import { recordCompanyAudit } from "@/lib/employer/server/company-admin";
 import { getValidAccessToken } from "@/lib/employer/calendar/tokens";
 import { deleteGoogleEvent } from "@/lib/employer/calendar/googleCalendar";
 import { deleteMicrosoftEvent } from "@/lib/employer/calendar/microsoftCalendar";
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const context = await getEmployerContext();
+  const supabase = createSupabaseAdminClient();
 
   const { data: interview, error: fetchError } = await supabase
     .from("interviews")
-    .select("id, calendar_provider, calendar_event_id")
+    .select("id, organizer_user_id, calendar_provider, calendar_event_id")
     .eq("id", id)
-    .eq("employer_id", user.id)
+    .eq("company_id", context.companyId)
     .single();
 
   if (fetchError || !interview) {
+    return NextResponse.json({ error: "Interview not found" }, { status: 404 });
+  }
+  if (context.role !== 'admin' && interview.organizer_user_id !== context.userId && !context.permissions.manageAllApplicants) {
     return NextResponse.json({ error: "Interview not found" }, { status: 404 });
   }
 
@@ -28,7 +29,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     .from("interviews")
     .delete()
     .eq("id", id)
-    .eq("employer_id", user.id);
+    .eq("company_id", context.companyId);
 
   if (deleteError) {
     console.error("Error deleting interview:", deleteError);
@@ -40,7 +41,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (interview.calendar_provider && interview.calendar_event_id) {
     try {
       const provider = interview.calendar_provider as "google" | "microsoft";
-      const accessToken = await getValidAccessToken(supabase, user.id, provider);
+      const accessToken = await getValidAccessToken(supabase, context.userId, provider);
       if (accessToken) {
         if (provider === "google") {
           await deleteGoogleEvent(accessToken, interview.calendar_event_id);
@@ -53,5 +54,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
   }
 
+  await recordCompanyAudit({ companyId: context.companyId, actorUserId: context.userId, action: 'interview.deleted', entityType: 'interview', entityId: id });
   return NextResponse.json({ success: true });
 }

@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('employer_boosts')
-    .select('employer_id')
+    .select('company_id')
     .eq('boost_type', 'job-spotlight')
     .eq('is_active', true)
 
@@ -20,6 +20,6 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const employerIds = (data ?? []).map((b) => b.employer_id)
+  const employerIds = (data ?? []).map((b) => b.company_id)
   return NextResponse.json({ employerIds })
 }
