@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { getCurrentUser, logout } from '@/lib/shared/auth/actions'
 import { loadTalentProfile } from '@/lib/talent/services/profile.service'
 import { getEmployerProfile } from '@/lib/employer/services/profile.service'
+import { isSafeRedirectPath } from '@/lib/shared/safeRedirect'
 import type { UserRole } from '@/types/shared/auth'
 
 function VerifiedContent() {
@@ -58,8 +59,9 @@ function VerifiedContent() {
         }
 
         const roleProfile = role === 'employer' ? await getEmployerProfile() : await loadTalentProfile()
+        const redirect = searchParams.get('redirect')
         const nextPath = roleProfile
-          ? `/${role}/dashboard`
+          ? (isSafeRedirectPath(redirect) ? redirect : `/${role}/dashboard`)
           : `/${role}/onboarding?name=${encodeURIComponent(firstName)}`
 
         if (newSignup) {

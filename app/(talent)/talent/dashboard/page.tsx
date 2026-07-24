@@ -45,6 +45,7 @@ function TalentDashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const requestedTab = searchParams.get('tab')
+  const requestedJobId = searchParams.get('job')
   const isOnboarded = searchParams.get('onboarded') === '1'
   
 
@@ -260,7 +261,7 @@ function TalentDashboardContent() {
             {(visitedTabs.has('jobs') || activeTab === 'jobs') && (
               <PersistentTabPanel active={activeTab === 'jobs'}>
                 <ViewMotion>
-                  <JobBrowser jobs={jobs} isLoading={jobsLoading} />
+                  <JobBrowser jobs={jobs} isLoading={jobsLoading} initialSelectedJobId={requestedJobId ?? undefined} />
                 </ViewMotion>
               </PersistentTabPanel>
             )}

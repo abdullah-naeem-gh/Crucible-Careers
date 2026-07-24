@@ -54,9 +54,10 @@ export async function login(email: string, password: string) {
  * as `portal` on the callback redirect — /auth/verified reads it and
  * assigns the role (or catches a portal mismatch for existing accounts).
  */
-export async function signInWithGoogle(portal: UserRole) {
+export async function signInWithGoogle(portal: UserRole, redirectTo?: string) {
   const supabase = createBrowserSupabaseClient()
-  const next = encodeURIComponent(`/auth/verified?portal=${portal}`)
+  const redirectSuffix = redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : ''
+  const next = encodeURIComponent(`/auth/verified?portal=${portal}${redirectSuffix}`)
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {

@@ -45,5 +45,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ profile: existing ?? null })
   }
 
+  // Also stamp the role into user_metadata (not just profiles) — middleware
+  // reads user_metadata.role from the session/JWT to route already-logged-in
+  // visitors without a DB round trip on every request. Without this, a
+  // Google-signup account's role would only ever live in profiles.role.
+  await supabase.auth.updateUser({ data: { role } })
+
   return NextResponse.json({ profile })
 }
