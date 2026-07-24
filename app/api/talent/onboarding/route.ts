@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/shared/supabase/admin'
 import { snapshotOf } from '@/lib/talent/services/experienceSnapshot'
+import { buildTalentProfileEmbeddingText } from '@/lib/talent/services/profileEmbeddingText'
+import { embedText } from '@/lib/shared/embeddings/embed'
+import { getQdrantClient, COLLECTIONS } from '@/lib/shared/qdrant/client'
 import type { TalentProfile } from '@/types/talent/profile'
 
 const normalizeCompany = (s?: string) => (s || '').trim().toLowerCase()
@@ -273,6 +276,19 @@ export async function POST(request: NextRequest) {
         const { error: projError } = await supabase.from('talent_projects').upsert(projRows)
         if (projError) console.error('Error upserting projects:', projError)
       }
+    }
+
+    // Best-effort sync to the vector store — a Qdrant/model hiccup must never
+    // block or fail the actual profile save, since Postgres already has it.
+    try {
+      const text = buildTalentProfileEmbeddingText(payload)
+      const vector = await embedText(text)
+      const qdrant = await getQdrantClient()
+      await qdrant.upsert(COLLECTIONS.talentProfiles, {
+        points: [{ id: user.id, vector, payload: { updated_at: new Date().toISOString() } }],
+      })
+    } catch (err) {
+      console.error('Failed to update talent profile embedding:', err)
     }
 
     return NextResponse.json({ success: true, profileId })

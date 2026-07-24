@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
+import { getTalentVector, scoreJobsForTalent } from '@/lib/shared/matching/matchScore'
 import type { ScrapedJob } from '@/types/talent/job'
 
 export async function GET() {
   const supabase = await createSupabaseServerClient()
+
+  // Soft auth check — this listing stays public either way; an authenticated
+  // talent additionally gets a real match score attached per job.
+  const { data: { user } } = await supabase.auth.getUser()
 
   const { data: jobs, error } = await supabase
     .from('jobs')
@@ -54,6 +59,18 @@ export async function GET() {
     applicantCountByJob.set(a.job_id, (applicantCountByJob.get(a.job_id) ?? 0) + 1)
   })
 
+  let matchScoreByJob = new Map<string, number>()
+  if (user) {
+    try {
+      const talentVector = await getTalentVector(user.id)
+      if (talentVector) {
+        matchScoreByJob = await scoreJobsForTalent(talentVector, jobIds)
+      }
+    } catch (err) {
+      console.error('Failed to compute job match scores:', err)
+    }
+  }
+
   const result: ScrapedJob[] = jobs.map((job) => ({
     _id: job.id,
     employerId: job.employer_id,
@@ -72,6 +89,7 @@ export async function GET() {
     tags: job.tags || [],
     posted_at: job.created_at,
     applicantCount: applicantCountByJob.get(job.id) ?? 0,
+    matchScore: matchScoreByJob.get(job.id),
   }))
 
   return NextResponse.json(result)

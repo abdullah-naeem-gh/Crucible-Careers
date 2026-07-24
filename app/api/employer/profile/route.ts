@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
+import { buildCompanyEmbeddingText } from '@/lib/employer/services/companyEmbeddingText'
+import { embedText } from '@/lib/shared/embeddings/embed'
+import { getQdrantClient, COLLECTIONS } from '@/lib/shared/qdrant/client'
 import type { CompanyProfile } from '@/types/employer/profile'
 
 export async function GET() {
@@ -106,6 +109,19 @@ export async function POST(req: Request) {
     if (error) {
       console.error('Error saving employer profile:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Best-effort sync to the vector store — a Qdrant/model hiccup must never
+    // block or fail the actual profile save, since Postgres already has it.
+    try {
+      const text = buildCompanyEmbeddingText(body)
+      const vector = await embedText(text)
+      const qdrant = await getQdrantClient()
+      await qdrant.upsert(COLLECTIONS.employerProfiles, {
+        points: [{ id: user.id, vector, payload: { updated_at: new Date().toISOString() } }],
+      })
+    } catch (err) {
+      console.error('Failed to update employer profile embedding:', err)
     }
 
     return NextResponse.json({ success: true })

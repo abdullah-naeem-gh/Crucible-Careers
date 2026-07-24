@@ -1,11 +1,10 @@
 "use client";
-import React, { useEffect, useRef } from 'react'
+import React from 'react'
 
 type AuthRequiredVariant = 'signed-out' | 'wrong-role'
 
 type AuthRequiredModalProps = {
   isOpen: boolean
-  onClose: () => void
   variant: AuthRequiredVariant
   onPrimaryAction: () => void
   id?: string
@@ -24,29 +23,8 @@ const CONTENT: Record<AuthRequiredVariant, { title: string; body: string; cta: s
   },
 }
 
-export default function AuthRequiredModal({ isOpen, onClose, variant, onPrimaryAction, id = 'auth-required-modal' }: AuthRequiredModalProps) {
-  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
-
-  useEffect(() => {
-    if (!isOpen) return
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    const to = window.setTimeout(() => closeButtonRef.current?.focus(), 0)
-
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      window.clearTimeout(to)
-    }
-  }, [isOpen, onClose])
-
+export default function AuthRequiredModal({ isOpen, variant, onPrimaryAction, id = 'auth-required-modal' }: AuthRequiredModalProps) {
   if (!isOpen) return null
-
-  const onOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose()
-  }
 
   const content = CONTENT[variant]
 
@@ -57,21 +35,9 @@ export default function AuthRequiredModal({ isOpen, onClose, variant, onPrimaryA
       aria-modal="true"
       aria-labelledby={`${id}-title`}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      onMouseDown={onOverlayClick}
     >
       <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl md:p-8">
-        <div className="absolute right-3 top-3">
-          <button
-            ref={closeButtonRef}
-            onClick={onClose}
-            aria-label="Close modal"
-            className="btn-pill bg-gray-100 text-gray-700 hover:bg-gray-200"
-          >
-            Close
-          </button>
-        </div>
-
-        <h2 id={`${id}-title`} className="mb-3 pr-24 text-2xl font-semibold text-gray-900">
+        <h2 id={`${id}-title`} className="mb-3 text-2xl font-semibold text-gray-900">
           {content.title}
         </h2>
         <p className="mb-6 text-sm leading-relaxed text-gray-600">{content.body}</p>

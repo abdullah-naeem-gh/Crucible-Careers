@@ -42,7 +42,6 @@ export async function GET(
     applications: 0,
     views: 0,
     hires: 0,
-    matchScore: 0,
     formConfig: job.form_config,
   }
 

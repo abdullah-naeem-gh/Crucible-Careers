@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
+import { buildJobEmbeddingText } from '@/lib/employer/services/jobEmbeddingText'
+import { embedText } from '@/lib/shared/embeddings/embed'
+import { getQdrantClient, COLLECTIONS } from '@/lib/shared/qdrant/client'
 import type { EmployerJob } from '@/types/employer/job'
 
 export async function GET(request: NextRequest) {
@@ -88,7 +91,6 @@ export async function GET(request: NextRequest) {
     applications: countByJob.get(job.id) ?? 0,
     views: viewsByJob.get(job.id) ?? 0,
     hires: hiresByJob.get(job.id) ?? 0,
-    matchScore: 0,
     formConfig: job.form_config,
   }))
 
@@ -155,8 +157,20 @@ export async function POST(request: NextRequest) {
       applications: 0,
       views: 0,
       hires: 0,
-      matchScore: 0,
       formConfig: data.form_config,
+    }
+
+    // Best-effort sync to the vector store — a Qdrant/model hiccup must never
+    // block or fail the actual job creation, since Postgres already has it.
+    try {
+      const text = buildJobEmbeddingText(newJob)
+      const vector = await embedText(text)
+      const qdrant = await getQdrantClient()
+      await qdrant.upsert(COLLECTIONS.jobs, {
+        points: [{ id: newJob.id, vector, payload: { employer_id: user.id, status: newJob.status, updated_at: new Date().toISOString() } }],
+      })
+    } catch (err) {
+      console.error('Failed to update job embedding:', err)
     }
 
     return NextResponse.json(newJob, { status: 201 })

@@ -11,7 +11,6 @@ export interface EmployerAnalyticsJobInput {
   tags: string[];
   applications: number;
   views: number;
-  matchScore: number;
 }
 
 export interface EmployerAnalyticsApplicantInput {
@@ -184,7 +183,7 @@ const getApplicantCounts = (applicants: EmployerAnalyticsApplicantInput[] = []) 
 };
 
 const getJobRecommendation = (
-  job: EmployerAnalyticsJobInput,
+  job: EmployerAnalyticsJobInput & { matchScore: number },
   conversionRate: number,
   unreviewed: number,
   avgConversionRate: number,
@@ -198,7 +197,7 @@ const getJobRecommendation = (
 };
 
 const getJobHealth = (
-  job: EmployerAnalyticsJobInput,
+  job: EmployerAnalyticsJobInput & { matchScore: number },
   conversionRate: number,
   unreviewed: number,
   avgConversionRate: number,
@@ -225,10 +224,7 @@ const mapSkillCounts = (counts: Map<string, number>, limit = 6) =>
     .sort((a, b) => b.count - a.count || a.skill.localeCompare(b.skill))
     .slice(0, limit);
 
-const getCandidateQualityScore = (applicant: EmployerAnalyticsApplicantInput, job: EmployerAnalyticsJobInput) => {
-  if (typeof applicant.matchScore === "number") return applicant.matchScore;
-  return job.matchScore;
-};
+const getCandidateQualityScore = (applicant: EmployerAnalyticsApplicantInput) => applicant.matchScore ?? 0;
 
 const getCandidateRecommendation = (candidate: EmployerCandidateInsight) => {
   if (candidate.status === "shortlisted") return "Already shortlisted. Prioritize outreach and next-step scheduling.";
@@ -317,6 +313,13 @@ export function buildEmployerAnalytics(
         .sort((a, b) => a.count - b.count || a.skill.localeCompare(b.skill))
         .slice(0, 4);
 
+      // Real average of this job's candidates' vector-similarity scores —
+      // not a caller-supplied input, since that was always a placeholder.
+      const matchScore = applicants.length
+        ? Math.round(applicants.reduce((sum, a) => sum + (a.matchScore ?? 0), 0) / applicants.length)
+        : 0;
+      const jobForHealth = { ...job, matchScore };
+
       return {
         id: job.id,
         title: job.title,
@@ -326,13 +329,13 @@ export function buildEmployerAnalytics(
         views: job.views,
         applications: job.applications,
         conversionRate,
-        matchScore: job.matchScore,
+        matchScore,
         shortlisted: counts.shortlisted,
         rejected: counts.rejected,
         unreviewed: counts.unreviewed,
         totalApplicants: counts.totalApplicants,
-        health: getJobHealth(job, conversionRate, counts.unreviewed, avgConversionRate),
-        recommendation: getJobRecommendation(job, conversionRate, counts.unreviewed, avgConversionRate),
+        health: getJobHealth(jobForHealth, conversionRate, counts.unreviewed, avgConversionRate),
+        recommendation: getJobRecommendation(jobForHealth, conversionRate, counts.unreviewed, avgConversionRate),
         strongSkills,
         weakRequirements,
       };
@@ -377,7 +380,7 @@ export function buildEmployerAnalytics(
         roleId: job.id,
         roleTitle: job.title,
         status: applicant.screeningStatus || "unscreened",
-        qualityScore: getCandidateQualityScore(applicant, job),
+        qualityScore: getCandidateQualityScore(applicant),
         experienceYears: applicant.experienceYears || 0,
         skills: applicant.skills || [],
         recommendation: "",
@@ -420,7 +423,7 @@ export function buildEmployerAnalytics(
       current.applications += 1;
       if (applicant.screeningStatus === "shortlisted") current.shortlisted += 1;
       if (applicant.screeningStatus === "rejected") current.rejected += 1;
-      current.qualityTotal += getCandidateQualityScore(applicant, job);
+      current.qualityTotal += getCandidateQualityScore(applicant);
       sourceMap.set(source, current);
     });
   });
@@ -513,7 +516,7 @@ export function buildEmployerAnalytics(
       totalUnreviewed: applicantTotals.unreviewed,
       avgApplications: totalJobs ? Math.round(totalApplications / totalJobs) : 0,
       avgViews: totalJobs ? Math.round(totalViews / totalJobs) : 0,
-      avgMatchScore: totalJobs ? Math.round(jobs.reduce((sum, job) => sum + job.matchScore, 0) / totalJobs) : 0,
+      avgMatchScore: totalJobs ? Math.round(roleInsights.reduce((sum, role) => sum + role.matchScore, 0) / totalJobs) : 0,
       viewToApplyRate: avgConversionRate,
       shortlistRate: safeRate(shortlisted, totalApplications),
       rejectionRate: safeRate(rejected, reviewed),
@@ -545,7 +548,7 @@ export function buildEmployerAnalytics(
       roleDecisionRates,
     },
     candidateQuality: {
-      averageMatchScore: totalJobs ? Math.round(jobs.reduce((sum, job) => sum + job.matchScore, 0) / totalJobs) : 0,
+      averageMatchScore: totalJobs ? Math.round(roleInsights.reduce((sum, role) => sum + role.matchScore, 0) / totalJobs) : 0,
       shortlistRatio: safeRate(shortlisted, totalApplications),
       topSkills,
       weakTags,

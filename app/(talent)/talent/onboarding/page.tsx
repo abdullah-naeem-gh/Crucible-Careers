@@ -18,6 +18,7 @@ import OnboardingStep8, { type MatchedJob } from '@/components/talent/onboarding
 import { JOBS } from '@/lib/talent/data/jobs'
 import { createBlankTalentProfile, saveTalentProfile } from '@/lib/talent/services/profile.service'
 import { getCurrentUser } from '@/lib/shared/auth/actions'
+import { isSafeRedirectPath } from '@/lib/shared/safeRedirect'
 import type { TalentEducation, TalentExperience } from '@/types/talent/profile'
 
 // ─── Job matching ─────────────────────────────────────────────────────────────
@@ -81,6 +82,7 @@ function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const firstName = searchParams.get('name') ?? ''
+  const redirect = searchParams.get('redirect')
 
   useEffect(() => {
     const html = document.documentElement
@@ -237,7 +239,7 @@ function OnboardingContent() {
       </div>
       <div className="absolute top-5 right-5 z-30">
         <button
-          onClick={() => router.push('/talent/dashboard?tab=jobs&onboarded=1')}
+          onClick={() => router.push(isSafeRedirectPath(redirect) ? redirect : '/talent/dashboard?tab=jobs&onboarded=1')}
           className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
         >
           Skip for now →
@@ -280,7 +282,7 @@ function OnboardingContent() {
                         preferredRoles={s3.preferredRoles}
                         matchCount={matchCount}
                         topMatches={topMatches}
-                        onExplore={() => router.push(`/talent/dashboard?tab=jobs&onboarded=1&name=${encodeURIComponent(firstName)}`)}
+                        onExplore={() => router.push(isSafeRedirectPath(redirect) ? redirect : `/talent/dashboard?tab=jobs&onboarded=1&name=${encodeURIComponent(firstName)}`)}
                         isSaving={isSaving}
                       />
                     )}

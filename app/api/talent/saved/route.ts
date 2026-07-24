@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
-import { computeAtsScore } from '@/lib/shared/atsScore'
+import { getTalentVector, scoreJobsForTalent } from '@/lib/shared/matching/matchScore'
 
 export async function GET() {
   const supabase = await createSupabaseServerClient()
@@ -27,12 +27,16 @@ export async function GET() {
     .in('id', employerIds)
   const companyById = new Map((companies ?? []).map((c) => [c.id, c.company]))
 
-  const { data: profile } = await supabase
-    .from('talent_profiles')
-    .select('skills')
-    .eq('user_id', user.id)
-    .single()
-  const skills: string[] = profile?.skills || []
+  const savedJobIds = data.filter((s: any) => s.jobs).map((s: any) => s.jobs.id)
+  let matchScoreByJob = new Map<string, number>()
+  try {
+    const talentVector = await getTalentVector(user.id)
+    if (talentVector) {
+      matchScoreByJob = await scoreJobsForTalent(talentVector, savedJobIds)
+    }
+  } catch (err) {
+    console.error('Failed to compute saved-job match scores:', err)
+  }
 
   const result = data
     .filter((s: any) => s.jobs)
@@ -46,7 +50,7 @@ export async function GET() {
       tags: s.jobs.tags || [],
       postedAt: s.jobs.created_at ? new Date(s.jobs.created_at).toLocaleDateString() : 'Recently',
       description: s.jobs.description || '',
-      matchScore: computeAtsScore(skills, s.jobs.tags || []),
+      matchScore: matchScoreByJob.get(s.jobs.id) ?? 0,
       savedAt: s.saved_at,
     }))
 

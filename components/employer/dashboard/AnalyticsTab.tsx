@@ -24,7 +24,7 @@ import {
 
 import { EmployerJob, JobType, JobStatus } from "@/types/employer/job";
 import { FORM_TEMPLATES } from "@/lib/shared/formTemplates";
-import { calculateAtsScore, getApplicantsByJob } from "@/lib/employer/services/applicants.service";
+import { getApplicantsByJob } from "@/lib/employer/services/applicants.service";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
@@ -583,7 +583,7 @@ export default function AnalyticsTab({ jobs, jobsLoading = false }: AnalyticsTab
       for (const job of jobs) {
         mapped[job.id] = (data[job.id] ?? []).map((candidate) => ({
           ...candidate,
-          matchScore: candidate.atsScore ?? calculateAtsScore(candidate.skills ?? [], job.tags ?? []),
+          matchScore: candidate.atsScore ?? 0,
         }));
       }
       setApplicantGroups(mapped);

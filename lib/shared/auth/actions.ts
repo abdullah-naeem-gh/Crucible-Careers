@@ -13,8 +13,12 @@ export async function signUp(data: {
   firstName: string
   lastName: string
   company?: string
+  redirectTo?: string
 }) {
   const supabase = createBrowserSupabaseClient()
+  const next = encodeURIComponent(
+    data.redirectTo ? `/auth/verified?redirect=${encodeURIComponent(data.redirectTo)}` : '/auth/verified'
+  )
   const { data: authData, error } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
@@ -25,7 +29,7 @@ export async function signUp(data: {
         last_name: data.lastName,
         company: data.company ?? null,
       },
-      emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+      emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${next}`,
     },
   })
   if (error) throw error

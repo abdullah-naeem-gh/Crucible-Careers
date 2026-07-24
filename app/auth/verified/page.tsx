@@ -62,7 +62,7 @@ function VerifiedContent() {
         const redirect = searchParams.get('redirect')
         const nextPath = roleProfile
           ? (isSafeRedirectPath(redirect) ? redirect : `/${role}/dashboard`)
-          : `/${role}/onboarding?name=${encodeURIComponent(firstName)}`
+          : `/${role}/onboarding?name=${encodeURIComponent(firstName)}${isSafeRedirectPath(redirect) ? `&redirect=${encodeURIComponent(redirect)}` : ''}`
 
         if (newSignup) {
           setIsNewSignup(true)

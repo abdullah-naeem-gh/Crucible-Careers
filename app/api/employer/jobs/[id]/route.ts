@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server';
+import { buildJobEmbeddingText } from '@/lib/employer/services/jobEmbeddingText';
+import { embedText } from '@/lib/shared/embeddings/embed';
+import { getQdrantClient, COLLECTIONS } from '@/lib/shared/qdrant/client';
 import type { EmployerJob } from '@/types/employer/job';
 
 export async function GET() {
@@ -70,9 +73,21 @@ export async function PATCH(
       applications: applicationCount ?? 0,
       views: 0,
       hires: hiresCount ?? 0,
-      matchScore: 0,
       formConfig: data.form_config,
     };
+
+    // Best-effort sync to the vector store — a Qdrant/model hiccup must never
+    // block or fail the actual job update, since Postgres already has it.
+    try {
+      const text = buildJobEmbeddingText(updatedJob);
+      const vector = await embedText(text);
+      const qdrant = await getQdrantClient();
+      await qdrant.upsert(COLLECTIONS.jobs, {
+        points: [{ id: updatedJob.id, vector, payload: { employer_id: user.id, status: updatedJob.status, updated_at: new Date().toISOString() } }],
+      });
+    } catch (err) {
+      console.error('Failed to update job embedding:', err);
+    }
 
     return NextResponse.json(updatedJob);
   } catch (error: any) {
@@ -102,6 +117,15 @@ export async function DELETE(
       .eq('employer_id', user.id);
 
     if (error) throw error;
+
+    // Best-effort cleanup — a deleted job shouldn't keep surfacing in future
+    // match results just because its vector lingered in Qdrant.
+    try {
+      const qdrant = await getQdrantClient();
+      await qdrant.delete(COLLECTIONS.jobs, { points: [id] });
+    } catch (err) {
+      console.error('Failed to delete job embedding:', err);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

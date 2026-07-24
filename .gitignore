@@ -10,3 +10,5 @@ tsconfig.tsbuildinfo
 /supabase/
 .mcp.json
 .env
+plan.md
+qdrantapikey.txt

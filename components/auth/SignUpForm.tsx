@@ -8,6 +8,7 @@ interface SignUpFormProps {
   onSubmit: (formData: SignUpFormData) => void
   isLoading?: boolean
   onGoogleError?: (message: string) => void
+  redirectTo?: string
 }
 
 export interface SignUpFormData {
@@ -22,7 +23,7 @@ export interface SignUpFormData {
   confirmPassword: string
 }
 
-export default function SignUpForm({ userType, onSubmit, isLoading = false, onGoogleError }: SignUpFormProps) {
+export default function SignUpForm({ userType, onSubmit, isLoading = false, onGoogleError, redirectTo }: SignUpFormProps) {
   const [formData, setFormData] = useState<SignUpFormData>({
     firstName: '',
     lastName: '',
@@ -329,7 +330,7 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false, onGo
         </p>
       </form>
 
-      <GoogleAuthButton portal={userType} isDarkTheme={isDarkTheme} onError={onGoogleError} />
+      <GoogleAuthButton portal={userType} isDarkTheme={isDarkTheme} onError={onGoogleError} redirectTo={redirectTo} />
     </motion.div>
   )
 }

@@ -1,15 +1,6 @@
 import { CandidateProfile, ApplicantPipelineStage, ScreeningStatus } from "@/types/employer/applicant";
 import { EmployerJob } from "@/types/employer/job";
 
-export function calculateAtsScore(candidateSkills: string[], jobTags: string[]): number {
-  if (!jobTags.length) return 75;
-  const matches = candidateSkills.filter((skill) =>
-    jobTags.some((tag) => tag.toLowerCase() === skill.toLowerCase()),
-  ).length;
-  const percentage = Math.round((matches / Math.max(jobTags.length, 1)) * 100);
-  return Math.min(Math.max(60 + Math.round(percentage * 0.38), 65), 97);
-}
-
 export function getPipelineStage(candidate: Pick<CandidateProfile, "pipelineStage" | "screeningStatus">): ApplicantPipelineStage {
   if (candidate.pipelineStage) return candidate.pipelineStage;
   if (candidate.screeningStatus === "shortlisted") return "shortlisted";

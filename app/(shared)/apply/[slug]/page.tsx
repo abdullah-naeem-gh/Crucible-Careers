@@ -493,7 +493,6 @@ export default function ApplyFormPage() {
         <AuthRequiredModal
           isOpen
           variant={authGate}
-          onClose={() => setAuthGate(null)}
           onPrimaryAction={handleAuthModalPrimaryAction}
         />
       )}
