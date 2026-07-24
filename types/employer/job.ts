@@ -66,6 +66,5 @@ export interface EmployerJob {
   applications: number;
   views: number;
   hires: number;
-  matchScore: number;
   formConfig?: FormConfig;
 }

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/shared/supabase/admin";
 import { canAccessOwnedResource, companyErrorResponse, getEmployerContext } from "@/lib/employer/server/company-context";
 import { recordCompanyAudit } from "@/lib/employer/server/company-admin";
+import { buildJobEmbeddingText } from "@/lib/employer/services/jobEmbeddingText";
+import { embedText } from "@/lib/shared/embeddings/embed";
+import { getQdrantClient, COLLECTIONS } from "@/lib/shared/qdrant/client";
 
 function formatJob(job: any, context: Awaited<ReturnType<typeof getEmployerContext>>) {
   return {
@@ -25,7 +28,6 @@ function formatJob(job: any, context: Awaited<ReturnType<typeof getEmployerConte
     applications: 0,
     views: 0,
     hires: 0,
-    matchScore: 0,
     formConfig: job.form_config,
   };
 }
@@ -74,7 +76,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       action: "job.updated", entityType: "job", entityId: id,
       metadata: { fields: Object.keys(patch) },
     });
-    return NextResponse.json(formatJob(data, context));
+
+    const updatedJob = formatJob(data, context);
+
+    // Best-effort sync to the vector store — a Qdrant/model hiccup must never
+    // block or fail the actual job update, since Postgres already has it.
+    try {
+      const text = buildJobEmbeddingText(updatedJob);
+      const vector = await embedText(text);
+      const qdrant = await getQdrantClient();
+      await qdrant.upsert(COLLECTIONS.jobs, {
+        points: [{ id: updatedJob.id, vector, payload: { company_id: context.companyId, status: updatedJob.status, updated_at: new Date().toISOString() } }],
+      });
+    } catch (err) {
+      console.error("Failed to update job embedding:", err);
+    }
+
+    return NextResponse.json(updatedJob);
   } catch (error) { return companyErrorResponse(error); }
 }
 
@@ -92,6 +110,18 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       action: hard ? "job.deleted" : "job.archived", entityType: "job", entityId: id,
       metadata: { title: job.title },
     });
+
+    // Best-effort cleanup — a permanently deleted job shouldn't keep
+    // surfacing in future match results just because its vector lingered.
+    if (hard) {
+      try {
+        const qdrant = await getQdrantClient();
+        await qdrant.delete(COLLECTIONS.jobs, { points: [id] });
+      } catch (err) {
+        console.error("Failed to delete job embedding:", err);
+      }
+    }
+
     return NextResponse.json({ success: true, archived: !hard });
   } catch (error) { return companyErrorResponse(error); }
 }

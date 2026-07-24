@@ -13,10 +13,14 @@ export async function signUp(data: {
   firstName?: string
   lastName?: string
   company?: string
+  redirectTo?: string
   employerIntent?: 'create_company' | 'join_company'
   companyJoinEmail?: string
 }) {
   const supabase = createBrowserSupabaseClient()
+  const next = encodeURIComponent(
+    data.redirectTo ? `/auth/verified?redirect=${encodeURIComponent(data.redirectTo)}` : '/auth/verified'
+  )
   const { data: authData, error } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
@@ -29,7 +33,7 @@ export async function signUp(data: {
         employer_intent: data.employerIntent ?? null,
         company_join_email: data.companyJoinEmail ?? null,
       },
-      emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+      emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${next}`,
     },
   })
   if (error) throw error

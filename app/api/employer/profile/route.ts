@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/shared/supabase/admin";
 import { companyErrorResponse, getEmployerContext } from "@/lib/employer/server/company-context";
 import { recordCompanyAudit } from "@/lib/employer/server/company-admin";
+import { buildCompanyEmbeddingText } from "@/lib/employer/services/companyEmbeddingText";
+import { embedText } from "@/lib/shared/embeddings/embed";
+import { getQdrantClient, COLLECTIONS } from "@/lib/shared/qdrant/client";
 import type { CompanyProfile } from "@/types/employer/profile";
 
 export async function GET() {
@@ -79,6 +82,22 @@ export async function POST(req: Request) {
       entityType: "company",
       entityId: context.companyId,
     });
+
+    // Best-effort sync to the vector store — a Qdrant/model hiccup must never
+    // block or fail the actual profile save, since Postgres already has it.
+    // Keyed by companyId now (not a single user), since a company profile is
+    // shared across every member of the workspace.
+    try {
+      const text = buildCompanyEmbeddingText(body);
+      const vector = await embedText(text);
+      const qdrant = await getQdrantClient();
+      await qdrant.upsert(COLLECTIONS.employerProfiles, {
+        points: [{ id: context.companyId, vector, payload: { updated_at: new Date().toISOString() } }],
+      });
+    } catch (err) {
+      console.error("Failed to update employer profile embedding:", err);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return companyErrorResponse(error);

@@ -11,7 +11,7 @@ import {
   IconPlus,
   IconUsers,
 } from "@tabler/icons-react";
-import { calculateAtsScore, getApplicantsByJob, getPipelineStage } from "@/lib/employer/services/applicants.service";
+import { getApplicantsByJob, getPipelineStage } from "@/lib/employer/services/applicants.service";
 import { ApplicantPipelineStage, CandidateProfile } from "@/types/employer/applicant";
 import { EmployerJob } from "@/types/employer/job";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -116,7 +116,7 @@ export default function OverviewTab({ jobs, company, onOpenJob, onOpenApplicants
         candidate,
         job,
         stage: getPipelineStage(candidate),
-        fitScore: candidate.atsScore ?? calculateAtsScore(candidate.skills ?? [], job.tags ?? []),
+        fitScore: candidate.atsScore ?? 0,
         originalIndex: originalIndex++,
       })),
     );

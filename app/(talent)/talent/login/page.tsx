@@ -209,7 +209,10 @@ function TalentLoginContent() {
                 <div className="mt-4 text-center sm:mt-6">
                   <p className="text-gray-600 text-sm">
                     Don't have an account?{' '}
-                    <Link href="/talent/signup" className="text-[#FF6B00] hover:underline font-medium">
+                    <Link
+                      href={isSafeRedirectPath(redirect) ? `/talent/signup?redirect=${encodeURIComponent(redirect)}` : '/talent/signup'}
+                      className="text-[#FF6B00] hover:underline font-medium"
+                    >
                       Sign up
                     </Link>
                   </p>

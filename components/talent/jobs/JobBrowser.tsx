@@ -160,12 +160,6 @@ function relativeDate(iso: string | null): string {
   return `${days}d ago`
 }
 
-function getMatchScore(jobId: string): number {
-  let hash = 0
-  for (let i = 0; i < jobId.length; i++) hash = jobId.charCodeAt(i) + ((hash << 5) - hash)
-  return 65 + (Math.abs(hash) % 34)
-}
-
 function formatApplicantCount(count: number): { value: string; label: string } {
   if (count === 0) return { value: 'New', label: '' }
   if (count < 10) return { value: 'Less than 10', label: 'Applicants' }
@@ -475,9 +469,11 @@ export default function JobBrowser({ jobs, isLoading = false, initialSelectedJob
                               {relativeDate(job.posted_at) && (
                                 <span className="text-xs text-gray-400">{relativeDate(job.posted_at)}</span>
                               )}
-                              <span className="font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/20 px-2 py-0.5 rounded-md text-[10px] leading-tight shadow-sm">
-                                {getMatchScore(job._id)}% Match
-                              </span>
+                              {typeof job.matchScore === 'number' && (
+                                <span className="font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/20 px-2 py-0.5 rounded-md text-[10px] leading-tight shadow-sm">
+                                  {job.matchScore}% Match
+                                </span>
+                              )}
                               {appliedJobIds.has(job._id) && (
                                 <span className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-white bg-emerald-600 border border-transparent px-1.5 py-0.5 rounded font-bold">
                                   <IconCheck size={10} /> Applied
@@ -656,7 +652,9 @@ export default function JobBrowser({ jobs, isLoading = false, initialSelectedJob
             </div>
 
             <div className="my-6 grid grid-cols-2 gap-3">
-              <MiniMetric label="Match Score" value={`${getMatchScore(selectedJob._id)}%`} accent="text-[#FF914D]" />
+              {typeof selectedJob.matchScore === 'number' && (
+                <MiniMetric label="Match Score" value={`${selectedJob.matchScore}%`} accent="text-[#FF914D]" />
+              )}
               {(() => {
                 const applicants = formatApplicantCount(selectedJob.applicantCount ?? 0)
                 return <MiniMetric label={applicants.label} value={applicants.value} accent="text-sky-500" />

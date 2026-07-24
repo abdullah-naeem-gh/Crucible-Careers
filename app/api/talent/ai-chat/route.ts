@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
 import { computeExperienceYears } from '@/lib/shared/experienceYears'
-import { computeAtsScore } from '@/lib/shared/atsScore'
+import { getTalentVector, scoreJobsForTalent } from '@/lib/shared/matching/matchScore'
 import type { TalentExperience } from '@/types/talent/profile'
 
 const MAX_HISTORY_MESSAGES = 16
@@ -144,11 +144,21 @@ export async function POST(request: NextRequest) {
       .in('id', employerIds.length ? employerIds : ['00000000-0000-0000-0000-000000000000'])
     const companyById = new Map((companies || []).map((c) => [c.id, c.company]))
 
+    let matchScoreByJob = new Map<string, number>()
+    try {
+      const talentVector = await getTalentVector(user.id)
+      if (talentVector) {
+        matchScoreByJob = await scoreJobsForTalent(talentVector, (jobs || []).map((j) => j.id))
+      }
+    } catch (err) {
+      console.error('Failed to compute job match scores for AI chat:', err)
+    }
+
     const rankedJobs = (jobs || [])
       .map((job) => ({
         ...job,
         company: companyById.get(job.employer_id) || 'Unknown Company',
-        matchScore: computeAtsScore(skills, job.tags || []),
+        matchScore: matchScoreByJob.get(job.id) ?? 0,
       }))
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, MAX_JOBS_IN_PROMPT)

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
+    "@qdrant/js-client-rest": "^1.18.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.54.0",
     "@tabler/icons-react": "^3.34.1",

@@ -18,6 +18,7 @@ export interface ScrapedJob {
   tags: string[]
   posted_at: string | null
   applicantCount?: number
+  matchScore?: number
 }
 
 export interface SavedJob {

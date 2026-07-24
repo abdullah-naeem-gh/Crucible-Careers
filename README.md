@@ -81,4 +81,4 @@ In Crucible, a recruiter builds a custom application form, gets a public shareab
 ### AI-Powered Recruiting
 
 - Use an AI chatbot to ask natural-language questions about applicants.
-- AI responses are powered by a **vector database** built from uploaded candidate profiles.
+- Talent profiles, company profiles, and job postings are embedded with an open-source model and stored in a **Qdrant vector database**, powering real cosine-similarity match scores (talent ↔ job, and candidate ↔ job on the employer side) and sharper AI job recommendations.

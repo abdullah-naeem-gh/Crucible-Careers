@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
-import { computeAtsScore } from '@/lib/shared/atsScore'
+import { getTalentVector, getJobVector, cosineSimilarity, toMatchPercent } from '@/lib/shared/matching/matchScore'
 import { pipelineStageLabel } from '@/lib/shared/pipelineStage'
 
 function formatRelative(iso: string): string {
@@ -145,7 +145,15 @@ export async function POST(request: NextRequest) {
   const resolvedResumeUrl = resumeUrl || profile?.resume_url || null
   const resolvedResumeFilename = resumeFilename || profile?.resume_filename || null
 
-  const atsScore = computeAtsScore(skills, job.tags || [])
+  let atsScore: number | null = null
+  try {
+    const [talentVector, jobVector] = await Promise.all([getTalentVector(user.id), getJobVector(jobId)])
+    if (talentVector && jobVector) {
+      atsScore = toMatchPercent(cosineSimilarity(talentVector, jobVector))
+    }
+  } catch (err) {
+    console.error('Failed to compute application match score:', err)
+  }
 
   const { data: application, error: insertError } = await supabase
     .from('applications')

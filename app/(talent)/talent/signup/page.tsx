@@ -1,15 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import SignUpForm, { type SignUpFormData } from '@/components/auth/SignUpForm'
 import { signUp } from '@/lib/shared/auth/actions'
+import { isSafeRedirectPath } from '@/lib/shared/safeRedirect'
 
-export default function TalentSignUp() {
+function TalentSignUpContent() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect')
 
   const [error, setError] = useState('')
 
@@ -23,6 +26,7 @@ export default function TalentSignUp() {
         role: 'talent',
         firstName: formData.firstName,
         lastName: formData.lastName,
+        redirectTo: isSafeRedirectPath(redirect) ? redirect : undefined,
       })
       router.push(`/talent/check-email?email=${encodeURIComponent(formData.email)}`)
     } catch (err) {
@@ -192,12 +196,16 @@ export default function TalentSignUp() {
                 onSubmit={handleSubmit}
                 isLoading={isLoading}
                 onGoogleError={setError}
+                redirectTo={isSafeRedirectPath(redirect) ? redirect : undefined}
               />
 
               <div className="mt-4 text-center sm:mt-6">
                                   <p className="text-gray-600 text-sm">
                     Already have an account?{' '}
-                    <Link href="/talent/login" className="text-[#FF6B00] hover:underline font-medium">
+                    <Link
+                      href={isSafeRedirectPath(redirect) ? `/talent/login?redirect=${encodeURIComponent(redirect)}` : '/talent/login'}
+                      className="text-[#FF6B00] hover:underline font-medium"
+                    >
                       Sign in
                     </Link>
                   </p>
@@ -208,5 +216,13 @@ export default function TalentSignUp() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function TalentSignUp() {
+  return (
+    <Suspense fallback={null}>
+      <TalentSignUpContent />
+    </Suspense>
   )
 }

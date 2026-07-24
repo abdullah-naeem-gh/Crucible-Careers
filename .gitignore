@@ -13,3 +13,5 @@ tsconfig.tsbuildinfo
 !/supabase/migrations/*.sql
 .mcp.json
 .env
+plan.md
+qdrantapikey.txt

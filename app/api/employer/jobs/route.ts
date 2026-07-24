@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/shared/supabase/admin";
 import { companyErrorResponse, getEmployerContext } from "@/lib/employer/server/company-context";
 import { recordCompanyAudit } from "@/lib/employer/server/company-admin";
+import { buildJobEmbeddingText } from "@/lib/employer/services/jobEmbeddingText";
+import { embedText } from "@/lib/shared/embeddings/embed";
+import { getQdrantClient, COLLECTIONS } from "@/lib/shared/qdrant/client";
 import type { EmployerJob } from "@/types/employer/job";
 
 function mapJob(job: any, companyName: string, verified: boolean, counts?: { applications?: number; views?: number; hires?: number }): EmployerJob {
@@ -26,7 +29,6 @@ function mapJob(job: any, companyName: string, verified: boolean, counts?: { app
     applications: counts?.applications ?? 0,
     views: counts?.views ?? 0,
     hires: counts?.hires ?? 0,
-    matchScore: 0,
     formConfig: job.form_config,
   };
 }
@@ -111,7 +113,23 @@ export async function POST(request: NextRequest) {
       action: "job.created", entityType: "job", entityId: data.id,
       metadata: { title: data.title, status: data.status },
     });
-    return NextResponse.json(mapJob(data, context.companyName, context.verificationStatus === "verified"), { status: 201 });
+
+    const newJob = mapJob(data, context.companyName, context.verificationStatus === "verified");
+
+    // Best-effort sync to the vector store — a Qdrant/model hiccup must never
+    // block or fail the actual job creation, since Postgres already has it.
+    try {
+      const text = buildJobEmbeddingText(newJob);
+      const vector = await embedText(text);
+      const qdrant = await getQdrantClient();
+      await qdrant.upsert(COLLECTIONS.jobs, {
+        points: [{ id: newJob.id, vector, payload: { company_id: context.companyId, status: newJob.status, updated_at: new Date().toISOString() } }],
+      });
+    } catch (err) {
+      console.error("Failed to update job embedding:", err);
+    }
+
+    return NextResponse.json(newJob, { status: 201 });
   } catch (error) {
     return companyErrorResponse(error);
   }

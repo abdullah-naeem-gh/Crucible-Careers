@@ -28,7 +28,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     description: job.description || "",
     responsibilities: job.responsibilities || [],
     requirements: job.requirements || [],
-    applications: 0, views: 0, hires: 0, matchScore: 0,
+    applications: 0,
+    views: 0,
+    hires: 0,
     formConfig: job.form_config,
   });
 }

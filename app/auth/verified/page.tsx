@@ -68,7 +68,7 @@ function VerifiedContent() {
           const roleProfile = await loadTalentProfile()
           nextPath = roleProfile
             ? (isSafeRedirectPath(redirect) ? redirect : '/talent/dashboard')
-            : `/talent/onboarding?name=${encodeURIComponent(firstName)}`
+            : `/talent/onboarding?name=${encodeURIComponent(firstName)}${isSafeRedirectPath(redirect) ? `&redirect=${encodeURIComponent(redirect)}` : ''}`
         }
 
         if (newSignup) {
