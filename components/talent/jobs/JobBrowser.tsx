@@ -14,6 +14,7 @@ import { getFeaturedEmployerIds } from '@/lib/employer/ranking/reviews'
 interface Props {
   jobs: ScrapedJob[]
   isLoading?: boolean
+  initialSelectedJobId?: string
 }
 
 function JobCardSkeleton() {
@@ -175,7 +176,7 @@ function formatApplicantCount(count: number): { value: string; label: string } {
   return { value: '500+', label: 'Applicants' }
 }
 
-export default function JobBrowser({ jobs, isLoading = false }: Props) {
+export default function JobBrowser({ jobs, isLoading = false, initialSelectedJobId }: Props) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(jobs[0]?._id ?? null)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [searchInput, setSearchInput] = useState('')
@@ -249,10 +250,26 @@ export default function JobBrowser({ jobs, isLoading = false }: Props) {
 
   const selectedJob = filtered.find(j => j._id === selectedJobId) ?? filtered[0] ?? null
 
+  // Tracks the last `initialSelectedJobId` we've already acted on, so a
+  // *new* deep-link target (e.g. clicking another "Apply Now" card from the
+  // AI chat while already on this tab) always wins, without fighting the
+  // user's own manual clicks on other jobs in between.
+  const appliedDeepLinkRef = useRef<string | undefined>(undefined)
+
   useEffect(() => {
+    if (
+      initialSelectedJobId &&
+      initialSelectedJobId !== appliedDeepLinkRef.current &&
+      filtered.some(job => job._id === initialSelectedJobId)
+    ) {
+      appliedDeepLinkRef.current = initialSelectedJobId
+      setSelectedJobId(initialSelectedJobId)
+      return
+    }
+
     if (selectedJobId && filtered.some(job => job._id === selectedJobId)) return
     setSelectedJobId(filtered[0]?._id ?? null)
-  }, [filtered, selectedJobId])
+  }, [filtered, selectedJobId, initialSelectedJobId])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)

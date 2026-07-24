@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { IconUsers, IconChevronDown, IconChevronUp, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { IconUsers, IconChevronDown, IconChevronUp, IconChevronLeft, IconChevronRight, IconLink, IconCheck } from "@tabler/icons-react";
 import { EmployerJob } from "@/types/employer/job";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { copyToClipboard } from "@/lib/shared/clipboard";
 
 const JOBS_PER_PAGE = 10;
 type JobFilter = "all" | "active" | "inactive";
@@ -55,6 +56,43 @@ function DetailList({ title, items }: { title: string; items: string[] }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+function CopyApplyLinkButton({ jobId, compact = false }: { jobId: string; compact?: boolean }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const ok = await copyToClipboard(`${window.location.origin}/apply/${jobId}`);
+    if (ok) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    }
+  };
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={handleCopy}
+        title="Copy public apply link"
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-white/[0.07] bg-white/[0.025] text-white/45 cursor-pointer hover:bg-white/[0.05] hover:text-white transition-all"
+      >
+        {copied ? <IconCheck size={14} className="text-emerald-400" /> : <IconLink size={14} />}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-xs text-white/55 cursor-pointer hover:bg-white/[0.05] hover:text-white"
+    >
+      {copied ? <IconCheck size={14} className="text-emerald-400" /> : <IconLink size={14} />}
+      {copied ? "Copied!" : "Copy Apply Link"}
+    </button>
   );
 }
 
@@ -234,16 +272,19 @@ export default function JobsTab({
               </div>
               <div className="mt-4 flex items-center justify-between text-xs">
                 <span className="text-white/45">{job.salary}</span>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onViewApplications(job.id);
-                  }}
-                  className="rounded-lg border border-orange-500/20 bg-orange-500/10 px-2.5 py-1.5 text-xs text-[#FF914D] cursor-pointer hover:bg-orange-500/20 transition-all font-medium"
-                >
-                  View Applications ({job.applications})
-                </button>
+                <div className="flex items-center gap-2">
+                  <CopyApplyLinkButton jobId={job.id} compact />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewApplications(job.id);
+                    }}
+                    className="rounded-lg border border-orange-500/20 bg-orange-500/10 px-2.5 py-1.5 text-xs text-[#FF914D] cursor-pointer hover:bg-orange-500/20 transition-all font-medium"
+                  >
+                    View Applications ({job.applications})
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))
@@ -300,6 +341,7 @@ export default function JobsTab({
             <div className="mt-4 flex items-center justify-between">
               <StatusBadge status={selectedJob.status} />
               <div className="flex gap-2">
+                <CopyApplyLinkButton jobId={selectedJob.id} />
                 <button
                   onClick={() => onUpdate(selectedJob.id, { status: selectedJob.status === "Active" ? "Paused" : "Active" })}
                   className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-xs text-white/55 cursor-pointer hover:bg-white/[0.05] hover:text-white"

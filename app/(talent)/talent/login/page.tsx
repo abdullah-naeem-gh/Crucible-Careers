@@ -1,15 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import LoginForm, { type LoginFormData } from '@/components/auth/LoginForm'
 import { login, getCurrentUser, logout } from '@/lib/shared/auth/actions'
+import { isSafeRedirectPath } from '@/lib/shared/safeRedirect'
 
-export default function TalentLogin() {
+function TalentLoginContent() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect')
 
   const [error, setError] = useState('')
 
@@ -18,17 +21,17 @@ export default function TalentLogin() {
     setError('')
     try {
       await login(formData.email, formData.password)
-      
+
       const userWithProfile = await getCurrentUser()
       const role = userWithProfile?.profile?.role || userWithProfile?.user_metadata?.role
-      
+
       if (role === 'employer') {
         await logout()
         setError('This account is registered as an Employer. Please use the Employer login.')
         return
       }
 
-      router.push('/talent/dashboard')
+      router.push(isSafeRedirectPath(redirect) ? redirect : '/talent/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please check your credentials.')
     } finally {
@@ -190,6 +193,7 @@ export default function TalentLogin() {
                   onSubmit={handleSubmit}
                   isLoading={isLoading}
                   onGoogleError={setError}
+                  redirectTo={isSafeRedirectPath(redirect) ? redirect : undefined}
                 />
 
                 {error && (
@@ -216,5 +220,13 @@ export default function TalentLogin() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function TalentLogin() {
+  return (
+    <Suspense fallback={null}>
+      <TalentLoginContent />
+    </Suspense>
   )
 }
