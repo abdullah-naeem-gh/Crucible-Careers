@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import EmployerSidebar from "@/components/employer/sidebar/EmployerSidebar";
 import JobApplicationsView from "@/components/employer/jobs/JobApplicationsView";
@@ -49,10 +49,20 @@ const DEFAULT_PROFILE: CompanyProfile = {
 const surface = "rounded-[24px] border border-white/[0.07] bg-[#171717] shadow-[12px_12px_30px_rgba(0,0,0,0.38),-6px_-6px_18px_rgba(255,255,255,0.025)]";
 
 function PersistentTabPanel({ active, children }: { active: boolean; children: React.ReactNode }) {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <div className={active ? "h-full" : "hidden"} aria-hidden={!active}>
+    <motion.div
+      initial={{ opacity: 0, y: reduceMotion ? 0 : 12, scale: reduceMotion ? 1 : 0.995 }}
+      animate={active
+        ? { opacity: 1, y: 0, scale: 1 }
+        : { opacity: 0, y: reduceMotion ? 0 : 12, scale: reduceMotion ? 1 : 0.995 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      className={active ? "h-full" : "hidden"}
+      aria-hidden={!active}
+    >
       {children}
-    </div>
+    </motion.div>
   );
 }
 

@@ -45,16 +45,23 @@ export default function TeamAccessTab() {
   const [evidencePath, setEvidencePath] = useState("");
 
   const load = useCallback(async () => {
-    const [contextRes, membersRes, invitationsRes, requestsRes, activityRes, verificationRes] = await Promise.all([
-      fetch("/api/employer/context"),
-      fetch("/api/employer/company/members"),
+    const contextRes = await fetch("/api/employer/context");
+    if (!contextRes.ok) return;
+
+    const nextContext = (await contextRes.json()).context as EmployerContext;
+    setContext(nextContext);
+
+    const membersRes = await fetch("/api/employer/company/members");
+    if (membersRes.ok) setMembers(await membersRes.json());
+
+    if (nextContext.role !== "admin") return;
+
+    const [invitationsRes, requestsRes, activityRes, verificationRes] = await Promise.all([
       fetch("/api/employer/company/invitations"),
       fetch("/api/employer/company/affiliation-requests"),
       fetch("/api/employer/company/activity"),
       fetch("/api/employer/company/verification"),
     ]);
-    if (contextRes.ok) setContext((await contextRes.json()).context);
-    if (membersRes.ok) setMembers(await membersRes.json());
     if (invitationsRes.ok) setInvitations(await invitationsRes.json());
     if (requestsRes.ok) setRequests(await requestsRes.json());
     if (activityRes.ok) setActivity(await activityRes.json());
@@ -87,6 +94,7 @@ export default function TeamAccessTab() {
   };
 
   const updatePermission = (member: CompanyMember, key: keyof CompanyMemberPermissions, value: boolean) => {
+    if (!member.permissions) return;
     const permissions = { ...member.permissions, [key]: value };
     if (key === "manageAllJobs" && value) permissions.viewAllJobs = true;
     if (key === "manageAllApplicants" && value) permissions.viewAllApplicants = true;
@@ -117,17 +125,7 @@ export default function TeamAccessTab() {
   };
 
   if (!context) return <div className={`${surface} grid h-full place-items-center text-sm text-white/40`}>Loading team access…</div>;
-  if (context.role !== "admin") {
-    return (
-      <div className={`${surface} flex h-full flex-col justify-center p-8 text-center`}>
-        <h1 className="text-xl font-semibold">Your company affiliation</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-white/45">You are a recruiter at {context.companyName}. Company administrators manage team permissions and invitations.</p>
-        <button type="button" onClick={() => mutate("/api/employer/company/leave", { method: "POST" })} className="mx-auto mt-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300">
-          Leave company
-        </button>
-      </div>
-    );
-  }
+  const isAdmin = context.role === "admin";
 
   return (
     <div className="grid h-full min-h-0 grid-cols-1 gap-5 overflow-auto lg:grid-cols-12 lg:gap-7">
@@ -143,6 +141,32 @@ export default function TeamAccessTab() {
           </span>
         </div>
         {error && <p className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-300">{error}</p>}
+        <div className="mt-5 rounded-2xl border border-orange-500/15 bg-orange-500/[0.055] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-400">My access</p>
+              <p className="mt-1 text-sm text-white/55">
+                {isAdmin ? "Administrators have full company access." : "Permissions granted by your company administrator."}
+              </p>
+            </div>
+            <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase text-orange-300">
+              {context.isOwner ? "Owner" : context.role}
+            </span>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {permissionLabels.map(([key, label]) => {
+              const granted = context.permissions[key];
+              return (
+                <div key={key} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-[#131313]/70 px-3 py-2 text-xs text-white/55">
+                  <span>{label}</span>
+                  <span className={granted ? "text-emerald-300" : "text-white/25"}>
+                    {granted ? "Granted" : "Not granted"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
         <div className="mt-5 space-y-3">
           {members.map((member) => (
             <article key={member.membershipId} className="rounded-2xl border border-white/[0.07] bg-[#131313] p-4">
@@ -151,11 +175,15 @@ export default function TeamAccessTab() {
                   {member.avatarUrl ? <img src={member.avatarUrl} alt="" className="h-full w-full object-cover" /> : member.name.charAt(0)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold">{member.name} {member.isOwner && <span className="text-[10px] text-orange-400">OWNER</span>}</div>
+                  <div className="text-sm font-semibold">
+                    {member.name}
+                    {member.userId === context.userId && <span className="ml-1 text-[10px] text-white/35">YOU</span>}
+                    {member.isOwner && <span className="ml-1 text-[10px] text-orange-400">OWNER</span>}
+                  </div>
                   <div className="truncate text-xs text-white/35">{member.email}</div>
                 </div>
                 <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase text-white/50">{member.role}</span>
-                {context.isOwner && !member.isOwner && member.status === "active" && (
+                {isAdmin && context.isOwner && !member.isOwner && member.status === "active" && (
                   <button type="button" disabled={busy} onClick={() => member.role === "admin"
                     ? mutate("/api/employer/company/transfer-ownership", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ membershipId: member.membershipId }) })
                     : mutate(`/api/employer/company/members/${member.membershipId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "admin" }) })
@@ -163,19 +191,19 @@ export default function TeamAccessTab() {
                     {member.role === "admin" ? "Make owner" : "Make admin"}
                   </button>
                 )}
-                {context.isOwner && !member.isOwner && member.role === "admin" && member.status === "active" && (
+                {isAdmin && context.isOwner && !member.isOwner && member.role === "admin" && member.status === "active" && (
                   <button type="button" disabled={busy} onClick={() => mutate(`/api/employer/company/members/${member.membershipId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "recruiter" }) })} className="text-xs font-semibold text-white/40 hover:text-white/70">Make recruiter</button>
                 )}
-                {!member.isOwner && member.status === "active" && (
+                {isAdmin && !member.isOwner && member.status === "active" && (
                   <button type="button" disabled={busy} onClick={() => mutate(`/api/employer/company/members/${member.membershipId}`, { method: "DELETE" })} className="text-xs font-semibold text-red-300/70 hover:text-red-300">Remove</button>
                 )}
               </div>
-              {member.role === "recruiter" && member.status === "active" && (
+              {isAdmin && member.role === "recruiter" && member.status === "active" && member.permissions && (
                 <div className="mt-4 grid grid-cols-1 gap-2 border-t border-white/[0.06] pt-4 sm:grid-cols-2">
                   {permissionLabels.map(([key, label]) => (
                     <label key={key} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] px-3 py-2 text-xs text-white/55">
                       {label}
-                      <input type="checkbox" checked={member.permissions[key]} onChange={(event) => updatePermission(member, key, event.target.checked)} className="accent-orange-500" />
+                      <input type="checkbox" checked={Boolean(member.permissions?.[key])} onChange={(event) => updatePermission(member, key, event.target.checked)} className="accent-orange-500" />
                     </label>
                   ))}
                 </div>
@@ -185,7 +213,8 @@ export default function TeamAccessTab() {
         </div>
       </section>
 
-      <div className="space-y-5 lg:col-span-5">
+      {isAdmin ? (
+        <div className="space-y-5 lg:col-span-5">
         <section className={`${surface} p-5`}>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">Invite HR members</p>
           <div className="mt-3 flex gap-2">
@@ -246,7 +275,21 @@ export default function TeamAccessTab() {
             </div>
           ))}</div>
         </section>
-      </div>
+        </div>
+      ) : (
+        <div className="space-y-5 lg:col-span-5">
+          <section className={`${surface} p-5`}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">Company affiliation</p>
+            <h2 className="mt-2 text-lg font-semibold">{context.companyName}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-white/45">
+              Company administrators manage invitations, roles, and team permissions.
+            </p>
+            <button type="button" disabled={busy} onClick={() => mutate("/api/employer/company/leave", { method: "POST" })} className="mt-5 w-full rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300 disabled:opacity-40">
+              Leave company
+            </button>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

@@ -34,7 +34,7 @@ export interface CompanyMember {
   status: CompanyMembershipStatus;
   isOwner: boolean;
   joinedAt: string;
-  permissions: CompanyMemberPermissions;
+  permissions?: CompanyMemberPermissions;
 }
 
 export interface CompanyInvitation {
