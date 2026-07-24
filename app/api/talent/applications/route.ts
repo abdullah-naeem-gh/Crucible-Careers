@@ -23,7 +23,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('applications')
-    .select('id, status, applied_at, updated_at, ats_score, jobs(id, title, employer_id)')
+    .select('id, status, applied_at, updated_at, ats_score, jobs(id, title, company_id)')
     .eq('talent_id', user.id)
     .order('applied_at', { ascending: false })
 
@@ -32,18 +32,19 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const employerIds = Array.from(new Set(data.map((a: any) => a.jobs?.employer_id).filter(Boolean)))
+  const employerIds = Array.from(new Set(data.map((a: any) => a.jobs?.company_id).filter(Boolean)))
   const { data: companies } = await supabase
-    .from('employer_company_names')
-    .select('id, company')
+    .from('companies')
+    .select('id, name, verification_status')
     .in('id', employerIds)
-  const companyById = new Map((companies ?? []).map((c) => [c.id, c.company]))
+  const companyById = new Map((companies ?? []).map((c) => [c.id, c]))
 
   const result = data.map((a: any) => ({
     id: a.id,
     jobId: a.jobs?.id,
     jobTitle: a.jobs?.title || 'Unknown Role',
-    company: companyById.get(a.jobs?.employer_id) || 'Unknown Company',
+    company: companyById.get(a.jobs?.company_id)?.name || 'Unknown Company',
+    companyVerified: companyById.get(a.jobs?.company_id)?.verification_status === 'verified',
     appliedAt: new Date(a.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     status: pipelineStageLabel(a.status),
     matchScore: a.ats_score ?? 0,
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   const { data: job, error: jobError } = await supabase
     .from('jobs')
-    .select('id, employer_id, tags, title')
+    .select('id, company_id, tags, title')
     .eq('id', jobId)
     .single()
 

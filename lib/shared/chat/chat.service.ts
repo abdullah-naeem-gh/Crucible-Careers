@@ -12,25 +12,60 @@ type SupabaseClient = ReturnType<typeof createBrowserSupabaseClient>
 
 const CONVERSATION_SELECT = '*, applications(job_id, profile_snapshot, jobs(title))'
 
+async function getSenderSnapshot(supabase: SupabaseClient) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not signed in.')
+  const [{ data: profile }, { data: membership }] = await Promise.all([
+    supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', user.id).maybeSingle(),
+    supabase.from('company_memberships')
+      .select('companies(name, verification_status, company_profiles(logo_url))')
+      .eq('user_id', user.id).eq('status', 'active').maybeSingle(),
+  ])
+  const company: any = membership?.companies
+  const companyProfile = Array.isArray(company?.company_profiles) ? company.company_profiles[0] : company?.company_profiles
+  return {
+    sender_user_id: user.id,
+    sender_display_name: [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || user.email || 'Crucible user',
+    sender_avatar_url: profile?.avatar_url ?? null,
+    sender_company_name: company?.name ?? null,
+    sender_company_logo_url: companyProfile?.logo_url ?? null,
+    sender_company_verified: company?.verification_status === 'verified',
+  }
+}
+
 async function mapConversations(supabase: SupabaseClient, rows: any[]): Promise<ChatConversation[]> {
   if (rows.length === 0) return []
 
-  const employerIds = Array.from(new Set(rows.map((r) => r.employer_id)))
+  const employerIds = Array.from(new Set(rows.map((r) => r.company_id || r.employer_id).filter(Boolean)))
   const { data: companies } = await supabase
-    .from('employer_company_names')
-    .select('id, company')
+    .from('companies')
+    .select('id, name, verification_status, company_profiles(logo_url)')
     .in('id', employerIds)
-  const companyById = new Map((companies ?? []).map((c) => [c.id, c.company]))
+  const companyById = new Map((companies ?? []).map((c: any) => [c.id, c]))
+
+  const recruiterIds = Array.from(new Set(rows.map((r) => r.assigned_to_user_id).filter(Boolean)))
+  const { data: recruiterProfiles } = recruiterIds.length
+    ? await supabase.from('employer_public_identities').select('id, first_name, last_name, avatar_url').in('id', recruiterIds)
+    : { data: [] }
+  const recruiterById = new Map((recruiterProfiles ?? []).map((p: any) => [p.id, p]))
 
   const convIds = rows.map((r) => r.id)
   const { data: unreadMsgs } = await supabase
     .from('messages')
-    .select('conversation_id, sender_role')
+    .select('conversation_id, sender_role, sender_user_id, sent_at')
     .in('conversation_id', convIds)
-    .eq('read_by_recipient', false)
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: readStates } = user
+    ? await supabase.from('conversation_read_states').select('conversation_id, last_read_at').eq('user_id', user.id).in('conversation_id', convIds)
+    : { data: [] }
+  const readAtByConv = new Map((readStates ?? []).map((state: any) => [state.conversation_id, state.last_read_at]))
 
   const unreadByConv = new Map<string, { talent: number; employer: number }>()
   for (const m of unreadMsgs ?? []) {
+    if (m.sender_user_id === user?.id) continue
+    const readAt = readAtByConv.get(m.conversation_id)
+    if (readAt && new Date(m.sent_at) <= new Date(readAt)) continue
     const entry = unreadByConv.get(m.conversation_id) ?? { talent: 0, employer: 0 }
     if (m.sender_role === 'employer') entry.talent += 1
     else entry.employer += 1
@@ -40,12 +75,20 @@ async function mapConversations(supabase: SupabaseClient, rows: any[]): Promise<
   return rows.map((row) => {
     const snap = row.applications?.profile_snapshot ?? {}
     const unread = unreadByConv.get(row.id) ?? { talent: 0, employer: 0 }
+    const company = companyById.get(row.company_id || row.employer_id) as any
+    const recruiter = recruiterById.get(row.assigned_to_user_id) as any
+    const companyProfile = Array.isArray(company?.company_profiles) ? company.company_profiles[0] : company?.company_profiles
     return {
       id: row.id,
       applicationId: row.application_id,
       jobId: row.applications?.job_id ?? '',
       jobTitle: row.applications?.jobs?.title ?? '',
-      companyName: companyById.get(row.employer_id) ?? '',
+      companyName: company?.name ?? '',
+      companyLogoUrl: companyProfile?.logo_url ?? null,
+      companyVerified: company?.verification_status === 'verified',
+      recruiterId: row.assigned_to_user_id ?? null,
+      recruiterName: recruiter ? [recruiter.first_name, recruiter.last_name].filter(Boolean).join(' ') : 'Recruiting team',
+      recruiterAvatarUrl: recruiter?.avatar_url ?? null,
       talentName: snap.name || '',
       talentEmail: snap.email || '',
       initiatedBy: row.initiated_by,
@@ -138,7 +181,7 @@ export async function openOrCreateConversation(params: {
 
   const { data: application, error: appError } = await supabase
     .from('applications')
-    .select('talent_id, job_id, jobs(employer_id)')
+    .select('talent_id, job_id, jobs(company_id, assigned_to_user_id, created_by_user_id)')
     .eq('id', params.applicationId)
     .single()
 
@@ -147,7 +190,7 @@ export async function openOrCreateConversation(params: {
   }
 
   const talentId = (application as any).talent_id
-  const employerId = (application as any).jobs?.employer_id
+  const employerId = (application as any).jobs?.company_id
   if (!employerId) {
     throw new Error('Could not resolve the employer for this conversation.')
   }
@@ -157,7 +200,8 @@ export async function openOrCreateConversation(params: {
     .insert({
       application_id: params.applicationId,
       talent_id: talentId,
-      employer_id: employerId,
+      company_id: employerId,
+      assigned_to_user_id: (application as any).jobs?.assigned_to_user_id || (application as any).jobs?.created_by_user_id,
       initiated_by: params.initiatedBy,
       initial_message: params.initialMessage.trim(),
     })
@@ -179,10 +223,12 @@ export async function openOrCreateConversation(params: {
     throw new Error(insertError?.message || 'Failed to create conversation.')
   }
 
+  const initialSender = await getSenderSnapshot(supabase)
   await supabase.from('messages').insert({
     conversation_id: created.id,
     sender_role: params.initiatedBy,
     body: params.initialMessage.trim(),
+    ...initialSender,
   })
 
   const [conv] = await mapConversations(supabase, [created])
@@ -227,7 +273,7 @@ export async function sendMessage(params: {
 
   const { data, error } = await supabase
     .from('messages')
-    .insert({ conversation_id: conversationId, sender_role: senderRole, body: body.trim() })
+    .insert({ conversation_id: conversationId, sender_role: senderRole, body: body.trim(), ...(await getSenderSnapshot(supabase)) })
     .select('*')
     .single()
 
@@ -237,6 +283,12 @@ export async function sendMessage(params: {
     id: data.id,
     conversationId: data.conversation_id,
     senderRole: data.sender_role,
+    senderUserId: data.sender_user_id,
+    senderName: data.sender_display_name || '',
+    senderAvatarUrl: data.sender_avatar_url,
+    senderCompanyName: data.sender_company_name || '',
+    senderCompanyLogoUrl: data.sender_company_logo_url,
+    senderCompanyVerified: data.sender_company_verified || false,
     body: data.body,
     sentAt: data.sent_at,
     readByRecipient: data.read_by_recipient,
@@ -258,6 +310,12 @@ export async function getMessages(conversationId: string): Promise<ChatMessage[]
     id: m.id,
     conversationId: m.conversation_id,
     senderRole: m.sender_role,
+    senderUserId: m.sender_user_id,
+    senderName: m.sender_display_name || '',
+    senderAvatarUrl: m.sender_avatar_url,
+    senderCompanyName: m.sender_company_name || '',
+    senderCompanyLogoUrl: m.sender_company_logo_url,
+    senderCompanyVerified: m.sender_company_verified || false,
     body: m.body,
     sentAt: m.sent_at,
     readByRecipient: m.read_by_recipient,
@@ -270,6 +328,10 @@ export async function getMessages(conversationId: string): Promise<ChatMessage[]
  */
 export async function markConversationRead(conversationId: string, role: ChatParticipantRole): Promise<void> {
   const supabase = createBrowserSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    await supabase.from('conversation_read_states').upsert({ conversation_id: conversationId, user_id: user.id, last_read_at: new Date().toISOString() })
+  }
   await supabase
     .from('messages')
     .update({ read_by_recipient: true })

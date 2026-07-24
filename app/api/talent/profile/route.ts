@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     const { data: verifications } = await supabase
       .from('talent_experience_verifications')
-      .select('id, experience_id, status, rejection_reason, requested_at, snapshot, employer_id')
+      .select('id, experience_id, status, rejection_reason, requested_at, snapshot, company_id')
       .eq('talent_id', user.id)
     const verificationByExperienceId = new Map((verifications ?? []).map((v) => [v.experience_id, v]))
 
@@ -62,9 +62,9 @@ export async function GET(request: NextRequest) {
     const admin = createSupabaseAdminClient()
     const { data: blacklistRows } = await admin
       .from('employer_talent_blacklist')
-      .select('employer_id')
+      .select('company_id')
       .eq('talent_id', user.id)
-    const blacklistedEmployerIds = new Set((blacklistRows ?? []).map((b) => b.employer_id))
+    const blacklistedEmployerIds = new Set((blacklistRows ?? []).map((b) => b.company_id))
 
     // Map database relations back to TalentProfile interface
     const mappedProfile: TalentProfile = {
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
           verificationRejectionReason: verification?.rejection_reason || undefined,
           verificationRequestedAt: verification?.requested_at || undefined,
           verificationCanResend: canResendAfterEdit,
-          verificationBlacklisted: verification ? blacklistedEmployerIds.has(verification.employer_id) : undefined,
+          verificationBlacklisted: verification ? blacklistedEmployerIds.has(verification.company_id) : undefined,
         }
       }),
       education: (profile.talent_educations || []).map((e: any): TalentEducation => ({

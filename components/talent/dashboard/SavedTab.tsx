@@ -100,7 +100,7 @@ export default function SavedTab() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs text-gray-500 mb-1 truncate">{job.company} • {job.location}</div>
+                  <div className="mb-1 truncate text-xs text-gray-500">{job.company}{job.companyVerified && <span title="Verified company" className="ml-1 text-sky-500">✓</span>} • {job.location}</div>
                   <h3 className="text-sm font-semibold text-gray-900 truncate">{job.title}</h3>
                   <div className="text-[11px] text-gray-600 font-medium mt-1">{job.type} • {job.salary}</div>
                 </div>
@@ -137,7 +137,7 @@ export default function SavedTab() {
           <motion.div key={selectedJob.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
             <div>
               <div className="flex items-center justify-between gap-3 mb-2">
-                <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{selectedJob.company}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-[#FF6B00]">{selectedJob.company}{selectedJob.companyVerified && <span title="Verified company" className="ml-1 text-sky-500">✓</span>}</p>
                 <button 
                   onClick={() => handleRemove(selectedJob.id)}
                   disabled={isPending(selectedJob.id)}

@@ -47,7 +47,11 @@ export interface FormConfig {
 
 export interface EmployerJob {
   id: string;
+  companyId?: string;
   company?: string;
+  companyVerified?: boolean;
+  createdByUserId?: string | null;
+  assignedToUserId?: string | null;
   title: string;
   location: string;
   locationType: LocationType;

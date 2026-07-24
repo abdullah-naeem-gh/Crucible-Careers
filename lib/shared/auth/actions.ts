@@ -10,10 +10,12 @@ export async function signUp(data: {
   email: string
   password: string
   role: UserRole
-  firstName: string
-  lastName: string
+  firstName?: string
+  lastName?: string
   company?: string
   redirectTo?: string
+  employerIntent?: 'create_company' | 'join_company'
+  companyJoinEmail?: string
 }) {
   const supabase = createBrowserSupabaseClient()
   const next = encodeURIComponent(
@@ -25,9 +27,11 @@ export async function signUp(data: {
     options: {
       data: {
         role: data.role,
-        first_name: data.firstName,
-        last_name: data.lastName,
+        ...(data.firstName?.trim() ? { first_name: data.firstName.trim() } : {}),
+        ...(data.lastName?.trim() ? { last_name: data.lastName.trim() } : {}),
         company: data.company ?? null,
+        employer_intent: data.employerIntent ?? null,
+        company_join_email: data.companyJoinEmail ?? null,
       },
       emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${next}`,
     },

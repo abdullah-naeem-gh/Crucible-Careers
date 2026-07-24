@@ -36,7 +36,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { data: blacklistRow } = await admin
     .from('employer_talent_blacklist')
     .select('id')
-    .eq('employer_id', existing.employer_id)
+    .eq('company_id', existing.company_id)
     .eq('talent_id', user.id)
     .maybeSingle()
 

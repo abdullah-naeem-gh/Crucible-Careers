@@ -13,6 +13,11 @@ export interface ChatConversation {
   jobId: string
   jobTitle: string
   companyName: string
+  companyLogoUrl: string | null
+  companyVerified: boolean
+  recruiterId: string | null
+  recruiterName: string
+  recruiterAvatarUrl: string | null
   talentName: string
   talentEmail: string
   /** role that sent the initial request */
@@ -30,6 +35,12 @@ export interface ChatMessage {
   id: string
   conversationId: string
   senderRole: ChatParticipantRole
+  senderUserId: string | null
+  senderName: string
+  senderAvatarUrl: string | null
+  senderCompanyName: string
+  senderCompanyLogoUrl: string | null
+  senderCompanyVerified: boolean
   body: string
   sentAt: string
   readByRecipient: boolean

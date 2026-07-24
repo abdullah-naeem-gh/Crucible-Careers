@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/shared/supabase/server'
+import { createSupabaseAdminClient } from '@/lib/shared/supabase/admin'
+import { canAccessOwnedResource, companyErrorResponse, getEmployerContext } from '@/lib/employer/server/company-context'
 import type { ApplicantPipelineStage, CandidateExperience, CandidateProfile, ScreeningStatus } from '@/types/employer/applicant'
 
 function toScreeningStatus(stage: ApplicantPipelineStage): ScreeningStatus | undefined {
@@ -12,22 +13,23 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  try {
+  const context = await getEmployerContext()
+  const supabase = createSupabaseAdminClient()
 
   const { id: jobId } = await params
 
   const { data: job, error: jobError } = await supabase
     .from('jobs')
-    .select('id, title')
+    .select('id, title, created_by_user_id, assigned_to_user_id')
     .eq('id', jobId)
-    .eq('employer_id', user.id)
+    .eq('company_id', context.companyId)
     .single()
 
   if (jobError || !job) {
+    return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+  }
+  if (!canAccessOwnedResource(context, job.assigned_to_user_id || job.created_by_user_id, 'viewAllApplicants')) {
     return NextResponse.json({ error: 'Job not found' }, { status: 404 })
   }
 
@@ -85,7 +87,7 @@ export async function GET(
     const { data: verifications } = await supabase
       .from('talent_experience_verifications')
       .select('experience_id, status')
-      .eq('employer_id', user.id)
+      .eq('company_id', context.companyId)
       .in('experience_id', allExperienceIds)
 
     const statusByExperienceId = new Map((verifications ?? []).map((v) => [v.experience_id, v.status]))
@@ -98,4 +100,7 @@ export async function GET(
   }
 
   return NextResponse.json(result)
+  } catch (error) {
+    return companyErrorResponse(error)
+  }
 }

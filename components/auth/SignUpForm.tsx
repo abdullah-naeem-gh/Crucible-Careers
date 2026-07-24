@@ -5,6 +5,7 @@ import GoogleAuthButton from './GoogleAuthButton'
 
 interface SignUpFormProps {
   userType: 'talent' | 'employer'
+  employerMode?: 'company' | 'recruiter'
   onSubmit: (formData: SignUpFormData) => void
   isLoading?: boolean
   onGoogleError?: (message: string) => void
@@ -16,6 +17,7 @@ export interface SignUpFormData {
   lastName: string
   email: string
   company?: string
+  companyJoinEmail?: string
   role?: string
   experience?: string
   skills?: string
@@ -23,12 +25,13 @@ export interface SignUpFormData {
   confirmPassword: string
 }
 
-export default function SignUpForm({ userType, onSubmit, isLoading = false, onGoogleError, redirectTo }: SignUpFormProps) {
+export default function SignUpForm({ userType, employerMode = 'company', onSubmit, isLoading = false, onGoogleError, redirectTo }: SignUpFormProps) {
   const [formData, setFormData] = useState<SignUpFormData>({
     firstName: '',
     lastName: '',
     email: '',
     company: '',
+    companyJoinEmail: '',
     role: '',
     experience: '',
     skills: '',
@@ -51,17 +54,18 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false, onGo
   }
 
   const isDarkTheme = userType === 'employer'
+  const requiresPersonalName = userType === 'talent' || employerMode === 'recruiter'
   
   const validateForm = (): boolean => {
     const newErrors: Partial<SignUpFormData> = {}
     let isValid = true
 
-    if (!formData.firstName.trim()) {
+    if (requiresPersonalName && !formData.firstName.trim()) {
       newErrors.firstName = 'First name is required'
       isValid = false
     }
 
-    if (!formData.lastName.trim()) {
+    if (requiresPersonalName && !formData.lastName.trim()) {
       newErrors.lastName = 'Last name is required'
       isValid = false
     }
@@ -74,9 +78,19 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false, onGo
       isValid = false
     }
 
-    if (userType === 'employer' && !formData.company?.trim()) {
+    if (userType === 'employer' && employerMode === 'company' && !formData.company?.trim()) {
       newErrors.company = 'Company name is required'
       isValid = false
+    }
+
+    if (userType === 'employer' && employerMode === 'recruiter') {
+      if (!formData.companyJoinEmail?.trim()) {
+        newErrors.companyJoinEmail = 'Company Crucible email is required'
+        isValid = false
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.companyJoinEmail)) {
+        newErrors.companyJoinEmail = 'Enter a valid company email'
+        isValid = false
+      }
     }
 
     if (!formData.password) {
@@ -111,7 +125,7 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false, onGo
       className="w-full max-w-md mx-auto"
     >
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+        {requiresPersonalName && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <div>
             <label htmlFor="firstName" className={`block text-sm font-medium mb-1 ${isDarkTheme ? 'text-white' : 'text-gray-700'}`}>
               First Name *
@@ -173,7 +187,7 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false, onGo
               </motion.p>
             )}
           </div>
-        </div>
+        </div>}
 
         <div>
           <label htmlFor="email" className={`block text-sm font-medium mb-1 ${isDarkTheme ? 'text-white' : 'text-gray-700'}`}>
@@ -206,7 +220,7 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false, onGo
           )}
         </div>
 
-        {userType === 'employer' && (
+        {userType === 'employer' && employerMode === 'company' && (
           <div>
             <label htmlFor="company" className={`block text-sm font-medium mb-1 ${isDarkTheme ? 'text-white' : 'text-gray-700'}`}>
               Company Name *
@@ -236,6 +250,26 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false, onGo
                 {errors.company}
               </motion.p>
             )}
+          </div>
+        )}
+
+        {userType === 'employer' && employerMode === 'recruiter' && (
+          <div>
+            <label htmlFor="companyJoinEmail" className="mb-1 block text-sm font-medium text-white">
+              Company Crucible account email *
+            </label>
+            <motion.input
+              id="companyJoinEmail"
+              type="email"
+              value={formData.companyJoinEmail}
+              onChange={(e) => handleInputChange('companyJoinEmail', e.target.value)}
+              variants={inputVariants}
+              whileFocus="focus"
+              className={`w-full min-w-0 rounded-lg border bg-white/5 px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:ring-2 sm:px-4 sm:py-3 ${errors.companyJoinEmail ? 'border-red-300 focus:ring-red-200' : 'border-white/20 focus:border-orange-400 focus:ring-orange-200'}`}
+              placeholder="careers@company.com"
+            />
+            {errors.companyJoinEmail && <p className="mt-1 text-sm text-red-500">{errors.companyJoinEmail}</p>}
+            <p className="mt-1.5 text-[11px] text-white/35">This routes a request to the company. An admin must approve it before you receive access.</p>
           </div>
         )}
 
@@ -318,7 +352,7 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false, onGo
               Creating account...
             </div>
           ) : (
-            `Join as ${userType === 'talent' ? 'Talent' : 'Employer'}`
+            userType === 'talent' ? 'Join as Talent' : employerMode === 'company' ? 'Create company account' : 'Request company access'
           )}
         </motion.button>
 
@@ -330,7 +364,9 @@ export default function SignUpForm({ userType, onSubmit, isLoading = false, onGo
         </p>
       </form>
 
-      <GoogleAuthButton portal={userType} isDarkTheme={isDarkTheme} onError={onGoogleError} redirectTo={redirectTo} />
+      {!(userType === 'employer' && employerMode === 'company') && (
+        <GoogleAuthButton portal={userType} isDarkTheme={isDarkTheme} onError={onGoogleError} redirectTo={redirectTo} />
+      )}
     </motion.div>
   )
 }

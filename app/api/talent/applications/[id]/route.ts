@@ -33,7 +33,7 @@ export async function GET(
 
   const { data: application, error } = await supabase
     .from('applications')
-    .select('id, status, applied_at, ats_score, custom_answers, profile_snapshot, jobs(id, title, employer_id, tags)')
+    .select('id, status, applied_at, ats_score, custom_answers, profile_snapshot, jobs(id, title, company_id, tags)')
     .eq('id', id)
     .eq('talent_id', user.id)
     .single()
@@ -47,9 +47,9 @@ export async function GET(
   const jobTags: string[] = job?.tags || []
 
   const { data: company } = await supabase
-    .from('employer_company_names')
-    .select('company')
-    .eq('id', job?.employer_id)
+    .from('companies')
+    .select('name, verification_status')
+    .eq('id', job?.company_id)
     .single()
 
   const { data: siblings } = await supabase
@@ -82,7 +82,8 @@ export async function GET(
   return NextResponse.json({
     id: application.id,
     jobTitle: job?.title || 'Unknown Role',
-    company: company?.company || 'Unknown Company',
+    company: company?.name || 'Unknown Company',
+    companyVerified: company?.verification_status === 'verified',
     status: pipelineStageLabel(application.status),
     appliedAt: new Date(application.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     matchScore: myScore,

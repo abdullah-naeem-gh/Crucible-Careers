@@ -442,6 +442,7 @@ export default function JobBrowser({ jobs, isLoading = false, initialSelectedJob
                               </div>
                               <div className="mt-1 text-sm font-medium text-[#FF6B00] truncate">
                                 {job.company}
+                                {job.companyVerified && <span title="Verified company" className="ml-1 text-sky-500">✓</span>}
                               </div>
                               <div className="mt-0.5 text-xs text-gray-500 truncate flex items-center gap-2">
                                 <span>{[job.location, job.type].filter(Boolean).join(' • ')}</span>
@@ -590,6 +591,7 @@ export default function JobBrowser({ jobs, isLoading = false, initialSelectedJob
                   </Link>
                   <Link href={`/talent/dashboard/company/${selectedJob.company.toLowerCase().replace(/\s+/g, '-')}`} className="text-base font-semibold text-gray-900 hover:text-[#FF6B00] transition-colors">
                     {selectedJob.company}
+                    {selectedJob.companyVerified && <span title="Verified company" className="ml-1 text-sky-500">✓</span>}
                   </Link>
                 </div>
                 <div>

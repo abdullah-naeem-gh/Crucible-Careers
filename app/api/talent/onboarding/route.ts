@@ -126,7 +126,8 @@ export async function POST(request: NextRequest) {
       .eq('talent_id', user.id)
     const verificationByExperienceId = new Map((existingVerifications ?? []).map((v) => [v.experience_id, v]))
 
-    const { data: employerNames } = await supabase.from('employer_company_names').select('id, company')
+    const { data: companyRows } = await supabase.from('companies').select('id, name')
+    const employerNames = (companyRows ?? []).map((row) => ({ id: row.id, company: row.name }))
     const employerIdByName = new Map<string, string>()
     for (const row of employerNames ?? []) {
       const key = normalizeCompany(row.company)
@@ -142,9 +143,9 @@ export async function POST(request: NextRequest) {
     const admin = createSupabaseAdminClient()
     const { data: blacklistRows } = await admin
       .from('employer_talent_blacklist')
-      .select('employer_id')
+      .select('company_id')
       .eq('talent_id', user.id)
-    const blacklistedEmployerIds = new Set((blacklistRows ?? []).map((b) => b.employer_id))
+    const blacklistedEmployerIds = new Set((blacklistRows ?? []).map((b) => b.company_id))
 
     // 2. Diff and Upsert Experiences
     // Safer than constructing an `in.(...)` filter from client-provided IDs.
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
             id: crypto.randomUUID(),
             experience_id: e.id,
             talent_id: user.id,
-            employer_id: employerId,
+            company_id: employerId,
             status: 'pending',
             rejection_reason: null,
             snapshot: snapshotOf(e),
@@ -215,7 +216,7 @@ export async function POST(request: NextRequest) {
             id: existing.id,
             experience_id: existing.experience_id,
             talent_id: existing.talent_id,
-            employer_id: existing.employer_id,
+            company_id: existing.company_id,
             status: existing.status,
             rejection_reason: existing.rejection_reason,
             snapshot: existing.snapshot,

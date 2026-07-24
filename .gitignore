@@ -7,7 +7,10 @@ tsconfig.tsbuildinfo
 .agents
 .playwright-mcp
 tsconfig.tsbuildinfo
-/supabase/
+/supabase/*
+!/supabase/migrations/
+/supabase/migrations/*
+!/supabase/migrations/*.sql
 .mcp.json
 .env
 plan.md
